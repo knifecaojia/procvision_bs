@@ -158,7 +158,7 @@ graph TD
 | :--- | :-------------------- | :------------------------------------------------- |
 | POST | `/mom/task/push`    | 接收 MOM 推送的生产任务（包含 PDF 链接、物料信息） |
 | POST | `/mom/process/sync` | 接收 MOM 推送的产品工艺信息                        |
-| POST | `/mom/msg/notify`   | 接收 MOM 的临时通知消息                            |
+
 
 ### 4.2 面向 C 端 (桌面端)
 
@@ -264,6 +264,84 @@ MOM 下发的生产指令，解析为本地的 `WorkOrder`。
 2. **工艺绑定**：根据 `process_no` 和 `process_version` 自动关联已存在的工艺包。若工艺包未发布（无视觉算法数据），该工单状态应标记为 `BLOCKED`（阻塞）。
 3. **人员/设备绑定**：`worker_code` 可用于自动分配工单到指定 C 端登录账号。
 
+### 5.3 API 接口定义
+
+#### 5.3.1 接收生产任务 (Push Production Task)
+
+| 属性 | 说明 |
+| :--- | :--- |
+| **Endpoint** | `/api/v1/mom/task/push` |
+| **Method** | `POST` |
+| **调用时机** | MOM 系统下发新的生产工单时调用 |
+| **功能** | 接收工单信息，生成本地 `WorkOrder` 记录，并异步下载关联资源 |
+
+**请求参数 (Body JSON)**:
+
+见 **5.2.1 数据结构**
+
+**响应参数**:
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `code` | int | 200: 成功, 500: 内部错误 |
+| `msg` | string | 提示信息 |
+| `data` | object | null |
+
+**错误码**:
+
+| Code | 描述 | 处理建议 |
+| :--- | :--- | :--- |
+| 200 | 接收成功 | 正常流程 |
+| 50001 | 数据格式错误 | 检查 JSON 结构是否符合规范 |
+| 50002 | 重复的工单号 | 忽略或记录日志，幂等处理 |
+
+#### 5.3.2 接收产品工艺 (Sync Process Info)
+
+| 属性 | 说明 |
+| :--- | :--- |
+| **Endpoint** | `/api/v1/mom/process/sync` |
+| **Method** | `POST` |
+| **调用时机** | MOM 系统新增或更新产品工艺时调用 |
+| **功能** | 同步工艺基础信息，创建或更新本地 `Product` 和 `CraftPackage` |
+
+**请求参数 (Body JSON)**:
+
+见 **5.1.1 数据结构**
+
+**响应参数**:
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `code` | int | 200: 成功 |
+| `msg` | string | 提示信息 |
+| `data` | object | null |
+
+**错误码**:
+
+| Code | 描述 | 处理建议 |
+| :--- | :--- | :--- |
+| 200 | 同步成功 | 正常流程 |
+| 50003 | 工艺版本冲突 | 检查版本号是否递增 |
+
+### 5.4 原始数据存储 (Raw Data Storage)
+
+为保证数据的可追溯性及问题排查能力，MOM 推送的所有原始 JSON 数据必须完整存储。
+
+**存储表设计 (`sys_mom_log`)**:
+
+| 字段名 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `log_id` | BIGINT (PK) | 主键 |
+| `req_type` | VARCHAR(50) | 请求类型，枚举值：`TASK_PUSH`, `PROCESS_SYNC` |
+| `req_payload` | LONGTEXT/JSON | **完整存储 MOM 推送的原始 JSON 数据** |
+| `req_time` | DATETIME | 接收时间 |
+| `process_status` | VARCHAR(20) | 处理状态：`RECEIVED` (已接收), `PROCESSED` (已处理), `FAILED` (处理失败) |
+| `err_msg` | VARCHAR(500) | 异常信息（如有） |
+
+**存储策略**:
+1.  **同步写入**：在 Controller 层接收到请求的第一时间，**同步**写入此表，确保即使后续业务逻辑报错，原始数据也不丢失。
+2.  **数据清理**：由于 `req_payload` 可能较大，建议设置定时任务（如每月 1 日）清理 3 个月前的历史日志。
+
 ---
 
 ## 6. 开发规范 (Student Guide)
@@ -314,9 +392,78 @@ ruoyi-business/
 
 ## 7. 部署与扩展性建议
 
-1. **MinIO 部署**：建议使用 Docker 部署 MinIO，并配置 Nginx 代理图片的访问路径。
-2. **安全性**：C 端与 Server 端建议使用 HTTPS 通信。
-3. **扩展性**：如果检测图片量巨大（如每天 10万+），需考虑将 `biz_detect_log` 表按月分表，或迁移至时序数据库/ElasticSearch。
+### 7.1 单节点高性能部署 (Single Node High Performance)
+
+推荐使用 Docker Compose 进行一键部署，确保环境一致性。
+
+**`docker-compose.yml` 参考配置**:
+
+```yaml
+version: '3.8'
+services:
+  # 1. 业务服务 (Server)
+  server:
+    build: .
+    container_name: procvision-server
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_HOST=mysql
+      - SPRING_REDIS_HOST=redis
+    depends_on:
+      - mysql
+      - redis
+
+  # 2. 数据库 (MySQL)
+  mysql:
+    image: mysql:8.0
+    container_name: procvision-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: procvision
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # 3. 缓存 (Redis)
+  redis:
+    image: redis:6.2
+    container_name: procvision-redis
+    volumes:
+      - ./data/redis:/data
+
+  # 4. 对象存储 (MinIO)
+  minio:
+    image: minio/minio
+    container_name: procvision-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password
+    volumes:
+      - ./data/minio:/data
+    command: server /data --console-address ":9001"
+
+  # 5. 网关 (Nginx)
+  nginx:
+    image: nginx:1.20
+    container_name: procvision-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./html/dist:/usr/share/nginx/html
+      - ./nginx/conf/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - server
+```
+
+### 7.2 其他建议
+
+1.  **MinIO 部署**：建议使用 Docker 部署 MinIO，并配置 Nginx 代理图片的访问路径。
+2.  **安全性**：C 端与 Server 端建议使用 HTTPS 通信。
+3.  **扩展性**：如果检测图片量巨大（如每天 10万+），需考虑将 `biz_detect_log` 表按月分表，或迁移至时序数据库/ElasticSearch。
 
 ---
 
