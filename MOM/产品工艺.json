@@ -1,0 +1,158 @@
+{
+	"process_info": {
+		"process_no": "JZ2.940.10287GY-TX02",
+		"process_version": "N.1",
+		"process_name": "Ls波段上天线工艺",
+		"process_desc": "2020-2" //这个工艺信息里面没有专有的描述字段，这里写的该工艺产品的项目号，具体需要什么再沟通。
+	},
+	"operation_list": [
+		{
+			"operation_info": {
+				"operation_no": "30",
+				"operation_name": "装配",
+				"operation_desc": "装配" //这里写的“工序简述”字段，具体需要补充什么再沟通。
+			},
+			"step_list": [{
+					"step_no": "1",
+					"step_name": "1", //后期有些工步是有名称的，但这个迁移工艺没有。
+					"step_content": "按表格准备零部件和辅料。"
+				},
+				{
+					"step_no": "2",
+					"step_name": "2",
+					"step_content": "检查连接器状态，确认一致后装配。"
+				},
+				{
+					"step_no": "3",
+					"step_name": "3",
+					"step_content": "按工序简图所示将连接器装配到腔体上(注意连接器的安装方向)，螺钉紧固前在螺纹根部涂适量乐泰243，按对称交叉分步拧紧，在连接器与腔体接触出面涂抹一圈南大704硅胶。溢出的胶液用脱脂棉蘸无水乙醇清理干净。"
+				},
+				{
+					"step_no": "4",
+					"step_name": "4",
+					"step_content": "按照简图所示安装接地柱，螺母螺纹涂乐泰272螺纹紧固剂。注意接地柱各个零部件安装位置。"
+				}],
+			"operation_material_info": [{
+					"material_no": "130000461",
+					"material_name": "平垫圈",
+					"material_quantity": 4,
+					"material_unit": "件",
+					"error_prevention_mark": "" //当前工艺没有标识防错标识
+				},
+				{
+					"material_no": "130003195",
+					"material_name": "弹垫",
+					"material_quantity": 4,
+					"material_unit": "件",
+					"error_prevention_mark": ""
+				},
+				{
+					"material_no": "130026322",
+					"material_name": "接地柱",
+					"material_quantity": 1,
+					"material_unit": "件",
+					"error_prevention_mark": ""
+				},
+				{
+					"material_no": "140053164",
+					"material_name": "射频插座",
+					"material_quantity": 1,
+					"material_unit": "件",
+					"error_prevention_mark": ""
+				}]
+		},
+		{
+			"operation_info": {
+				"operation_no": "210",
+				"operation_name": "装配",
+				"operation_desc": "装配"
+			},
+			"step_list": [{
+					"step_no": "1",
+					"step_name": "1",
+					"step_content": "天线返回后，检查天线外观，若无划伤、磨损等问题则转调试工序对天线进行参数复测。"
+				},
+				{
+					"step_no": "2",
+					"step_name": "2",
+					"step_content": "按照工序简图所示安装防水透气阀，螺纹涂乐泰243螺纹紧固剂。"
+				},
+				{
+					"step_no": "3",
+					"step_name": "3",
+					"step_content": "将铭牌粘接处的标签去除并做好标签转换成铭牌的编号记录。"
+				},
+				{
+					"step_no": "4",
+					"step_name": "4",
+					"step_content": "用二维码扫描器检查铭牌上的二维码，二维码技术要求如简图所示。"
+				},
+				{
+					"step_no": "5",
+					"step_name": "5",
+					"step_content": "用100#砂纸打磨天线腔体铭牌粘接处，打磨以基本去除表面氧化层为准，打磨完毕用无尘布蘸丙酮清洗干净天线腔体及铭牌上的浮灰，按1-2:1比例配置好3gDG-4胶，做好配胶记录，在铭牌粘接面均匀涂覆一层DG-4胶，对正腔体位置粘贴铭牌，注意铭牌粘贴方向。"
+				},
+				{
+					"step_no": "6",
+					"step_name": "6",
+					"step_content": "固化：温度60℃±2℃，时间3小时，时间到后关闭烘箱电源，打开箱门随箱冷却至室温。"
+				},
+				{
+					"step_no": "7",
+					"step_name": "7",
+					"step_content": "在天线铭牌与腔体粘接四周用704硅橡胶均匀涂覆一层，室温放置4小时以上。"
+				},
+				{
+					"step_no": "8",
+					"step_name": "8",
+					"step_content": "按图示方向粘贴航向铭牌，压平，无翘曲。（安装于沉头螺钉位置正中心）"
+				},
+				{
+					"step_no": "9",
+					"step_name": "9",
+					"step_content": "在连接器与腔体接触四周，接地柱安装凸台四周均匀涂抹一圈南大704硅胶，室温晾干。"
+				}],
+			"operation_material_info": [{
+					"material_no": "130009362",
+					"material_name": "防水透气阀",
+					"material_quantity": 1,
+					"material_unit": "件",
+					"error_prevention_mark": ""
+				},
+				{
+					"material_no": "JZ8.807.10323",
+					"material_name": "航向铭牌",
+					"material_quantity": 1,
+					"material_unit": "件",
+					"error_prevention_mark": ""
+				},
+				{
+					"material_no": "JZ8.807.10324",
+					"material_name": "铭牌",
+					"material_quantity": 1,
+					"material_unit": "件",
+					"error_prevention_mark": ""
+				},
+				{
+					"material_no": "JZ8.807.10328",
+					"material_name": "铭牌",
+					"material_quantity": 1,
+					"material_unit": "件",
+					"error_prevention_mark": ""
+				},
+				{
+					"material_no": "130004665",
+					"material_name": "室温固化硅橡胶",
+					"material_quantity": 1,
+					"material_unit": "件",
+					"error_prevention_mark": ""
+				},
+				{
+					"material_no": "130014755",
+					"material_name": "螺纹紧固剂",
+					"material_quantity": 1,
+					"material_unit": "件",
+					"error_prevention_mark": ""
+				}]
+		}]
+}

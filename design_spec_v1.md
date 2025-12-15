@@ -1,7 +1,7 @@
-# B/S 架构设计说明书 (工业视觉装配引导与检测系统)
+# B/S 架构设计规范说明(工业视觉装配引导与检测系统)
 
-> **文档版本**: V1.0  
-> **创建日期**: 2025-12-15  
+> **文档版本**: V1.0
+> **创建日期**: 2025-12-15
 > **适用对象**: 开发团队（研究生团队）、架构评审人员
 
 ---
@@ -11,10 +11,11 @@
 本项目旨在构建一套工业视觉装配引导与检测系统的服务端管理平台（B/S 架构）。该平台主要负责与 MOM（制造运营管理）系统交互，管理工艺数据、算法模型、工单任务，并为桌面端（C/S 架构）提供鉴权、任务分发及数据收集服务。
 
 ### 1.1 核心目标
-1.  **MOM 集成**：通过网闸与企业内网 MOM 系统通信，接收生产任务，上报检测结果。
-2.  **工艺数字化**：提供可视化工具，将产品装配工艺转化为计算机可识别的结构化数据（JSON + 图片）。
-3.  **算法管理**：统一管理视觉算法包，提供版本控制与分发服务。
-4.  **数据闭环**：收集 C 端检测日志与图片，实现质量追溯。
+
+1. **MOM 集成**：通过网闸与企业内网 MOM 系统通信，接收生产任务，上报检测结果。
+2. **工艺数字化**：提供可视化工具，将产品装配工艺转化为计算机可识别的结构化数据（JSON + 图片）。
+3. **算法管理**：统一管理视觉算法包，提供版本控制与分发服务。
+4. **数据闭环**：收集 C 端检测日志与图片，实现质量追溯。
 
 ---
 
@@ -24,15 +25,15 @@
 
 ### 2.1 技术选型
 
-| 模块 | 技术栈 | 说明 |
-| :--- | :--- | :--- |
-| **后端框架** | Spring Boot 2.7+ / 3.x | 核心业务逻辑容器，提供 RESTful API |
-| **安全框架** | Spring Security + JWT | 实现无状态鉴权，支持 C 端 Token 认证 |
-| **数据库** | MySQL 8.0 | 存储业务数据（用户、工艺、工单等） |
-| **缓存** | Redis 6+ | 缓存用户 Token、字典数据、热点配置 |
-| **对象存储** | **MinIO** | **核心组件**。存储工艺原图、检测结果图、算法包。**必须使用 Pre-signed URL 模式**，让客户端直接与 MinIO 通信，避免大文件（>20M）经过后端服务。 |
-| **消息队列** | **RabbitMQ** | **推荐引入**。用于解耦 MOM 上报接口与内部处理，处理高并发图片上传 |
-| **前端框架** | Vue 3 + Element Plus | B 端管理后台，推荐使用 Vue 3 以获得更好的性能与开发体验 |
+| 模块               | 技术栈                 | 说明                                                                                                                                                      |
+| :----------------- | :--------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **后端框架** | Spring Boot 2.7+ / 3.x | 核心业务逻辑容器，提供 RESTful API                                                                                                                        |
+| **安全框架** | Spring Security + JWT  | 实现无状态鉴权，支持 C 端 Token 认证                                                                                                                      |
+| **数据库**   | MySQL 8.0              | 存储业务数据（用户、工艺、工单等）                                                                                                                        |
+| **缓存**     | Redis 6+               | 缓存用户 Token、字典数据、热点配置                                                                                                                        |
+| **对象存储** | **MinIO**        | **核心组件**。存储工艺原图、检测结果图、算法包。**必须使用 Pre-signed URL 模式**，让客户端直接与 MinIO 通信，避免大文件（>20M）经过后端服务。 |
+| **消息队列** | **RabbitMQ**     | **推荐引入**。用于解耦 MOM 上报接口与内部处理，处理高并发图片上传                                                                                   |
+| **前端框架** | Vue 3 + Element Plus   | B 端管理后台，推荐使用 Vue 3 以获得更好的性能与开发体验                                                                                                   |
 
 ### 2.2 系统架构图 (逻辑视图)
 
@@ -48,11 +49,11 @@ graph TD
 
     subgraph "服务端 (B/S)"
         Gateway[Nginx 网关]
-        
+    
         subgraph "应用服务 (Spring Boot)"
             Auth[认证鉴权]
             Sys[系统管理模块]
-            
+        
             subgraph "业务模块"
                 MOM_Bridge[MOM 通信模块]
                 Craft[工艺信息模块]
@@ -61,7 +62,7 @@ graph TD
                 Detect[检测结果模块]
             end
         end
-        
+    
         subgraph "基础中间件"
             Redis[Redis 缓存]
             MySQL[MySQL 数据库]
@@ -85,58 +86,65 @@ graph TD
 ## 3. 核心模块详细设计
 
 ### 3.1 系统管理模块 (System)
-*   **功能**：基于若依原生功能，管理用户、角色、菜单、部门。
-*   **适配**：需要为 C 端设备/工位创建专门的“设备账号”或“工位账号”，用于 API 鉴权。
+
+* **功能**：基于若依原生功能，管理用户、角色、菜单、部门。
+* **适配**：需要为 C 端设备/工位创建专门的“设备账号”或“工位账号”，用于 API 鉴权。
 
 ### 3.2 MOM 通信模块 (MOM Bridge)
-*   **职责**：作为与 MOM 系统的唯一交互窗口。
-*   **核心流程**：
-    1.  **接收任务**：暴露 HTTP 接口供 MOM 调用，接收 JSON 数据及 PDF 下载链接。
-    2.  **异步处理**：接收到请求后，立即存入数据库（`sys_mom_log`）并返回成功，通过 MQ 异步解析 PDF 和生成本地工单，避免阻塞 MOM 调用。
-    3.  **结果上报**：定时任务或触发式扫描“待上报队列”，将检测结果推送到 MOM 指定接口。
+
+* **职责**：作为与 MOM 系统的唯一交互窗口。
+* **核心流程**：
+  1. **接收任务**：暴露 HTTP 接口供 MOM 调用，接收 JSON 数据及 PDF 下载链接。
+  2. **异步处理**：接收到请求后，立即存入数据库（`sys_mom_log`）并返回成功，通过 MQ 异步解析 PDF 和生成本地工单，避免阻塞 MOM 调用。
+  3. **结果上报**：定时任务或触发式扫描“待上报队列”，将检测结果推送到 MOM 指定接口。
 
 ### 3.3 工艺信息模块 (Process/Craft) - **重点**
+
 本模块是连接 MOM 任务与视觉算法的核心。
-*   **业务对象**：
-    *   `Product` (产品)：对应 MOM 中的物料/产品型号（PID）。
-    *   `CraftPackage` (工艺包)：一个产品对应一个工艺包，包含版本号。
-    *   `CraftStep` (工艺步骤)：具体的装配动作。
-*   **功能逻辑**：
-    1.  **全局模板**：上传一张产品的高清实物图作为“底图”。
-    2.  **画布编辑 (Canvas)**：
-        *   前端集成 Canvas 库（如 Fabric.js）。
-        *   工艺人员在底图上框选 ROI（感兴趣区域）。
-        *   为每个框选区域配置属性：`StepID`（步骤号）、`Description`（描述）、`IsMandatory`（是否强制顺序）、`AlgorithmParam`（关联的算法参数）。
-    3.  **导出规范**：
-        *   点击发布时，后端异步生成 ZIP 包并上传至 MinIO。
-        *   ZIP 内容：`metadata.json`（包含所有步骤坐标、逻辑） + `template.jpg`（底图）。
-        *   **下载逻辑**：C 端请求下载接口，后端返回 MinIO 的 **Pre-signed GET URL**（有效期如 10分钟），C 端直接从 MinIO 下载，降低后端带宽压力。
+
+* **业务对象**：
+  * `Product` (产品)：对应 MOM 中的物料/产品型号（PID）。
+  * `CraftPackage` (工艺包)：一个产品对应一个工艺包，包含版本号。
+  * `CraftStep` (工艺步骤)：具体的装配动作。
+* **功能逻辑**：
+  1. **全局模板**：上传一张产品的高清实物图作为“底图”。
+  2. **画布编辑 (Canvas)**：
+     * 前端集成 Canvas 库（如 Fabric.js）。
+     * 工艺人员在底图上框选 ROI（感兴趣区域）。
+     * 为每个框选区域配置属性：`StepID`（步骤号）、`Description`（描述）、`IsMandatory`（是否强制顺序）、`AlgorithmParam`（关联的算法参数）。
+  3. **导出规范**：
+     * 点击发布时，后端异步生成 ZIP 包并上传至 MinIO。
+     * ZIP 内容：`metadata.json`（包含所有步骤坐标、逻辑） + `template.jpg`（底图）。
+     * **下载逻辑**：C 端请求下载接口，后端返回 MinIO 的 **Pre-signed GET URL**（有效期如 10分钟），C 端直接从 MinIO 下载，降低后端带宽压力。
 
 ### 3.4 算法管理模块 (Algorithm)
-*   **功能**：
-    *   **算法包上传**：采用 **Pre-signed PUT URL** 模式。
-        1. B 端前端请求上传地址，后端生成 MinIO 上传链接。
-        2. B 端前端直接 PUT 文件到 MinIO。
-        3. 上传完成后，调用“确认上传”接口，后端记录路径并异步触发校验任务。
-    *   **校验**：后端异步下载并解压，检查是否包含必要的 `init.py` 或 `manifest.json`。若校验失败，标记状态为“不可用”。
-    *   **存储**：文件存入 MinIO，数据库记录版本号、MD5、Object Key。
-*   **API**：提供 `latest` 接口返回下载用的 Pre-signed URL。
+
+* **功能**：
+  * **算法包上传**：采用 **Pre-signed PUT URL** 模式。
+    1. B 端前端请求上传地址，后端生成 MinIO 上传链接。
+    2. B 端前端直接 PUT 文件到 MinIO。
+    3. 上传完成后，调用“确认上传”接口，后端记录路径并异步触发校验任务。
+  * **校验**：后端异步下载并解压，检查是否包含必要的 `init.py` 或 `manifest.json`。若校验失败，标记状态为“不可用”。
+  * **存储**：文件存入 MinIO，数据库记录版本号、MD5、Object Key。
+* **API**：提供 `latest` 接口返回下载用的 Pre-signed URL。
 
 ### 3.5 工单信息模块 (Work Order)
-*   **逻辑**：
-    *   MOM 推送的任务在本地转化为 `WorkOrder` 记录。
-    *   状态流转：`PENDING` (待领取) -> `PROCESSING` (进行中) -> `COMPLETED` (完成) / `FAILED` (异常)。
-    *   C 端登录后，拉取该工位关联的 `PENDING` 工单。
+
+* **逻辑**：
+  * MOM 推送的任务在本地转化为 `WorkOrder` 记录。
+  * 状态流转：`PENDING` (待领取) -> `PROCESSING` (进行中) -> `COMPLETED` (完成) / `FAILED` (异常)。
+  * C 端登录后，拉取该工位关联的 `PENDING` 工单。
 
 ### 3.6 检测结果模块 (Detection Result)
-*   **数据量级**：高并发写入。
-*   **逻辑**：
-    *   **上传流程**：
-        1. C 端请求“图片上传凭证”接口，获取 MinIO **Pre-signed PUT URL**。
-        2. C 端直接 PUT 图片至 MinIO。
-        3. C 端调用“结果上报”接口，提交 JSON 数据 + 图片路径（Object Key）。
-    *   **后端处理**：后端接收轻量级 JSON，写入 MQ 或直接存库。图片流不再经过后端，极大降低 IO 压力。
-    *   **查询**：提供查询页面，查看详情时前端请求图片的 Pre-signed GET URL 进行展示。
+
+* **数据量级**：高并发写入。
+* **逻辑**：
+  * **上传流程**：
+    1. C 端请求“图片上传凭证”接口，获取 MinIO **Pre-signed PUT URL**。
+    2. C 端直接 PUT 图片至 MinIO。
+    3. C 端调用“结果上报”接口，提交 JSON 数据 + 图片路径（Object Key）。
+  * **后端处理**：后端接收轻量级 JSON，写入 MQ 或直接存库。图片流不再经过后端，极大降低 IO 压力。
+  * **查询**：提供查询页面，查看详情时前端请求图片的 Pre-signed GET URL 进行展示。
 
 ---
 
@@ -145,30 +153,123 @@ graph TD
 所有接口统一前缀 `/api/v1`。
 
 ### 4.1 面向 MOM 系统
-| 方法 | 路径 | 描述 |
-| :--- | :--- | :--- |
-| POST | `/mom/task/push` | 接收 MOM 推送的生产任务（包含 PDF 链接、物料信息） |
-| POST | `/mom/msg/notify` | 接收 MOM 的临时通知消息 |
+
+| 方法 | 路径                  | 描述                                               |
+| :--- | :-------------------- | :------------------------------------------------- |
+| POST | `/mom/task/push`    | 接收 MOM 推送的生产任务（包含 PDF 链接、物料信息） |
+| POST | `/mom/process/sync` | 接收 MOM 推送的产品工艺信息                        |
+| POST | `/mom/msg/notify`   | 接收 MOM 的临时通知消息                            |
 
 ### 4.2 面向 C 端 (桌面端)
-| 方法 | 路径 | 描述 |
-| :--- | :--- | :--- |
-| POST | `/client/auth/login` | 设备/工位登录，获取 Token |
-| GET | `/client/task/list` | 获取当前工位待执行的任务清单 |
-| GET | `/client/craft/url/{pid}` | 获取工艺包（ZIP）的 MinIO 下载链接 (Pre-signed GET) |
-| GET | `/client/algo/check_update` | 检查算法更新，返回 MinIO 下载链接 (Pre-signed GET) |
-| GET | `/client/file/presigned/put` | 获取文件上传凭证 (Pre-signed PUT URL) |
-| POST | `/client/result/submit` | 上报检测结果（仅 JSON，包含图片 Key，不含文件流） |
-| POST | `/client/log/error` | 上报设备运行异常日志 |
+
+| 方法 | 路径                           | 描述                                                |
+| :--- | :----------------------------- | :-------------------------------------------------- |
+| POST | `/client/auth/login`         | 设备/工位登录，获取 Token                           |
+| GET  | `/client/task/list`          | 获取当前工位待执行的任务清单                        |
+| GET  | `/client/craft/url/{pid}`    | 获取工艺包（ZIP）的 MinIO 下载链接 (Pre-signed GET) |
+| GET  | `/client/algo/check_update`  | 检查算法更新，返回 MinIO 下载链接 (Pre-signed GET)  |
+| GET  | `/client/file/presigned/put` | 获取文件上传凭证 (Pre-signed PUT URL)               |
+| POST | `/client/result/submit`      | 上报检测结果（仅 JSON，包含图片 Key，不含文件流）   |
+| POST | `/client/log/error`          | 上报设备运行异常日志                                |
 
 ### 4.3 面向 B 端前端 (管理后台)
+
 *遵循 RuoYi 标准 Controller 写法，使用 `@PreAuthorize` 控制权限。*
 
 ---
 
-## 5. 开发规范 (Student Guide)
+## 5. MOM 数据交互规范 (MOM Data Spec)
 
-### 5.1 目录结构建议
+基于 `BS\MOM` 目录下的数据样例，本章节定义 MOM 推送数据的结构解析与映射策略。
+
+### 5.1 产品工艺数据 (`产品工艺.json`)
+
+MOM 推送的工艺数据是系统“工艺信息模块”的基础。需解析并存储为 `Product` 和 `CraftPackage`。
+
+#### 5.1.1 数据结构
+
+```json
+{
+  "process_info": {
+    "process_no": "JZ2.940.10287GY-TX02", // 工艺编号 -> 关联 Product
+    "process_version": "N.1",             // 版本号 -> CraftPackage Version
+    "process_name": "Ls波段上天线工艺",
+    "process_desc": "..."
+  },
+  "operation_list": [
+    {
+      "operation_info": {
+        "operation_no": "30",            // 工序编号
+        "operation_name": "装配"
+      },
+      "step_list": [                     // 工步列表 -> 映射为 CraftStep
+        {
+          "step_no": "1",
+          "step_content": "按表格准备零部件和辅料。"
+        }
+      ],
+      "operation_material_info": [       // 物料清单 (BOM)
+        {
+          "material_no": "130000461",
+          "material_name": "平垫圈",
+          "material_quantity": 4
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### 5.1.2 映射策略
+
+1. **工艺识别**：使用 `process_no` + `process_version` 作为唯一键。若数据库中不存在，则创建新的工艺包记录。
+2. **工步解析**：`step_list` 中的文本内容需展示在前端“画布编辑”的待选列表中，供工艺人员拖拽或关联到图片区域。
+3. **物料关联**：`operation_material_info` 需存储，以便在 C 端作业时提示操作员需消耗的物料。
+
+### 5.2 工序任务数据 (`工序任务同步.json`)
+
+MOM 下发的生产指令，解析为本地的 `WorkOrder`。
+
+#### 5.2.1 数据结构
+
+```json
+{
+  "order_info": {
+    "production_order_no": "1000023451", // 生产订单号
+    "product_batch": "202503",           // 批次
+    "material_no": "120099483"           // 物料号
+  },
+  "work_order_list": [
+    {
+      "work_order_info": {
+        "work_order_no": "1000023451-01", // 派工单号 (主键)
+        "process_no": "JZ2.940.10287GY-TX02", // 关联工艺
+        "process_version": "N.1",
+        "work_order_quantity": 1
+      },
+      "dispatch_task_info": {
+        "operation_no": "30",
+        "worker_code": "07488",          // 操作员/工位绑定
+        "planned_start_time": "2025-12-09T08:30:00",
+        "step_list": [...]               // 具体的工步执行要求
+      }
+    }
+  ]
+}
+```
+
+#### 5.2.2 处理逻辑
+
+1. **工单生成**：遍历 `work_order_list`，为每个 `work_order_no` 生成一条工单记录。
+2. **工艺绑定**：根据 `process_no` 和 `process_version` 自动关联已存在的工艺包。若工艺包未发布（无视觉算法数据），该工单状态应标记为 `BLOCKED`（阻塞）。
+3. **人员/设备绑定**：`worker_code` 可用于自动分配工单到指定 C 端登录账号。
+
+---
+
+## 6. 开发规范 (Student Guide)
+
+### 6.1 目录结构建议
+
 在 `ruoyi-admin` 模块中不建议写业务代码，请在 `ruoyi-system` 或新建 `ruoyi-business` 模块中开发。建议新建模块以保持架构清晰：
 
 ```text
@@ -181,37 +282,42 @@ ruoyi-business/
 │   └── mom/           # 专门处理 MOM 对接的逻辑
 ```
 
-### 5.2 命名规范
-*   **Java 类名**：使用 PascalCase（大驼峰），如 `CraftService`。
-*   **方法名**：使用 camelCase（小驼峰），如 `getTaskById`。
-*   **数据库表**：使用 `snake_case`，并加模块前缀。
-    *   系统表：`sys_`
-    *   工艺表：`biz_craft_`
-    *   工单表：`biz_order_`
-    *   日志表：`biz_detect_log_`
+### 6.2 命名规范
 
-### 5.3 数据库设计规约
-*   每个表必须包含 `create_time`, `update_time`, `create_by`, `update_by`, `remark` 字段（继承 RuoYi 的 `BaseEntity`）。
-*   **严禁**使用外键，关联关系在代码层面维护。
-*   所有图片、文件字段只存储 **MinIO 的相对路径** 或 **URL**，不存储二进制流。
+* **Java 类名**：使用 PascalCase（大驼峰），如 `CraftService`。
+* **方法名**：使用 camelCase（小驼峰），如 `getTaskById`。
+* **数据库表**：使用 `snake_case`，并加模块前缀。
+  * 系统表：`sys_`
+  * 工艺表：`biz_craft_`
+  * 工单表：`biz_order_`
+  * 日志表：`biz_detect_log_`
 
-### 5.4 异常处理
-*   统一使用 `throw new ServiceException("错误信息")`。
-*   前端响应结构统一为 `{ "code": 200, "msg": "操作成功", "data": ... }`。
+### 6.3 数据库设计规约
 
-### 5.5 版本管理 (Git)
-*   **master**: 主分支，仅限发布版本。
-*   **dev**: 开发主分支。
-*   **feat/xxx**: 功能分支，从 dev 切出，开发完合并回 dev。
-*   **提交信息 (Commit Message)**: `feat: 新增工艺上传功能` 或 `fix: 修复 MOM 解析错误`。
+* 每个表必须包含 `create_time`, `update_time`, `create_by`, `update_by`, `remark` 字段（继承 RuoYi 的 `BaseEntity`）。
+* **严禁**使用外键，关联关系在代码层面维护。
+* 所有图片、文件字段只存储 **MinIO 的相对路径** 或 **URL**，不存储二进制流。
+
+### 6.4 异常处理
+
+* 统一使用 `throw new ServiceException("错误信息")`。
+* 前端响应结构统一为 `{ "code": 200, "msg": "操作成功", "data": ... }`。
+
+### 6.5 版本管理 (Git)
+
+* **master**: 主分支，仅限发布版本。
+* **dev**: 开发主分支。
+* **feat/xxx**: 功能分支，从 dev 切出，开发完合并回 dev。
+* **提交信息 (Commit Message)**: `feat: 新增工艺上传功能` 或 `fix: 修复 MOM 解析错误`。
+
+---
+
+## 7. 部署与扩展性建议
+
+1. **MinIO 部署**：建议使用 Docker 部署 MinIO，并配置 Nginx 代理图片的访问路径。
+2. **安全性**：C 端与 Server 端建议使用 HTTPS 通信。
+3. **扩展性**：如果检测图片量巨大（如每天 10万+），需考虑将 `biz_detect_log` 表按月分表，或迁移至时序数据库/ElasticSearch。
 
 ---
 
-## 6. 部署与扩展性建议
-
-1.  **MinIO 部署**：建议使用 Docker 部署 MinIO，并配置 Nginx 代理图片的访问路径。
-2.  **安全性**：C 端与 Server 端建议使用 HTTPS 通信。
-3.  **扩展性**：如果检测图片量巨大（如每天 10万+），需考虑将 `biz_detect_log` 表按月分表，或迁移至时序数据库/ElasticSearch。
-
----
 **请严格按照本文档进行架构搭建与开发。如有疑问，请组织架构评审会议讨论。**

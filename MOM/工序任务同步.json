@@ -1,0 +1,64 @@
+{
+	"order_info": {
+		"production_order_no": "1000023451",
+		"product_batch": "202503",
+		"material_no": "120099483"
+	},
+	"work_order_list": [{
+			"work_order_info": {
+				"work_order_no": "1000023451-01",
+				"work_order_quantity": 1,
+				"process_no": "JZ2.940.10287GY-TX02",
+				"process_version": "N.1"
+			},
+			"dispatch_task_info": {
+				"operation_no": "30",
+				"operation_name": "装配",
+				"dispatch_quantity": 1,
+				"planned_start_time": "2025-12-09T08:30:00",
+				"planned_end_time": "2025-12-09T12:00:00",
+				"worker_code": "07488",
+				"worker_name": "张三",
+				"step_list": [{
+					"step_no": "1",
+					"step_name": "1", 
+					"step_content": "按表格准备零部件和辅料。"
+				},
+				{
+					"step_no": "2",
+					"step_name": "2",
+					"step_content": "检查连接器状态，确认一致后装配。"
+				},
+				{
+					"step_no": "3",
+					"step_name": "3",
+					"step_content": "按工序简图所示将连接器装配到腔体上(注意连接器的安装方向)，螺钉紧固前在螺纹根部涂适量乐泰243，按对称交叉分步拧紧，在连接器与腔体接触出面涂抹一圈南大704硅胶。溢出的胶液用脱脂棉蘸无水乙醇清理干净。"
+				},
+				{
+					"step_no": "4",
+					"step_name": "4",
+					"step_content": "按照简图所示安装接地柱，螺母螺纹涂乐泰272螺纹紧固剂。注意接地柱各个零部件安装位置。"
+				}]
+			}
+		},
+		{
+			"work_order_info": {
+				"work_order_no": "1000023451-02",
+				"work_order_quantity": 1,
+				"process_no": "JZ2.940.10287GY-TX02",
+				"process_version": "N.1"
+			},
+			"dispatch_task_info": {
+				"operation_no": "210",
+				"operation_name": "装配",
+				"dispatch_quantity": 1,
+				"planned_start_time": "2025-12-09T13:00:00",
+				"planned_end_time": "2025-12-09T17:00:00",
+				"worker_code": "07488",
+				"worker_name": "李四",
+				"step_no": "1",
+				"step_content": "工步内容xxx"
+			}
+		}
+	]
+}
