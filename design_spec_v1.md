@@ -1,0 +1,217 @@
+# B/S 架构设计说明书 (工业视觉装配引导与检测系统)
+
+> **文档版本**: V1.0  
+> **创建日期**: 2025-12-15  
+> **适用对象**: 开发团队（研究生团队）、架构评审人员
+
+---
+
+## 1. 项目概述
+
+本项目旨在构建一套工业视觉装配引导与检测系统的服务端管理平台（B/S 架构）。该平台主要负责与 MOM（制造运营管理）系统交互，管理工艺数据、算法模型、工单任务，并为桌面端（C/S 架构）提供鉴权、任务分发及数据收集服务。
+
+### 1.1 核心目标
+1.  **MOM 集成**：通过网闸与企业内网 MOM 系统通信，接收生产任务，上报检测结果。
+2.  **工艺数字化**：提供可视化工具，将产品装配工艺转化为计算机可识别的结构化数据（JSON + 图片）。
+3.  **算法管理**：统一管理视觉算法包，提供版本控制与分发服务。
+4.  **数据闭环**：收集 C 端检测日志与图片，实现质量追溯。
+
+---
+
+## 2. 技术架构设计
+
+本项目基于 **RuoYi-Vue**（前后端分离版本）进行二次开发。
+
+### 2.1 技术选型
+
+| 模块 | 技术栈 | 说明 |
+| :--- | :--- | :--- |
+| **后端框架** | Spring Boot 2.7+ / 3.x | 核心业务逻辑容器，提供 RESTful API |
+| **安全框架** | Spring Security + JWT | 实现无状态鉴权，支持 C 端 Token 认证 |
+| **数据库** | MySQL 8.0 | 存储业务数据（用户、工艺、工单等） |
+| **缓存** | Redis 6+ | 缓存用户 Token、字典数据、热点配置 |
+| **对象存储** | **MinIO** | **核心组件**。存储工艺原图、检测结果图、算法包。**必须使用 Pre-signed URL 模式**，让客户端直接与 MinIO 通信，避免大文件（>20M）经过后端服务。 |
+| **消息队列** | **RabbitMQ** | **推荐引入**。用于解耦 MOM 上报接口与内部处理，处理高并发图片上传 |
+| **前端框架** | Vue 3 + Element Plus | B 端管理后台，推荐使用 Vue 3 以获得更好的性能与开发体验 |
+
+### 2.2 系统架构图 (逻辑视图)
+
+```mermaid
+graph TD
+    subgraph "外部系统"
+        MOM[MOM 系统]
+    end
+
+    subgraph "客户端 (C/S)"
+        Desktop[桌面端引导软件]
+    end
+
+    subgraph "服务端 (B/S)"
+        Gateway[Nginx 网关]
+        
+        subgraph "应用服务 (Spring Boot)"
+            Auth[认证鉴权]
+            Sys[系统管理模块]
+            
+            subgraph "业务模块"
+                MOM_Bridge[MOM 通信模块]
+                Craft[工艺信息模块]
+                Algo[算法管理模块]
+                Order[工单信息模块]
+                Detect[检测结果模块]
+            end
+        end
+        
+        subgraph "基础中间件"
+            Redis[Redis 缓存]
+            MySQL[MySQL 数据库]
+            MinIO[MinIO 对象存储]
+            MQ[RabbitMQ 消息队列]
+        end
+    end
+
+    MOM -->|HTTP/Push| Gateway
+    Desktop -->|HTTP/REST| Gateway
+    Gateway --> Auth
+    Gateway --> MOM_Bridge
+    MOM_Bridge --> MQ
+    MQ --> Detect
+    Craft --> MinIO
+    Algo --> MinIO
+```
+
+---
+
+## 3. 核心模块详细设计
+
+### 3.1 系统管理模块 (System)
+*   **功能**：基于若依原生功能，管理用户、角色、菜单、部门。
+*   **适配**：需要为 C 端设备/工位创建专门的“设备账号”或“工位账号”，用于 API 鉴权。
+
+### 3.2 MOM 通信模块 (MOM Bridge)
+*   **职责**：作为与 MOM 系统的唯一交互窗口。
+*   **核心流程**：
+    1.  **接收任务**：暴露 HTTP 接口供 MOM 调用，接收 JSON 数据及 PDF 下载链接。
+    2.  **异步处理**：接收到请求后，立即存入数据库（`sys_mom_log`）并返回成功，通过 MQ 异步解析 PDF 和生成本地工单，避免阻塞 MOM 调用。
+    3.  **结果上报**：定时任务或触发式扫描“待上报队列”，将检测结果推送到 MOM 指定接口。
+
+### 3.3 工艺信息模块 (Process/Craft) - **重点**
+本模块是连接 MOM 任务与视觉算法的核心。
+*   **业务对象**：
+    *   `Product` (产品)：对应 MOM 中的物料/产品型号（PID）。
+    *   `CraftPackage` (工艺包)：一个产品对应一个工艺包，包含版本号。
+    *   `CraftStep` (工艺步骤)：具体的装配动作。
+*   **功能逻辑**：
+    1.  **全局模板**：上传一张产品的高清实物图作为“底图”。
+    2.  **画布编辑 (Canvas)**：
+        *   前端集成 Canvas 库（如 Fabric.js）。
+        *   工艺人员在底图上框选 ROI（感兴趣区域）。
+        *   为每个框选区域配置属性：`StepID`（步骤号）、`Description`（描述）、`IsMandatory`（是否强制顺序）、`AlgorithmParam`（关联的算法参数）。
+    3.  **导出规范**：
+        *   点击发布时，后端异步生成 ZIP 包并上传至 MinIO。
+        *   ZIP 内容：`metadata.json`（包含所有步骤坐标、逻辑） + `template.jpg`（底图）。
+        *   **下载逻辑**：C 端请求下载接口，后端返回 MinIO 的 **Pre-signed GET URL**（有效期如 10分钟），C 端直接从 MinIO 下载，降低后端带宽压力。
+
+### 3.4 算法管理模块 (Algorithm)
+*   **功能**：
+    *   **算法包上传**：采用 **Pre-signed PUT URL** 模式。
+        1. B 端前端请求上传地址，后端生成 MinIO 上传链接。
+        2. B 端前端直接 PUT 文件到 MinIO。
+        3. 上传完成后，调用“确认上传”接口，后端记录路径并异步触发校验任务。
+    *   **校验**：后端异步下载并解压，检查是否包含必要的 `init.py` 或 `manifest.json`。若校验失败，标记状态为“不可用”。
+    *   **存储**：文件存入 MinIO，数据库记录版本号、MD5、Object Key。
+*   **API**：提供 `latest` 接口返回下载用的 Pre-signed URL。
+
+### 3.5 工单信息模块 (Work Order)
+*   **逻辑**：
+    *   MOM 推送的任务在本地转化为 `WorkOrder` 记录。
+    *   状态流转：`PENDING` (待领取) -> `PROCESSING` (进行中) -> `COMPLETED` (完成) / `FAILED` (异常)。
+    *   C 端登录后，拉取该工位关联的 `PENDING` 工单。
+
+### 3.6 检测结果模块 (Detection Result)
+*   **数据量级**：高并发写入。
+*   **逻辑**：
+    *   **上传流程**：
+        1. C 端请求“图片上传凭证”接口，获取 MinIO **Pre-signed PUT URL**。
+        2. C 端直接 PUT 图片至 MinIO。
+        3. C 端调用“结果上报”接口，提交 JSON 数据 + 图片路径（Object Key）。
+    *   **后端处理**：后端接收轻量级 JSON，写入 MQ 或直接存库。图片流不再经过后端，极大降低 IO 压力。
+    *   **查询**：提供查询页面，查看详情时前端请求图片的 Pre-signed GET URL 进行展示。
+
+---
+
+## 4. API 接口需求 (Endpoint Specification)
+
+所有接口统一前缀 `/api/v1`。
+
+### 4.1 面向 MOM 系统
+| 方法 | 路径 | 描述 |
+| :--- | :--- | :--- |
+| POST | `/mom/task/push` | 接收 MOM 推送的生产任务（包含 PDF 链接、物料信息） |
+| POST | `/mom/msg/notify` | 接收 MOM 的临时通知消息 |
+
+### 4.2 面向 C 端 (桌面端)
+| 方法 | 路径 | 描述 |
+| :--- | :--- | :--- |
+| POST | `/client/auth/login` | 设备/工位登录，获取 Token |
+| GET | `/client/task/list` | 获取当前工位待执行的任务清单 |
+| GET | `/client/craft/url/{pid}` | 获取工艺包（ZIP）的 MinIO 下载链接 (Pre-signed GET) |
+| GET | `/client/algo/check_update` | 检查算法更新，返回 MinIO 下载链接 (Pre-signed GET) |
+| GET | `/client/file/presigned/put` | 获取文件上传凭证 (Pre-signed PUT URL) |
+| POST | `/client/result/submit` | 上报检测结果（仅 JSON，包含图片 Key，不含文件流） |
+| POST | `/client/log/error` | 上报设备运行异常日志 |
+
+### 4.3 面向 B 端前端 (管理后台)
+*遵循 RuoYi 标准 Controller 写法，使用 `@PreAuthorize` 控制权限。*
+
+---
+
+## 5. 开发规范 (Student Guide)
+
+### 5.1 目录结构建议
+在 `ruoyi-admin` 模块中不建议写业务代码，请在 `ruoyi-system` 或新建 `ruoyi-business` 模块中开发。建议新建模块以保持架构清晰：
+
+```text
+ruoyi-business/
+├── src/main/java/com/ruoyi/business/
+│   ├── controller/    # 控制层
+│   ├── domain/        # 实体类
+│   ├── service/       # 业务逻辑层
+│   ├── mapper/        # 数据持久层
+│   └── mom/           # 专门处理 MOM 对接的逻辑
+```
+
+### 5.2 命名规范
+*   **Java 类名**：使用 PascalCase（大驼峰），如 `CraftService`。
+*   **方法名**：使用 camelCase（小驼峰），如 `getTaskById`。
+*   **数据库表**：使用 `snake_case`，并加模块前缀。
+    *   系统表：`sys_`
+    *   工艺表：`biz_craft_`
+    *   工单表：`biz_order_`
+    *   日志表：`biz_detect_log_`
+
+### 5.3 数据库设计规约
+*   每个表必须包含 `create_time`, `update_time`, `create_by`, `update_by`, `remark` 字段（继承 RuoYi 的 `BaseEntity`）。
+*   **严禁**使用外键，关联关系在代码层面维护。
+*   所有图片、文件字段只存储 **MinIO 的相对路径** 或 **URL**，不存储二进制流。
+
+### 5.4 异常处理
+*   统一使用 `throw new ServiceException("错误信息")`。
+*   前端响应结构统一为 `{ "code": 200, "msg": "操作成功", "data": ... }`。
+
+### 5.5 版本管理 (Git)
+*   **master**: 主分支，仅限发布版本。
+*   **dev**: 开发主分支。
+*   **feat/xxx**: 功能分支，从 dev 切出，开发完合并回 dev。
+*   **提交信息 (Commit Message)**: `feat: 新增工艺上传功能` 或 `fix: 修复 MOM 解析错误`。
+
+---
+
+## 6. 部署与扩展性建议
+
+1.  **MinIO 部署**：建议使用 Docker 部署 MinIO，并配置 Nginx 代理图片的访问路径。
+2.  **安全性**：C 端与 Server 端建议使用 HTTPS 通信。
+3.  **扩展性**：如果检测图片量巨大（如每天 10万+），需考虑将 `biz_detect_log` 表按月分表，或迁移至时序数据库/ElasticSearch。
+
+---
+**请严格按照本文档进行架构搭建与开发。如有疑问，请组织架构评审会议讨论。**
