@@ -28,7 +28,7 @@
 | 模块               | 技术栈                 | 说明                                                                                                                                                      |
 | :----------------- | :--------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **后端框架** | Spring Boot 2.7+ / 3.x | 核心业务逻辑容器，提供 RESTful API                                                                                                                        |
-| **MOM 通信** | **Apache CXF**         | 实现 SOAP WebService 服务端，接收 MOM 推送数据                                                                                                            |
+| **MOM 通信** | **Apache CXF**   | 实现 SOAP WebService 服务端，接收 MOM 推送数据                                                                                                            |
 | **安全框架** | Spring Security + JWT  | 实现无状态鉴权，支持 C 端 Token 认证                                                                                                                      |
 | **数据库**   | MySQL 8.0              | 存储业务数据（用户、工艺、工单等）                                                                                                                        |
 | **缓存**     | Redis 6+               | 缓存用户 Token、字典数据、热点配置                                                                                                                        |
@@ -54,7 +54,7 @@ graph TD
         subgraph "应用服务 (Spring Boot)"
             Auth[认证鉴权]
             Sys[系统管理模块]
-    
+  
             subgraph "业务模块"
                 MOM_Bridge[MOM 通信模块]
                 Craft[工艺信息模块]
@@ -164,10 +164,10 @@ graph TD
 
 基于 SOAP 协议，服务命名空间建议为 `http://mom.business.ruoyi.com/`。
 
-| 方法 (Method)       | 描述                                               |
-| :------------------ | :------------------------------------------------- |
-| `pushProductionTask`| 接收 MOM 推送的生产任务（包含 PDF 链接、物料信息） |
-| `syncProcessInfo`   | 接收 MOM 推送的产品工艺信息                        |
+| 方法 (Method)          | 描述                                               |
+| :--------------------- | :------------------------------------------------- |
+| `pushProductionTask` | 接收 MOM 推送的生产任务（包含 PDF 链接、物料信息） |
+| `syncProcessInfo`    | 接收 MOM 推送的产品工艺信息                        |
 
 ### 4.2 面向 C 端 (桌面端)
 
@@ -433,20 +433,20 @@ MOM 下发的生产指令，解析为本地的 `WorkOrder`。
 
 #### 6.3.1 接收生产任务 (pushProductionTask)
 
-| 属性               | 说明                                                          |
-| :----------------- | :------------------------------------------------------------ |
+| 属性                  | 说明                                                          |
+| :-------------------- | :------------------------------------------------------------ |
 | **Method Name** | `pushProductionTask`                                        |
-| **Namespace** | `http://mom.business.ruoyi.com/`                            |
-| **调用时机** | MOM 系统下发新的生产工单时调用                                |
-| **功能**     | 接收工单信息，生成本地 `WorkOrder` 记录，并异步下载关联资源 |
+| **Namespace**   | `http://mom.business.ruoyi.com/`                            |
+| **调用时机**    | MOM 系统下发新的生产工单时调用                                |
+| **功能**        | 接收工单信息，生成本地 `WorkOrder` 记录，并异步下载关联资源 |
 
 **参数定义 (Input)**:
 
-*   `taskJson` (String): JSON 格式字符串，结构见 **6.2.1 数据结构**
+* `taskJson` (String): JSON 格式字符串，结构见 **6.2.1 数据结构**
 
 **响应定义 (Output)**:
 
-*   Return (String): JSON 格式字符串
+* Return (String): JSON 格式字符串
 
 ```json
 {
@@ -465,20 +465,20 @@ MOM 下发的生产指令，解析为本地的 `WorkOrder`。
 
 #### 6.3.2 接收产品工艺 (syncProcessInfo)
 
-| 属性               | 说明                                                             |
-| :----------------- | :--------------------------------------------------------------- |
-| **Method Name** | `syncProcessInfo`                                           |
-| **Namespace** | `http://mom.business.ruoyi.com/`                            |
-| **调用时机** | MOM 系统新增或更新产品工艺时调用                                 |
-| **功能**     | 同步工艺基础信息，创建或更新本地 `Product` 和 `CraftPackage` |
+| 属性                  | 说明                                                             |
+| :-------------------- | :--------------------------------------------------------------- |
+| **Method Name** | `syncProcessInfo`                                              |
+| **Namespace**   | `http://mom.business.ruoyi.com/`                               |
+| **调用时机**    | MOM 系统新增或更新产品工艺时调用                                 |
+| **功能**        | 同步工艺基础信息，创建或更新本地 `Product` 和 `CraftPackage` |
 
 **参数定义 (Input)**:
 
-*   `processJson` (String): JSON 格式字符串，结构见 **6.1.1 数据结构**
+* `processJson` (String): JSON 格式字符串，结构见 **6.1.1 数据结构**
 
 **响应定义 (Output)**:
 
-*   Return (String): JSON 格式字符串
+* Return (String): JSON 格式字符串
 
 ```json
 {
