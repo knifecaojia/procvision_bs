@@ -49,11 +49,11 @@ graph TD
 
     subgraph "服务端 (B/S)"
         Gateway[Nginx 网关]
-    
+  
         subgraph "应用服务 (Spring Boot)"
             Auth[认证鉴权]
             Sys[系统管理模块]
-        
+    
             subgraph "业务模块"
                 MOM_Bridge[MOM 通信模块]
                 Craft[工艺信息模块]
@@ -62,7 +62,7 @@ graph TD
                 Detect[检测结果模块]
             end
         end
-    
+  
         subgraph "基础中间件"
             Redis[Redis 缓存]
             MySQL[MySQL 数据库]
@@ -88,7 +88,7 @@ graph TD
 ### 3.1 系统管理模块 (System)
 
 * **功能**：基于若依原生功能，管理用户、角色、菜单、部门。
-* **适配**：需要为 C 端设备/工位创建专门的“设备账号”或“工位账号”，用于 API 鉴权。
+* **适配**：支持 C 端用户使用账号密码登录，用于 API 鉴权。
 
 ### 3.2 MOM 通信模块 (MOM Bridge)
 
@@ -133,17 +133,24 @@ graph TD
 * **逻辑**：
   * MOM 推送的任务在本地转化为 `WorkOrder` 记录。
   * 状态流转：`PENDING` (待领取) -> `PROCESSING` (进行中) -> `COMPLETED` (完成) / `FAILED` (异常)。
-  * C 端登录后，拉取该工位关联的 `PENDING` 工单。
+  * C 端用户登录后，拉取该用户关联或可领取的 `PENDING` / `PROCESSING` 工单。
+  * **详情查询**：
+    * 针对 `PROCESSING` 状态任务，可获取已执行的步骤信息。
+    * 针对 `COMPLETED` 状态任务，可获取完整的执行步骤信息及最终结果信息。
 
 ### 3.6 检测结果模块 (Detection Result)
 
 * **数据量级**：高并发写入。
 * **逻辑**：
-  * **上传流程**：
-    1. C 端请求“图片上传凭证”接口，获取 MinIO **Pre-signed PUT URL**。
-    2. C 端直接 PUT 图片至 MinIO。
-    3. C 端调用“结果上报”接口，提交 JSON 数据 + 图片路径（Object Key）。
-  * **后端处理**：后端接收轻量级 JSON，写入 MQ 或直接存库。图片流不再经过后端，极大降低 IO 压力。
+  * **步骤上报 (Step Reporting)**：
+    1. C 端请求 MinIO **Pre-signed PUT URL**。
+    2. 上传步骤检测图/过程图。
+    3. 调用“步骤上报”接口，提交步骤状态、数据及图片 Key。
+  * **结果上报 (Result Reporting)**：
+    1. 任务所有步骤完成后，C 端请求 MinIO **Pre-signed PUT URL**（如需上传最终报告或总览图）。
+    2. 上传图片（可选）。
+    3. 调用“结果上报”接口，提交工单最终状态及图片 Key。
+  * **后端处理**：后端接收轻量级 JSON，写入 MQ 或直接存库。图片流不再经过后端。
   * **查询**：提供查询页面，查看详情时前端请求图片的 Pre-signed GET URL 进行展示。
 
 ---
@@ -159,17 +166,18 @@ graph TD
 | POST | `/mom/task/push`    | 接收 MOM 推送的生产任务（包含 PDF 链接、物料信息） |
 | POST | `/mom/process/sync` | 接收 MOM 推送的产品工艺信息                        |
 
-
 ### 4.2 面向 C 端 (桌面端)
 
 | 方法 | 路径                           | 描述                                                |
 | :--- | :----------------------------- | :-------------------------------------------------- |
-| POST | `/client/auth/login`         | 设备/工位登录，获取 Token                           |
-| GET  | `/client/task/list`          | 获取当前工位待执行的任务清单                        |
+| POST | `/client/auth/login`         | 用户登录，获取 Token                                |
+| GET  | `/client/task/list`          | 获取当前用户待执行的任务清单                        |
+| GET  | `/client/task/detail/{id}`   | 获取任务详情（包含步骤信息、结果信息）              |
 | GET  | `/client/craft/url/{pid}`    | 获取工艺包（ZIP）的 MinIO 下载链接 (Pre-signed GET) |
 | GET  | `/client/algo/check_update`  | 检查算法更新，返回 MinIO 下载链接 (Pre-signed GET)  |
 | GET  | `/client/file/presigned/put` | 获取文件上传凭证 (Pre-signed PUT URL)               |
-| POST | `/client/result/submit`      | 上报检测结果（仅 JSON，包含图片 Key，不含文件流）   |
+| POST | `/client/step/submit`        | 上报步骤执行结果（含图片 Key）                      |
+| POST | `/client/result/submit`      | 上报工单最终结果（含图片 Key）                      |
 | POST | `/client/log/error`          | 上报设备运行异常日志                                |
 
 ### 4.3 面向 B 端前端 (管理后台)
@@ -178,7 +186,161 @@ graph TD
 
 ---
 
-## 5. MOM 数据交互规范 (MOM Data Spec)
+## 5. S/C 端交互数据规范 (Client-Server Data Spec)
+
+本章节定义 C 端（桌面引导软件）与 S 端（服务端）的核心交互数据格式与协议。
+
+### 5.1 通用响应结构
+
+所有 HTTP API 响应均遵循以下 JSON 结构：
+
+```json
+{
+  "code": 200,      // 状态码，200 表示成功，其他表示异常
+  "msg": "操作成功", // 提示消息
+  "data": { ... }   // 业务数据载体
+}
+```
+
+### 5.2 核心业务交互数据定义
+
+#### 5.2.1 用户登录 (Login)
+
+* **Request (POST /client/auth/login)**
+
+```json
+{
+  "username": "admin",
+  "password": "password123",
+  "client_version": "1.0.0"       // 客户端版本号
+}
+```
+
+* **Response**
+
+```json
+{
+  "code": 200,
+  "msg": "登录成功",
+  "data": {
+    "token": "eyJhbGciOiJIUzUxMiJ9...", // JWT Token
+    "expire_time": 1734567890           // 过期时间戳 (秒)
+  }
+}
+```
+
+#### 5.2.2 获取待执行任务 (Fetch Tasks)
+
+* **Response (GET /client/task/list)**
+
+```json
+{
+  "code": 200,
+  "data": [
+    {
+      "work_order_no": "1000023451-01",     // 派工单号
+      "process_no": "JZ2.940.10287GY-TX02", // 工艺编号
+      "operation_no": "30",                 // 工序号
+      "status": "PENDING"                   // 任务状态: PENDING / PROCESSING
+    }
+  ]
+}
+```
+
+#### 5.2.3 获取任务详情 (Task Detail)
+
+* **Response (GET /client/task/detail/{work_order_no})**
+
+```json
+{
+  "code": 200,
+  "data": {
+    "base_info": {
+       "work_order_no": "1000023451-01",
+       "process_no": "JZ2.940.10287GY-TX02",
+       "operation_no": "30",
+       "status": "PROCESSING"
+    },
+    // 仅 PROCESSING/COMPLETED 状态返回
+    "executed_steps": [
+       {
+         "step_id": 1,
+         "step_no": "1",
+         "status": "OK",
+         "image_path": "...",
+         "submit_time": "2025-12-17 10:01:00"
+       }
+    ],
+    // 仅 COMPLETED 状态返回
+    "result_info": {
+       "final_status": "PASS",
+       "end_time": "2025-12-17 10:05:00",
+       "summary_image": "..."
+    }
+  }
+}
+```
+
+#### 5.2.4 步骤上报 (Submit Step)
+
+* **Request (POST /client/step/submit)**
+
+```json
+{
+  "work_order_no": "1000023451-01",
+  "step_id": 1,                       // 步骤ID
+  "step_status": "OK",                // 步骤结果：OK / NG
+  "image_path": "2025/12/17/task_123_step_1.jpg", // MinIO Key
+  "data": { "score": 0.99 }           // 扩展数据
+}
+```
+
+#### 5.2.5 结果上报 (Submit Result)
+
+* **Request (POST /client/result/submit)**
+
+```json
+{
+  "work_order_no": "1000023451-01",
+  "result_status": "PASS",            // 最终结果：PASS / FAIL
+  "start_time": "2025-12-17 10:00:00",
+  "end_time": "2025-12-17 10:05:30",
+  "image_path": "2025/12/17/task_123_final.jpg", // 可选，总览图 Key
+  "summary_data": { ... }             // 可选，统计数据
+}
+```
+
+#### 5.2.6 异常日志上报 (Error Log)
+
+* **Request (POST /client/log/error)**
+
+```json
+{
+   "level": "ERROR",           // INFO, WARN, ERROR
+   "module": "CameraDevice",   // 模块名称
+   "message": "Camera connect failed: timeout", // 简短描述
+   "stack_trace": "java.net.SocketTimeoutException: ...", // 详细堆栈
+   "occurred_time": "2025-12-17 10:06:00"
+}
+```
+
+### 5.3 错误码定义 (Error Codes)
+
+| 错误码 (Code)   | 说明                       | 处理建议                           |
+| :-------------- | :------------------------- | :--------------------------------- |
+| **200**   | **操作成功**         | 正常处理业务数据                   |
+| **401**   | **认证失败**         | Token 无效或过期，客户端需重新登录 |
+| **403**   | **权限不足**         | 该设备无权访问此接口               |
+| **404**   | **资源未找到**       | 请求的工单或资源不存在             |
+| **500**   | **系统内部错误**     | 服务端异常，请重试或联系管理员     |
+| **10001** | **版本过低**         | 客户端版本过低，强制升级           |
+| **20001** | **工单状态异常**     | 工单已结案或不可执行               |
+| **20002** | **工艺未就绪**       | 关联的工艺包或算法未发布，无法下载 |
+| **30001** | **上传凭证获取失败** | MinIO 签名生成失败，请重试         |
+
+---
+
+## 6. MOM 数据交互规范 (MOM Data Spec)
 
 基于 `BS\MOM` 目录下的数据样例，本章节定义 MOM 推送数据的结构解析与映射策略。
 
@@ -249,7 +411,7 @@ MOM 下发的生产指令，解析为本地的 `WorkOrder`。
       },
       "dispatch_task_info": {
         "operation_no": "30",
-        "worker_code": "07488",          // 操作员/工位绑定
+        "worker_code": "07488",          // 操作员绑定
         "planned_start_time": "2025-12-09T08:30:00",
         "step_list": [...]               // 具体的工步执行要求
       }
@@ -268,12 +430,12 @@ MOM 下发的生产指令，解析为本地的 `WorkOrder`。
 
 #### 5.3.1 接收生产任务 (Push Production Task)
 
-| 属性 | 说明 |
-| :--- | :--- |
-| **Endpoint** | `/api/v1/mom/task/push` |
-| **Method** | `POST` |
-| **调用时机** | MOM 系统下发新的生产工单时调用 |
-| **功能** | 接收工单信息，生成本地 `WorkOrder` 记录，并异步下载关联资源 |
+| 属性               | 说明                                                          |
+| :----------------- | :------------------------------------------------------------ |
+| **Endpoint** | `/api/v1/mom/task/push`                                     |
+| **Method**   | `POST`                                                      |
+| **调用时机** | MOM 系统下发新的生产工单时调用                                |
+| **功能**     | 接收工单信息，生成本地 `WorkOrder` 记录，并异步下载关联资源 |
 
 **请求参数 (Body JSON)**:
 
@@ -281,28 +443,28 @@ MOM 下发的生产指令，解析为本地的 `WorkOrder`。
 
 **响应参数**:
 
-| 字段 | 类型 | 说明 |
-| :--- | :--- | :--- |
-| `code` | int | 200: 成功, 500: 内部错误 |
-| `msg` | string | 提示信息 |
-| `data` | object | null |
+| 字段     | 类型   | 说明                     |
+| :------- | :----- | :----------------------- |
+| `code` | int    | 200: 成功, 500: 内部错误 |
+| `msg`  | string | 提示信息                 |
+| `data` | object | null                     |
 
 **错误码**:
 
-| Code | 描述 | 处理建议 |
-| :--- | :--- | :--- |
-| 200 | 接收成功 | 正常流程 |
+| Code  | 描述         | 处理建议                   |
+| :---- | :----------- | :------------------------- |
+| 200   | 接收成功     | 正常流程                   |
 | 50001 | 数据格式错误 | 检查 JSON 结构是否符合规范 |
-| 50002 | 重复的工单号 | 忽略或记录日志，幂等处理 |
+| 50002 | 重复的工单号 | 忽略或记录日志，幂等处理   |
 
 #### 5.3.2 接收产品工艺 (Sync Process Info)
 
-| 属性 | 说明 |
-| :--- | :--- |
-| **Endpoint** | `/api/v1/mom/process/sync` |
-| **Method** | `POST` |
-| **调用时机** | MOM 系统新增或更新产品工艺时调用 |
-| **功能** | 同步工艺基础信息，创建或更新本地 `Product` 和 `CraftPackage` |
+| 属性               | 说明                                                             |
+| :----------------- | :--------------------------------------------------------------- |
+| **Endpoint** | `/api/v1/mom/process/sync`                                     |
+| **Method**   | `POST`                                                         |
+| **调用时机** | MOM 系统新增或更新产品工艺时调用                                 |
+| **功能**     | 同步工艺基础信息，创建或更新本地 `Product` 和 `CraftPackage` |
 
 **请求参数 (Body JSON)**:
 
@@ -310,17 +472,17 @@ MOM 下发的生产指令，解析为本地的 `WorkOrder`。
 
 **响应参数**:
 
-| 字段 | 类型 | 说明 |
-| :--- | :--- | :--- |
-| `code` | int | 200: 成功 |
-| `msg` | string | 提示信息 |
-| `data` | object | null |
+| 字段     | 类型   | 说明      |
+| :------- | :----- | :-------- |
+| `code` | int    | 200: 成功 |
+| `msg`  | string | 提示信息  |
+| `data` | object | null      |
 
 **错误码**:
 
-| Code | 描述 | 处理建议 |
-| :--- | :--- | :--- |
-| 200 | 同步成功 | 正常流程 |
+| Code  | 描述         | 处理建议           |
+| :---- | :----------- | :----------------- |
+| 200   | 同步成功     | 正常流程           |
 | 50003 | 工艺版本冲突 | 检查版本号是否递增 |
 
 ### 5.4 原始数据存储 (Raw Data Storage)
@@ -329,24 +491,25 @@ MOM 下发的生产指令，解析为本地的 `WorkOrder`。
 
 **存储表设计 (`sys_mom_log`)**:
 
-| 字段名 | 类型 | 说明 |
-| :--- | :--- | :--- |
-| `log_id` | BIGINT (PK) | 主键 |
-| `req_type` | VARCHAR(50) | 请求类型，枚举值：`TASK_PUSH`, `PROCESS_SYNC` |
-| `req_payload` | LONGTEXT/JSON | **完整存储 MOM 推送的原始 JSON 数据** |
-| `req_time` | DATETIME | 接收时间 |
-| `process_status` | VARCHAR(20) | 处理状态：`RECEIVED` (已接收), `PROCESSED` (已处理), `FAILED` (处理失败) |
-| `err_msg` | VARCHAR(500) | 异常信息（如有） |
+| 字段名             | 类型          | 说明                                                                           |
+| :----------------- | :------------ | :----------------------------------------------------------------------------- |
+| `log_id`         | BIGINT (PK)   | 主键                                                                           |
+| `req_type`       | VARCHAR(50)   | 请求类型，枚举值：`TASK_PUSH`, `PROCESS_SYNC`                              |
+| `req_payload`    | LONGTEXT/JSON | **完整存储 MOM 推送的原始 JSON 数据**                                    |
+| `req_time`       | DATETIME      | 接收时间                                                                       |
+| `process_status` | VARCHAR(20)   | 处理状态：`RECEIVED` (已接收), `PROCESSED` (已处理), `FAILED` (处理失败) |
+| `err_msg`        | VARCHAR(500)  | 异常信息（如有）                                                               |
 
 **存储策略**:
-1.  **同步写入**：在 Controller 层接收到请求的第一时间，**同步**写入此表，确保即使后续业务逻辑报错，原始数据也不丢失。
-2.  **数据清理**：由于 `req_payload` 可能较大，建议设置定时任务（如每月 1 日）清理 3 个月前的历史日志。
+
+1. **同步写入**：在 Controller 层接收到请求的第一时间，**同步**写入此表，确保即使后续业务逻辑报错，原始数据也不丢失。
+2. **数据清理**：由于 `req_payload` 可能较大，建议设置定时任务（如每月 1 日）清理 3 个月前的历史日志。
 
 ---
 
-## 6. 开发规范 (Student Guide)
+## 7. 开发规范 (Student Guide)
 
-### 6.1 目录结构建议
+### 7.1 目录结构建议
 
 在 `ruoyi-admin` 模块中不建议写业务代码，请在 `ruoyi-system` 或新建 `ruoyi-business` 模块中开发。建议新建模块以保持架构清晰：
 
@@ -360,7 +523,7 @@ ruoyi-business/
 │   └── mom/           # 专门处理 MOM 对接的逻辑
 ```
 
-### 6.2 命名规范
+### 7.2 命名规范
 
 * **Java 类名**：使用 PascalCase（大驼峰），如 `CraftService`。
 * **方法名**：使用 camelCase（小驼峰），如 `getTaskById`。
@@ -370,18 +533,18 @@ ruoyi-business/
   * 工单表：`biz_order_`
   * 日志表：`biz_detect_log_`
 
-### 6.3 数据库设计规约
+### 7.3 数据库设计规约
 
 * 每个表必须包含 `create_time`, `update_time`, `create_by`, `update_by`, `remark` 字段（继承 RuoYi 的 `BaseEntity`）。
 * **严禁**使用外键，关联关系在代码层面维护。
 * 所有图片、文件字段只存储 **MinIO 的相对路径** 或 **URL**，不存储二进制流。
 
-### 6.4 异常处理
+### 7.4 异常处理
 
 * 统一使用 `throw new ServiceException("错误信息")`。
 * 前端响应结构统一为 `{ "code": 200, "msg": "操作成功", "data": ... }`。
 
-### 6.5 版本管理 (Git)
+### 7.5 版本管理 (Git)
 
 * **master**: 主分支，仅限发布版本。
 * **dev**: 开发主分支。
@@ -390,9 +553,9 @@ ruoyi-business/
 
 ---
 
-## 7. 部署与扩展性建议
+## 8. 部署与扩展性建议
 
-### 7.1 单节点高性能部署 (Single Node High Performance)
+### 8.1 单节点高性能部署 (Single Node High Performance)
 
 推荐使用 Docker Compose 进行一键部署，确保环境一致性。
 
@@ -459,11 +622,11 @@ services:
       - server
 ```
 
-### 7.2 其他建议
+### 8.2 其他建议
 
-1.  **MinIO 部署**：建议使用 Docker 部署 MinIO，并配置 Nginx 代理图片的访问路径。
-2.  **安全性**：C 端与 Server 端建议使用 HTTPS 通信。
-3.  **扩展性**：如果检测图片量巨大（如每天 10万+），需考虑将 `biz_detect_log` 表按月分表，或迁移至时序数据库/ElasticSearch。
+1. **MinIO 部署**：建议使用 Docker 部署 MinIO，并配置 Nginx 代理图片的访问路径。
+2. **安全性**：C 端与 Server 端建议使用 HTTPS 通信。
+3. **扩展性**：如果检测图片量巨大（如每天 10万+），需考虑将 `biz_detect_log` 表按月分表，或迁移至时序数据库/ElasticSearch。
 
 ---
 
