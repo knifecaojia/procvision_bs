@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.imustsz.craft.mapper.ProcessMapper">
+    
+    <resultMap type="Process" id="ProcessResult">
+        <result property="id"    column="id"    />
+        <result property="code"    column="code"    />
+        <result property="name"    column="name"    />
+        <result property="desc"    column="desc"    />
+        <result property="guideGranularity"    column="guide_granularity"    />
+        <result property="craftId"    column="craft_id"    />
+        <result property="craftCode"    column="craft_code"    />
+        <result property="guideMapUrl"    column="guide_map_url"    />
+        <result property="processMaterialInfo"    column="process_material_info"    />
+    </resultMap>
+
+    <sql id="selectProcessVo">
+        select id, code, name, `desc`, guide_granularity, craft_id, craft_code, guide_map_url, process_material_info from biz_process
+    </sql>
+
+    <select id="selectProcessList" parameterType="Process" resultMap="ProcessResult">
+        <include refid="selectProcessVo"/>
+        <where>  
+            <if test="code != null  and code != ''"> and code = #{code}</if>
+            <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
+            <if test="desc != null  and desc != ''"> and `desc` = #{desc}</if>
+            <if test="guideGranularity != null "> and guide_granularity = #{guideGranularity}</if>
+            <if test="craftId != null "> and craft_id = #{craftId}</if>
+            <if test="craftCode != null  and craftCode != ''"> and craft_code = #{craftCode}</if>
+            <if test="guideMapUrl != null  and guideMapUrl != ''"> and guide_map_url = #{guideMapUrl}</if>
+            <if test="processMaterialInfo != null  and processMaterialInfo != ''"> and process_material_info = #{processMaterialInfo}</if>
+        </where>
+    </select>
+    
+    <select id="selectProcessById" parameterType="Long" resultMap="ProcessResult">
+        <include refid="selectProcessVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertProcess" parameterType="Process" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_process
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="code != null">code,</if>
+            <if test="name != null">name,</if>
+            <if test="desc != null">desc,</if>
+            <if test="guideGranularity != null">guide_granularity,</if>
+            <if test="craftId != null">craft_id,</if>
+            <if test="craftCode != null">craft_code,</if>
+            <if test="guideMapUrl != null">guide_map_url,</if>
+            <if test="processMaterialInfo != null">process_material_info,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="code != null">#{code},</if>
+            <if test="name != null">#{name},</if>
+            <if test="desc != null">#{desc},</if>
+            <if test="guideGranularity != null">#{guideGranularity},</if>
+            <if test="craftId != null">#{craftId},</if>
+            <if test="craftCode != null">#{craftCode},</if>
+            <if test="guideMapUrl != null">#{guideMapUrl},</if>
+            <if test="processMaterialInfo != null">#{processMaterialInfo},</if>
+         </trim>
+    </insert>
+
+    <update id="updateProcess" parameterType="Process">
+        update biz_process
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="code != null">code = #{code},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="desc != null">desc = #{desc},</if>
+            <if test="guideGranularity != null">guide_granularity = #{guideGranularity},</if>
+            <if test="craftId != null">craft_id = #{craftId},</if>
+            <if test="craftCode != null">craft_code = #{craftCode},</if>
+            <if test="guideMapUrl != null">guide_map_url = #{guideMapUrl},</if>
+            <if test="processMaterialInfo != null">process_material_info = #{processMaterialInfo},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteProcessById" parameterType="Long">
+        delete from biz_process where id = #{id}
+    </delete>
+
+    <delete id="deleteProcessByIds" parameterType="String">
+        delete from biz_process where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

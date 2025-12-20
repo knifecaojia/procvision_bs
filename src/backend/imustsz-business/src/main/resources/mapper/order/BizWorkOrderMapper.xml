@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.imustsz.order.mapper.BizWorkOrderMapper">
+    
+    <resultMap type="BizWorkOrder" id="BizWorkOrderResult">
+        <result property="id"    column="id"    />
+        <result property="workOrderCode"    column="work_order_code"    />
+        <result property="workOrderQuantity"    column="work_order_quantity"    />
+        <result property="craftCode"    column="craft_code"    />
+        <result property="craftVersion"    column="craft_version"    />
+        <result property="status"    column="status"    />
+        <result property="orderId"    column="order_id"    />
+        <result property="createdTime"    column="created_time"    />
+        <result property="updatedTime"    column="updated_time"    />
+        <result property="createdBy"    column="created_by"    />
+        <result property="updatedBy"    column="updated_by"    />
+        <result property="remarks"    column="remarks"    />
+    </resultMap>
+
+    <sql id="selectBizWorkOrderVo">
+        select id, work_order_code, work_order_quantity, craft_code, craft_version, status, order_id, created_time, updated_time, created_by, updated_by, remarks from biz_work_order
+    </sql>
+
+    <select id="selectBizWorkOrderList" parameterType="BizWorkOrder" resultMap="BizWorkOrderResult">
+        <include refid="selectBizWorkOrderVo"/>
+        <where>  
+            <if test="workOrderCode != null  and workOrderCode != ''"> and work_order_code = #{workOrderCode}</if>
+            <if test="workOrderQuantity != null "> and work_order_quantity = #{workOrderQuantity}</if>
+            <if test="craftCode != null  and craftCode != ''"> and craft_code = #{craftCode}</if>
+            <if test="craftVersion != null  and craftVersion != ''"> and craft_version = #{craftVersion}</if>
+            <if test="status != null "> and status = #{status}</if>
+            <if test="orderId != null "> and order_id = #{orderId}</if>
+            <if test="createdTime != null "> and created_time = #{createdTime}</if>
+            <if test="updatedTime != null "> and updated_time = #{updatedTime}</if>
+            <if test="createdBy != null  and createdBy != ''"> and created_by = #{createdBy}</if>
+            <if test="updatedBy != null  and updatedBy != ''"> and updated_by = #{updatedBy}</if>
+            <if test="remarks != null  and remarks != ''"> and remarks = #{remarks}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizWorkOrderById" parameterType="Long" resultMap="BizWorkOrderResult">
+        <include refid="selectBizWorkOrderVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertBizWorkOrder" parameterType="BizWorkOrder" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_work_order
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="workOrderCode != null">work_order_code,</if>
+            <if test="workOrderQuantity != null">work_order_quantity,</if>
+            <if test="craftCode != null">craft_code,</if>
+            <if test="craftVersion != null">craft_version,</if>
+            <if test="status != null">status,</if>
+            <if test="orderId != null">order_id,</if>
+            <if test="createdTime != null">created_time,</if>
+            <if test="updatedTime != null">updated_time,</if>
+            <if test="createdBy != null">created_by,</if>
+            <if test="updatedBy != null">updated_by,</if>
+            <if test="remarks != null">remarks,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="workOrderCode != null">#{workOrderCode},</if>
+            <if test="workOrderQuantity != null">#{workOrderQuantity},</if>
+            <if test="craftCode != null">#{craftCode},</if>
+            <if test="craftVersion != null">#{craftVersion},</if>
+            <if test="status != null">#{status},</if>
+            <if test="orderId != null">#{orderId},</if>
+            <if test="createdTime != null">#{createdTime},</if>
+            <if test="updatedTime != null">#{updatedTime},</if>
+            <if test="createdBy != null">#{createdBy},</if>
+            <if test="updatedBy != null">#{updatedBy},</if>
+            <if test="remarks != null">#{remarks},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizWorkOrder" parameterType="BizWorkOrder">
+        update biz_work_order
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="workOrderCode != null">work_order_code = #{workOrderCode},</if>
+            <if test="workOrderQuantity != null">work_order_quantity = #{workOrderQuantity},</if>
+            <if test="craftCode != null">craft_code = #{craftCode},</if>
+            <if test="craftVersion != null">craft_version = #{craftVersion},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="orderId != null">order_id = #{orderId},</if>
+            <if test="createdTime != null">created_time = #{createdTime},</if>
+            <if test="updatedTime != null">updated_time = #{updatedTime},</if>
+            <if test="createdBy != null">created_by = #{createdBy},</if>
+            <if test="updatedBy != null">updated_by = #{updatedBy},</if>
+            <if test="remarks != null">remarks = #{remarks},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBizWorkOrderById" parameterType="Long">
+        delete from biz_work_order where id = #{id}
+    </delete>
+
+    <delete id="deleteBizWorkOrderByIds" parameterType="String">
+        delete from biz_work_order where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

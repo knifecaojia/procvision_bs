@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.imustsz.address.mapper.AddressMapper">
+    
+    <resultMap type="Address" id="AddressResult">
+        <result property="id"    column="id"    />
+        <result property="name"    column="name"    />
+        <result property="province"    column="province"    />
+        <result property="city"    column="city"    />
+        <result property="county"    column="county"    />
+        <result property="village"    column="village"    />
+        <result property="hamlet"    column="hamlet"    />
+        <result property="address"    column="address"    />
+        <result property="area"    column="area"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectAddressVo">
+        select id, name, province, city, county, village, hamlet, address, area, create_time, update_time from address
+    </sql>
+
+    <select id="selectAddressList" parameterType="Address" resultMap="AddressResult">
+        <include refid="selectAddressVo"/>
+        <where>  
+            <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
+            <if test="province != null  and province != ''"> and province like concat('%', #{province}, '%')</if>
+            <if test="city != null  and city != ''"> and city like concat('%', #{city}, '%')</if>
+            <if test="county != null  and county != ''"> and county like concat('%', #{county}, '%')</if>
+            <if test="village != null  and village != ''"> and village = #{village}</if>
+            <if test="hamlet != null  and hamlet != ''"> and hamlet = #{hamlet}</if>
+            <if test="address != null  and address != ''"> and address like concat('%', #{address}, '%')</if>
+            <if test="area != null "> and area = #{area}</if>
+        </where>
+    </select>
+    
+    <select id="selectAddressById" parameterType="Long" resultMap="AddressResult">
+        <include refid="selectAddressVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertAddress" parameterType="Address" useGeneratedKeys="true" keyProperty="id">
+        insert into address
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">name,</if>
+            <if test="province != null and province != ''">province,</if>
+            <if test="city != null and city != ''">city,</if>
+            <if test="county != null and county != ''">county,</if>
+            <if test="village != null">village,</if>
+            <if test="hamlet != null">hamlet,</if>
+            <if test="address != null and address != ''">address,</if>
+            <if test="area != null">area,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">#{name},</if>
+            <if test="province != null and province != ''">#{province},</if>
+            <if test="city != null and city != ''">#{city},</if>
+            <if test="county != null and county != ''">#{county},</if>
+            <if test="village != null">#{village},</if>
+            <if test="hamlet != null">#{hamlet},</if>
+            <if test="address != null and address != ''">#{address},</if>
+            <if test="area != null">#{area},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateAddress" parameterType="Address">
+        update address
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="province != null and province != ''">province = #{province},</if>
+            <if test="city != null and city != ''">city = #{city},</if>
+            <if test="county != null and county != ''">county = #{county},</if>
+            <if test="village != null">village = #{village},</if>
+            <if test="hamlet != null">hamlet = #{hamlet},</if>
+            <if test="address != null and address != ''">address = #{address},</if>
+            <if test="area != null">area = #{area},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteAddressById" parameterType="Long">
+        delete from address where id = #{id}
+    </delete>
+
+    <delete id="deleteAddressByIds" parameterType="String">
+        delete from address where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

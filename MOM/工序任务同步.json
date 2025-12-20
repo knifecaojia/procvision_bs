@@ -56,8 +56,11 @@
 				"planned_end_time": "2025-12-09T17:00:00",
 				"worker_code": "07488",
 				"worker_name": "李四",
-				"step_no": "1",
-				"step_content": "工步内容xxx"
+                "step_list": [{
+                  "step_no": "1",
+                  "step_name": "1",
+                  "step_content": "工步内容xxx"
+                }]
 			}
 		}
 	]

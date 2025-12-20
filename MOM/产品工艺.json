@@ -3,18 +3,18 @@
 		"process_no": "JZ2.940.10287GY-TX02",
 		"process_version": "N.1",
 		"process_name": "Ls波段上天线工艺",
-		"process_desc": "2020-2" //这个工艺信息里面没有专有的描述字段，这里写的该工艺产品的项目号，具体需要什么再沟通。
+		"process_desc": "2020-2"
 	},
 	"operation_list": [
 		{
 			"operation_info": {
 				"operation_no": "30",
 				"operation_name": "装配",
-				"operation_desc": "装配" //这里写的“工序简述”字段，具体需要补充什么再沟通。
+				"operation_desc": "装配"
 			},
 			"step_list": [{
 					"step_no": "1",
-					"step_name": "1", //后期有些工步是有名称的，但这个迁移工艺没有。
+					"step_name": "1",
 					"step_content": "按表格准备零部件和辅料。"
 				},
 				{
@@ -37,7 +37,7 @@
 					"material_name": "平垫圈",
 					"material_quantity": 4,
 					"material_unit": "件",
-					"error_prevention_mark": "" //当前工艺没有标识防错标识
+					"error_prevention_mark": ""
 				},
 				{
 					"material_no": "130003195",
