@@ -1,4 +1,9 @@
-DROP TABLE IF EXISTS craft;
+DROP TABLE IF EXISTS biz_craft;
+DROP TABLE IF EXISTS biz_process;
+DROP TABLE IF EXISTS biz_step;
+DROP TABLE IF EXISTS biz_order;
+DROP TABLE IF EXISTS biz_work_order;
+DROP TABLE IF EXISTS biz_dispatch_order;
 
 
 # 工艺信息表
