@@ -7,18 +7,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="Craft" id="CraftResult">
         <result property="id"    column="id"    />
         <result property="code"    column="code"    />
+        <result property="name"    column="name"    />
         <result property="version"    column="version"    />
         <result property="desc"    column="desc"    />
     </resultMap>
 
     <sql id="selectCraftVo">
-        select id, code, version, `desc` from biz_craft
+        select id, code, name, version, `desc` from biz_craft
     </sql>
 
     <select id="selectCraftList" parameterType="Craft" resultMap="CraftResult">
         <include refid="selectCraftVo"/>
         <where>  
             <if test="code != null  and code != ''"> and code = #{code}</if>
+            <if test="name != null  and name != ''"> and name = #{name}</if>
             <if test="version != null  and version != ''"> and version = #{version}</if>
             <if test="desc != null  and desc != ''"> and `desc` = #{desc}</if>
         </where>
@@ -33,11 +35,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into biz_craft
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="code != null">code,</if>
+            <if test="name != null">name,</if>
             <if test="version != null">version,</if>
             <if test="desc != null">`desc`,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="code != null">#{code},</if>
+            <if test="name != null">#{name},</if>
             <if test="version != null">#{version},</if>
             <if test="desc != null">#{desc},</if>
          </trim>
@@ -47,6 +51,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update biz_craft
         <trim prefix="SET" suffixOverrides=",">
             <if test="code != null">code = #{code},</if>
+            <if test="name != null">name = #{name},</if>
             <if test="version != null">version = #{version},</if>
             <if test="desc != null">`desc` = #{desc},</if>
         </trim>

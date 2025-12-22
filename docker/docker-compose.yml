@@ -1,4 +1,9 @@
 version: '3.8'
+
+networks:
+  procvision:
+    name: procvision
+
 services:
   # 1. 业务服务 (Server)
   server:
@@ -9,9 +14,14 @@ services:
     environment:
       - SPRING_DATASOURCE_HOST=mysql
       - SPRING_REDIS_HOST=redis
+      - MINIO_HOST=minio
     depends_on:
-      - mysql
-      - redis
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - procvision
 
   # 2. 数据库 (MySQL)
   mysql:
@@ -20,11 +30,23 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root_password
       MYSQL_DATABASE: procvision
+      MYSQL_INITDB_ARGS: "--character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci"
     volumes:
       - ./mysql/data:/var/lib/mysql
-      - ./mysql/conf:/etc/mysql
+      - ./mysql/conf/my.cnf:/etc/mysql/conf.d/my.cnf
       - ./mysql/init/:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    # 健康检查：检测MySQL是否就绪
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password"]
+      interval: 5s    # 每5秒检查一次
+      timeout: 10s    # 每次检查超时时间10秒
+      retries: 20     # 最多重试10次，仍失败则标记为不健康
+      start_period: 30s  # 容器启动后，延迟30秒再开始健康检查（给初始化留时间）
+    networks:
+      - procvision
 
   # 3. 缓存 (Redis)
   redis:
@@ -32,7 +54,9 @@ services:
     container_name: procvision-redis
     volumes:
       - ./redis/data:/data
-      - ./redis/conf:/etc/redis:/usr/local/etc/redis
+      - ./redis/conf:/usr/local/etc/redis
+    networks:
+      - procvision
 
   # 4. 对象存储 (MinIO)
   minio:
@@ -48,10 +72,12 @@ services:
       - ./minio/data:/data
       - ./minio/config:/etc/minio/config
     command: server /data --config-dir /etc/minio/config --console-address ":9001"
+    networks:
+      - procvision
 
   # 5. 网关 (Nginx)
   nginx:
-    image: nginx:1.20
+    image: nginx
     container_name: procvision-nginx
     ports:
       - "80:80"
@@ -61,3 +87,5 @@ services:
       - ./nginx/logs:/var/log/nginx
     depends_on:
       - server
+    networks:
+      - procvision

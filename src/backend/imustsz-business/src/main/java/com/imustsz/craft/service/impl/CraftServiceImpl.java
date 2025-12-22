@@ -146,8 +146,7 @@ public class CraftServiceImpl implements ICraftService
             //导入工步信息
             operation.getStepList().forEach(step -> {
                 BizStep bizStep = new BizStep();
-                bizStep.setType(1);
-                bizStep.setTypeId(process.getId());
+                bizStep.setProcessId(process.getId());
                 bizStep.setCode(step.getStepNo());
                 bizStep.setName(step.getStepName());
                 bizStep.setContent(step.getStepContent());

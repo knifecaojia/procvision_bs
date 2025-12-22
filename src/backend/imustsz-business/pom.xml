@@ -9,11 +9,12 @@
         <version>3.9.0</version>
     </parent>
 
+    <packaging>jar</packaging>
     <artifactId>imustsz-business</artifactId>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <dependencies>
@@ -111,8 +112,8 @@
                 <version>3.11.0</version>
                 <configuration>
                     <!-- 替换为你的JDK版本：1.8、11、17、21 -->
-                    <source>17</source>
-                    <target>17</target>
+                    <source>11</source>
+                    <target>11</target>
                     <!-- 关键：启用注解处理器并指定Lombok的注解处理器路径 -->
                     <annotationProcessorPaths>
                         <path>

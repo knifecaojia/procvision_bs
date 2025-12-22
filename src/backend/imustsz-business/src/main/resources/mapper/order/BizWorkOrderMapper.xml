@@ -11,16 +11,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="craftCode"    column="craft_code"    />
         <result property="craftVersion"    column="craft_version"    />
         <result property="status"    column="status"    />
-        <result property="orderId"    column="order_id"    />
-        <result property="createdTime"    column="created_time"    />
-        <result property="updatedTime"    column="updated_time"    />
-        <result property="createdBy"    column="created_by"    />
-        <result property="updatedBy"    column="updated_by"    />
-        <result property="remarks"    column="remarks"    />
+        <result property="processCode"    column="process_code"    />
+        <result property="processName"    column="process_name"    />
+        <result property="dispatchQuantity"    column="dispatch_quantity"    />
+        <result property="startTime"    column="start_time"    />
+        <result property="endTime"    column="end_time"    />
+        <result property="guideMapUrl"    column="guide_map_url"    />
+        <result property="workerCode"    column="worker_code"    />
+        <result property="workerName"    column="worker_name"    />
     </resultMap>
 
     <sql id="selectBizWorkOrderVo">
-        select id, work_order_code, work_order_quantity, craft_code, craft_version, status, order_id, created_time, updated_time, created_by, updated_by, remarks from biz_work_order
+        select id, work_order_code, work_order_quantity, craft_code, craft_version, status, process_code, process_name, dispatch_quantity, start_time, end_time, guide_map_url, worker_code, worker_name from biz_work_order
     </sql>
 
     <select id="selectBizWorkOrderList" parameterType="BizWorkOrder" resultMap="BizWorkOrderResult">
@@ -31,12 +33,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="craftCode != null  and craftCode != ''"> and craft_code = #{craftCode}</if>
             <if test="craftVersion != null  and craftVersion != ''"> and craft_version = #{craftVersion}</if>
             <if test="status != null "> and status = #{status}</if>
-            <if test="orderId != null "> and order_id = #{orderId}</if>
-            <if test="createdTime != null "> and created_time = #{createdTime}</if>
-            <if test="updatedTime != null "> and updated_time = #{updatedTime}</if>
-            <if test="createdBy != null  and createdBy != ''"> and created_by = #{createdBy}</if>
-            <if test="updatedBy != null  and updatedBy != ''"> and updated_by = #{updatedBy}</if>
-            <if test="remarks != null  and remarks != ''"> and remarks = #{remarks}</if>
+            <if test="processCode != null  and processCode != ''"> and process_code = #{processCode}</if>
+            <if test="processName != null  and processName != ''"> and process_name like concat('%', #{processName}, '%')</if>
+            <if test="dispatchQuantity != null "> and dispatch_quantity = #{dispatchQuantity}</if>
+            <if test="startTime != null "> and start_time = #{startTime}</if>
+            <if test="endTime != null "> and end_time = #{endTime}</if>
+            <if test="guideMapUrl != null  and guideMapUrl != ''"> and guide_map_url = #{guideMapUrl}</if>
+            <if test="workerCode != null  and workerCode != ''"> and worker_code = #{workerCode}</if>
+            <if test="workerName != null  and workerName != ''"> and worker_name like concat('%', #{workerName}, '%')</if>
         </where>
     </select>
     
@@ -53,12 +57,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="craftCode != null">craft_code,</if>
             <if test="craftVersion != null">craft_version,</if>
             <if test="status != null">status,</if>
-            <if test="orderId != null">order_id,</if>
-            <if test="createdTime != null">created_time,</if>
-            <if test="updatedTime != null">updated_time,</if>
-            <if test="createdBy != null">created_by,</if>
-            <if test="updatedBy != null">updated_by,</if>
-            <if test="remarks != null">remarks,</if>
+            <if test="processCode != null">process_code,</if>
+            <if test="processName != null">process_name,</if>
+            <if test="dispatchQuantity != null">dispatch_quantity,</if>
+            <if test="startTime != null">start_time,</if>
+            <if test="endTime != null">end_time,</if>
+            <if test="guideMapUrl != null">guide_map_url,</if>
+            <if test="workerCode != null">worker_code,</if>
+            <if test="workerName != null">worker_name,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="workOrderCode != null">#{workOrderCode},</if>
@@ -66,12 +72,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="craftCode != null">#{craftCode},</if>
             <if test="craftVersion != null">#{craftVersion},</if>
             <if test="status != null">#{status},</if>
-            <if test="orderId != null">#{orderId},</if>
-            <if test="createdTime != null">#{createdTime},</if>
-            <if test="updatedTime != null">#{updatedTime},</if>
-            <if test="createdBy != null">#{createdBy},</if>
-            <if test="updatedBy != null">#{updatedBy},</if>
-            <if test="remarks != null">#{remarks},</if>
+            <if test="processCode != null">#{processCode},</if>
+            <if test="processName != null">#{processName},</if>
+            <if test="dispatchQuantity != null">#{dispatchQuantity},</if>
+            <if test="startTime != null">#{startTime},</if>
+            <if test="endTime != null">#{endTime},</if>
+            <if test="guideMapUrl != null">#{guideMapUrl},</if>
+            <if test="workerCode != null">#{workerCode},</if>
+            <if test="workerName != null">#{workerName},</if>
          </trim>
     </insert>
 
@@ -83,12 +91,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="craftCode != null">craft_code = #{craftCode},</if>
             <if test="craftVersion != null">craft_version = #{craftVersion},</if>
             <if test="status != null">status = #{status},</if>
-            <if test="orderId != null">order_id = #{orderId},</if>
-            <if test="createdTime != null">created_time = #{createdTime},</if>
-            <if test="updatedTime != null">updated_time = #{updatedTime},</if>
-            <if test="createdBy != null">created_by = #{createdBy},</if>
-            <if test="updatedBy != null">updated_by = #{updatedBy},</if>
-            <if test="remarks != null">remarks = #{remarks},</if>
+            <if test="processCode != null">process_code = #{processCode},</if>
+            <if test="processName != null">process_name = #{processName},</if>
+            <if test="dispatchQuantity != null">dispatch_quantity = #{dispatchQuantity},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="guideMapUrl != null">guide_map_url = #{guideMapUrl},</if>
+            <if test="workerCode != null">worker_code = #{workerCode},</if>
+            <if test="workerName != null">worker_name = #{workerName},</if>
         </trim>
         where id = #{id}
     </update>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.imustsz.algorithm.mapper.BizAlgorithmMapper">
+    
+    <resultMap type="BizAlgorithm" id="BizAlgorithmResult">
+        <result property="id"    column="id"    />
+        <result property="name"    column="name"    />
+        <result property="version"    column="version"    />
+        <result property="desc"    column="desc"    />
+        <result property="objectName"    column="object_name"    />
+    </resultMap>
+
+    <sql id="selectBizAlgorithmVo">
+        select id, name, version, `desc`, object_name from biz_algorithm
+    </sql>
+
+    <select id="selectBizAlgorithmList" parameterType="BizAlgorithm" resultMap="BizAlgorithmResult">
+        <include refid="selectBizAlgorithmVo"/>
+        <where>  
+            <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
+            <if test="version != null  and version != ''"> and version = #{version}</if>
+            <if test="desc != null  and desc != ''"> and desc = #{desc}</if>
+            <if test="objectName != null  and objectName != ''"> and object_name like concat('%', #{objectName}, '%')</if>
+        </where>
+    </select>
+    
+    <select id="selectBizAlgorithmById" parameterType="Long" resultMap="BizAlgorithmResult">
+        <include refid="selectBizAlgorithmVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertBizAlgorithm" parameterType="BizAlgorithm" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_algorithm
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="name != null">name,</if>
+            <if test="version != null">version,</if>
+            <if test="desc != null">desc,</if>
+            <if test="objectName != null">object_name,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="name != null">#{name},</if>
+            <if test="version != null">#{version},</if>
+            <if test="desc != null">#{desc},</if>
+            <if test="objectName != null">#{objectName},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizAlgorithm" parameterType="BizAlgorithm">
+        update biz_algorithm
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="name != null">name = #{name},</if>
+            <if test="version != null">version = #{version},</if>
+            <if test="desc != null">desc = #{desc},</if>
+            <if test="objectName != null">object_name = #{objectName},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBizAlgorithmById" parameterType="Long">
+        delete from biz_algorithm where id = #{id}
+    </delete>
+
+    <delete id="deleteBizAlgorithmByIds" parameterType="String">
+        delete from biz_algorithm where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

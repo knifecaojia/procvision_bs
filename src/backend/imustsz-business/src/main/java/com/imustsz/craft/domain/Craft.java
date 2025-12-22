@@ -22,6 +22,9 @@ public class Craft extends BaseEntity
     @Excel(name = "编码")
     private String code;
 
+    @Excel(name = "编码")
+    private String name;
+
     /** 版本 */
     @Excel(name = "版本")
     private String version;
@@ -30,7 +33,15 @@ public class Craft extends BaseEntity
     @Excel(name = "说明")
     private String desc;
 
-    public void setId(Long id) 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setId(Long id)
     {
         this.id = id;
     }
@@ -75,6 +86,7 @@ public class Craft extends BaseEntity
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("id", getId())
             .append("code", getCode())
+            .append("name", getName())
             .append("version", getVersion())
             .append("desc", getDesc())
             .toString();

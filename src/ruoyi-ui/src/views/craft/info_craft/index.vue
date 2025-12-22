@@ -9,6 +9,14 @@
             @keyup.enter="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="名称" prop="code">
+        <el-input
+            v-model="queryParams.name"
+            placeholder="请输入名称"
+            clearable
+            @keyup.enter="handleQuery"
+        />
+      </el-form-item>
       <el-form-item label="版本" prop="version">
         <el-input
             v-model="queryParams.version"
@@ -62,6 +70,7 @@
     <el-table v-loading="loading" :data="craftList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center"/>
       <el-table-column label="编码" align="center" prop="code"/>
+      <el-table-column label="名称" align="center" prop="name"/>
       <el-table-column label="版本" align="center" prop="version"/>
       <el-table-column label="说明" align="center" prop="desc"/>
       <el-table-column label="详细" align="center" prop="">
@@ -95,11 +104,14 @@
         <el-form-item label="编码" prop="code">
           <el-input v-model="form.code" placeholder="请输入编码"/>
         </el-form-item>
+        <el-form-item label="名称" prop="code">
+          <el-input v-model="form.name" placeholder="请输入名称"/>
+        </el-form-item>
         <el-form-item label="版本" prop="version">
           <el-input v-model="form.version" placeholder="请输入版本"/>
         </el-form-item>
-        <el-form-item label="说明" prop="brief">
-          <el-input v-model="form.brief" type="textarea" placeholder="请输入内容"/>
+        <el-form-item label="说明" prop="desc">
+          <el-input v-model="form.desc" type="textarea" placeholder="请输入内容"/>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -110,14 +122,32 @@
       </template>
     </el-dialog>
 
-    <el-dialog title="工序信息" v-model="processOpen" width="800px" append-to-body>
+    <el-dialog title="工序信息" v-model="processOpen" width="900px" append-to-body>
       <el-table v-loading="loading" :data="processList" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center"/>
         <el-table-column label="工序号" align="center" prop="code"/>
         <el-table-column label="工序名称" align="center" prop="name"/>
         <el-table-column label="说明" align="center" prop="desc"/>
         <el-table-column label="首部检验" align="center" prop=""/>
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+          <template #default="scope">
+            <el-button link type="primary" icon="Edit" @click="handleProcessUpdate(scope.row)" v-hasPermi="['craft:craft:edit']">
+              修改
+            </el-button>
+            <el-button link type="primary" icon="Delete" @click="handleProcessDelete(scope.row)"
+                       v-hasPermi="['craft:craft:remove']">删除
+            </el-button>
+          </template>
+        </el-table-column>
       </el-table>
+
+      <pagination
+          v-show="processTotal>0"
+          :total="processTotal"
+          v-model:page="processPageParms.pageNum"
+          v-model:limit="processPageParms.pageSize"
+          @pagination="getProcessList"
+      />
     </el-dialog>
   </div>
 </template>
@@ -138,9 +168,10 @@ const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
-const totalProcess = ref(0)
+const processTotal = ref(0)
 const title = ref("")
 const processOpen = ref(false)
+const tempCraftId = ref(null)
 
 const data = reactive({
   form: {},
@@ -148,13 +179,19 @@ const data = reactive({
     pageNum: 1,
     pageSize: 10,
     code: null,
+    name: null,
     version: null,
-    brief: null
+    desc: null
+  },
+  processPageParms: {
+    pageNum: 1,
+    pageSize: 10,
+    craftId: null
   },
   rules: {}
 })
 
-const {queryParams, form, rules} = toRefs(data)
+const {queryParams, form, rules, processPageParms} = toRefs(data)
 
 /** 查询工艺信息列表 */
 function getList() {
@@ -163,6 +200,16 @@ function getList() {
     craftList.value = response.rows
     total.value = response.total
     loading.value = false
+  })
+}
+
+function getProcessList() {
+  processLoading.value = true
+  processPageParms.craftId = tempCraftId.value
+  listProcess(processPageParms.value).then(response => {
+    processList.value = response.rows
+    processTotal.value = response.total
+    processLoading.value = false
   })
 }
 
@@ -177,8 +224,9 @@ function reset() {
   form.value = {
     id: null,
     code: null,
+    name: null,
     version: null,
-    brief: null
+    desc: null
   }
   proxy.resetForm("craftRef")
 }
@@ -256,10 +304,11 @@ function handleDelete(row) {
 function showProcess(row) {
   processOpen.value = true
   processLoading.value = true
+  tempCraftId.value = row.id
   listProcess({craftId: row.id}).then(res => {
     if (res.code === 200) {
       processList.value = res.rows
-      totalProcess.value = res.total
+      processTotal.value = res.total
       processLoading.value = false
     }
   })

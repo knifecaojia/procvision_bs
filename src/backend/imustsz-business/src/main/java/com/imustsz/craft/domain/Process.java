@@ -26,6 +26,10 @@ public class Process extends BaseEntity
     @Excel(name = "名称")
     private String name;
 
+    /** 检测算法编码 */
+    @Excel(name = "检测算法编码")
+    private String algorithmCode;
+
     /** 说明 */
     @Excel(name = "说明")
     private String desc;
@@ -140,6 +144,14 @@ public class Process extends BaseEntity
         return processMaterialInfo;
     }
 
+    public String getAlgorithmCode() {
+        return algorithmCode;
+    }
+
+    public void setAlgorithmCode(String algorithmCode) {
+        this.algorithmCode = algorithmCode;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -147,6 +159,7 @@ public class Process extends BaseEntity
             .append("code", getCode())
             .append("name", getName())
             .append("desc", getDesc())
+            .append("algorithmCode", getAlgorithmCode())
             .append("guideGranularity", getGuideGranularity())
             .append("craftId", getCraftId())
             .append("craftCode", getCraftCode())

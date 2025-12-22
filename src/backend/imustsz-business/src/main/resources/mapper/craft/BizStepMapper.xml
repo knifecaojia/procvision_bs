@@ -10,17 +10,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="name"    column="name"    />
         <result property="content"    column="content"    />
         <result property="guideMapUrl"    column="guide_map_url"    />
-        <result property="type"    column="type"    />
-        <result property="typeId"    column="type_id"    />
-        <result property="createdTime"    column="created_time"    />
-        <result property="updatedTime"    column="updated_time"    />
-        <result property="createdBy"    column="created_by"    />
-        <result property="updatedBy"    column="updated_by"    />
-        <result property="remarks"    column="remarks"    />
+        <result property="processId"    column="process_id"    />
     </resultMap>
 
     <sql id="selectBizStepVo">
-        select id, code, name, content, guide_map_url, `type`, type_id, created_time, updated_time, created_by, updated_by, remarks from biz_step
+        select id, code, name, content, guide_map_url, process_id from biz_step
     </sql>
 
     <select id="selectBizStepList" parameterType="BizStep" resultMap="BizStepResult">
@@ -30,13 +24,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
             <if test="content != null  and content != ''"> and content = #{content}</if>
             <if test="guideMapUrl != null  and guideMapUrl != ''"> and guide_map_url = #{guideMapUrl}</if>
-            <if test="type != null "> and type = #{type}</if>
-            <if test="typeId != null "> and type_id = #{typeId}</if>
-            <if test="createdTime != null "> and created_time = #{createdTime}</if>
-            <if test="updatedTime != null "> and updated_time = #{updatedTime}</if>
-            <if test="createdBy != null  and createdBy != ''"> and created_by = #{createdBy}</if>
-            <if test="updatedBy != null  and updatedBy != ''"> and updated_by = #{updatedBy}</if>
-            <if test="remarks != null  and remarks != ''"> and remarks = #{remarks}</if>
+            <if test="processId != null "> and process_id = #{processId}</if>
         </where>
     </select>
     
@@ -52,26 +40,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="name != null">name,</if>
             <if test="content != null">content,</if>
             <if test="guideMapUrl != null">guide_map_url,</if>
-            <if test="type != null">type,</if>
-            <if test="typeId != null">type_id,</if>
-            <if test="createdTime != null">created_time,</if>
-            <if test="updatedTime != null">updated_time,</if>
-            <if test="createdBy != null">created_by,</if>
-            <if test="updatedBy != null">updated_by,</if>
-            <if test="remarks != null">remarks,</if>
+            <if test="processId != null">process_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="code != null">#{code},</if>
             <if test="name != null">#{name},</if>
             <if test="content != null">#{content},</if>
             <if test="guideMapUrl != null">#{guideMapUrl},</if>
-            <if test="type != null">#{type},</if>
-            <if test="typeId != null">#{typeId},</if>
-            <if test="createdTime != null">#{createdTime},</if>
-            <if test="updatedTime != null">#{updatedTime},</if>
-            <if test="createdBy != null">#{createdBy},</if>
-            <if test="updatedBy != null">#{updatedBy},</if>
-            <if test="remarks != null">#{remarks},</if>
+            <if test="processId != null">#{processId},</if>
          </trim>
     </insert>
 
@@ -82,13 +58,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="name != null">name = #{name},</if>
             <if test="content != null">content = #{content},</if>
             <if test="guideMapUrl != null">guide_map_url = #{guideMapUrl},</if>
-            <if test="type != null">type = #{type},</if>
-            <if test="typeId != null">type_id = #{typeId},</if>
-            <if test="createdTime != null">created_time = #{createdTime},</if>
-            <if test="updatedTime != null">updated_time = #{updatedTime},</if>
-            <if test="createdBy != null">created_by = #{createdBy},</if>
-            <if test="updatedBy != null">updated_by = #{updatedBy},</if>
-            <if test="remarks != null">remarks = #{remarks},</if>
+            <if test="processId != null">process_id = #{processId},</if>
         </trim>
         where id = #{id}
     </update>

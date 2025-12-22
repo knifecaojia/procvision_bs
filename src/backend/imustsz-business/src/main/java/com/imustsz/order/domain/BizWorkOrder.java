@@ -11,7 +11,7 @@ import com.imustsz.common.annotation.Excel;
  * 工单对象 biz_work_order
  * 
  * @author imustsz
- * @date 2025-12-19
+ * @date 2025-12-22
  */
 public class BizWorkOrder extends BaseEntity
 {
@@ -38,33 +38,41 @@ public class BizWorkOrder extends BaseEntity
 
     /** 工单状态(1为待开始，2为进行中，3为已完成，4为BLOCKED) */
     @Excel(name = "工单状态(1为待开始，2为进行中，3为已完成，4为BLOCKED)")
-    private Long status;
+    private Integer status;
 
-    /** 订单id */
-    @Excel(name = "订单id")
-    private Long orderId;
+    /** 工序编码 */
+    @Excel(name = "工序编码")
+    private String processCode;
 
-    /** 创建时间 */
+    /** 工序名称 */
+    @Excel(name = "工序名称")
+    private String processName;
+
+    /** 派单数量 */
+    @Excel(name = "派单数量")
+    private Long dispatchQuantity;
+
+    /** 计划开始时间 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "创建时间", width = 30, dateFormat = "yyyy-MM-dd")
-    private Date createdTime;
+    @Excel(name = "计划开始时间", width = 30, dateFormat = "yyyy-MM-dd")
+    private Date startTime;
 
-    /** 更新时间 */
+    /** 计划结束时间 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "更新时间", width = 30, dateFormat = "yyyy-MM-dd")
-    private Date updatedTime;
+    @Excel(name = "计划结束时间", width = 30, dateFormat = "yyyy-MM-dd")
+    private Date endTime;
 
-    /** 创建人 */
-    @Excel(name = "创建人")
-    private String createdBy;
+    /** 引导图url */
+    @Excel(name = "引导图url")
+    private String guideMapUrl;
 
-    /** 更新人 */
-    @Excel(name = "更新人")
-    private String updatedBy;
+    /** 装配工人编码 */
+    @Excel(name = "装配工人编码")
+    private String workerCode;
 
-    /** 备注 */
-    @Excel(name = "备注")
-    private String remarks;
+    /** 装配工人姓名 */
+    @Excel(name = "装配工人姓名")
+    private String workerName;
 
     public void setId(Long id) 
     {
@@ -116,74 +124,94 @@ public class BizWorkOrder extends BaseEntity
         return craftVersion;
     }
 
-    public void setStatus(Long status) 
+    public void setStatus(Integer status)
     {
         this.status = status;
     }
 
-    public Long getStatus() 
+    public Integer getStatus()
     {
         return status;
     }
 
-    public void setOrderId(Long orderId) 
+    public void setProcessCode(String processCode) 
     {
-        this.orderId = orderId;
+        this.processCode = processCode;
     }
 
-    public Long getOrderId() 
+    public String getProcessCode() 
     {
-        return orderId;
+        return processCode;
     }
 
-    public void setCreatedTime(Date createdTime) 
+    public void setProcessName(String processName) 
     {
-        this.createdTime = createdTime;
+        this.processName = processName;
     }
 
-    public Date getCreatedTime() 
+    public String getProcessName() 
     {
-        return createdTime;
+        return processName;
     }
 
-    public void setUpdatedTime(Date updatedTime) 
+    public void setDispatchQuantity(Long dispatchQuantity) 
     {
-        this.updatedTime = updatedTime;
+        this.dispatchQuantity = dispatchQuantity;
     }
 
-    public Date getUpdatedTime() 
+    public Long getDispatchQuantity() 
     {
-        return updatedTime;
+        return dispatchQuantity;
     }
 
-    public void setCreatedBy(String createdBy) 
+    public void setStartTime(Date startTime) 
     {
-        this.createdBy = createdBy;
+        this.startTime = startTime;
     }
 
-    public String getCreatedBy() 
+    public Date getStartTime() 
     {
-        return createdBy;
+        return startTime;
     }
 
-    public void setUpdatedBy(String updatedBy) 
+    public void setEndTime(Date endTime) 
     {
-        this.updatedBy = updatedBy;
+        this.endTime = endTime;
     }
 
-    public String getUpdatedBy() 
+    public Date getEndTime() 
     {
-        return updatedBy;
+        return endTime;
     }
 
-    public void setRemarks(String remarks) 
+    public void setGuideMapUrl(String guideMapUrl) 
     {
-        this.remarks = remarks;
+        this.guideMapUrl = guideMapUrl;
     }
 
-    public String getRemarks() 
+    public String getGuideMapUrl() 
     {
-        return remarks;
+        return guideMapUrl;
+    }
+
+    public void setWorkerCode(String workerCode) 
+    {
+        this.workerCode = workerCode;
+    }
+
+    public String getWorkerCode() 
+    {
+        return workerCode;
+    }
+
+    public void setWorkerName(String workerName) 
+    {
+        this.workerName = workerName;
+    }
+
+    public String getWorkerName() 
+    {
+        return workerName;
     }
 
     @Override
@@ -195,12 +223,14 @@ public class BizWorkOrder extends BaseEntity
             .append("craftCode", getCraftCode())
             .append("craftVersion", getCraftVersion())
             .append("status", getStatus())
-            .append("orderId", getOrderId())
-            .append("createdTime", getCreatedTime())
-            .append("updatedTime", getUpdatedTime())
-            .append("createdBy", getCreatedBy())
-            .append("updatedBy", getUpdatedBy())
-            .append("remarks", getRemarks())
+            .append("processCode", getProcessCode())
+            .append("processName", getProcessName())
+            .append("dispatchQuantity", getDispatchQuantity())
+            .append("startTime", getStartTime())
+            .append("endTime", getEndTime())
+            .append("guideMapUrl", getGuideMapUrl())
+            .append("workerCode", getWorkerCode())
+            .append("workerName", getWorkerName())
             .toString();
     }
 }

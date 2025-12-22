@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.imustsz.cilent.mapper.ClientTaskMapper">
+
+    <resultMap type="PendingTaskVO" id="PendingTaskVO">
+        <result property="workOrderNo"    column="work_order_no"    />
+        <result property="processNo"    column="craft_code"    />
+        <result property="operationNo"    column="operation_code"    />
+        <result property="status"    column="status"    />
+    </resultMap>
+
+    <select id="getPendingTaskList" resultType="com.imustsz.cilent.domain.vo.PendingTaskVO">
+        select work_order_code as workOrderNo, craft_code as processNo, process_code as operationNo, status from biz_work_order
+    </select>
+</mapper>

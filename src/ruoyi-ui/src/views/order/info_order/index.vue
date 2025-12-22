@@ -1,66 +1,90 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="生产订单编码" prop="orderCode">
+      <el-form-item label="工单编码" prop="workOrderCode">
         <el-input
-          v-model="queryParams.orderCode"
-          placeholder="请输入生产订单编码"
+          v-model="queryParams.workOrderCode"
+          placeholder="请输入工单编码"
           clearable
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="产品批次" prop="productBatch">
+      <el-form-item label="工单数量" prop="workOrderQuantity">
         <el-input
-          v-model="queryParams.productBatch"
-          placeholder="请输入产品批次"
+          v-model="queryParams.workOrderQuantity"
+          placeholder="请输入工单数量"
           clearable
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="物料编码" prop="materialCode">
+      <el-form-item label="工艺编码" prop="craftCode">
         <el-input
-          v-model="queryParams.materialCode"
-          placeholder="请输入物料编码"
+          v-model="queryParams.craftCode"
+          placeholder="请输入工艺编码"
           clearable
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="创建时间" prop="createdTime">
+      <el-form-item label="工艺版本" prop="craftVersion">
+        <el-input
+          v-model="queryParams.craftVersion"
+          placeholder="请输入工艺版本"
+          clearable
+          @keyup.enter="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="工序编码" prop="processCode">
+        <el-input
+          v-model="queryParams.processCode"
+          placeholder="请输入工序编码"
+          clearable
+          @keyup.enter="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="工序名称" prop="processName">
+        <el-input
+          v-model="queryParams.processName"
+          placeholder="请输入工序名称"
+          clearable
+          @keyup.enter="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="派单数量" prop="dispatchQuantity">
+        <el-input
+          v-model="queryParams.dispatchQuantity"
+          placeholder="请输入派单数量"
+          clearable
+          @keyup.enter="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="计划开始时间" prop="startTime">
         <el-date-picker clearable
-          v-model="queryParams.createdTime"
+          v-model="queryParams.startTime"
           type="date"
           value-format="YYYY-MM-DD"
-          placeholder="请选择创建时间">
+          placeholder="请选择计划开始时间">
         </el-date-picker>
       </el-form-item>
-      <el-form-item label="更新时间" prop="updatedTime">
+      <el-form-item label="计划结束时间" prop="endTime">
         <el-date-picker clearable
-          v-model="queryParams.updatedTime"
+          v-model="queryParams.endTime"
           type="date"
           value-format="YYYY-MM-DD"
-          placeholder="请选择更新时间">
+          placeholder="请选择计划结束时间">
         </el-date-picker>
       </el-form-item>
-      <el-form-item label="创建人" prop="createdBy">
+      <el-form-item label="装配工人编码" prop="workerCode">
         <el-input
-          v-model="queryParams.createdBy"
-          placeholder="请输入创建人"
+          v-model="queryParams.workerCode"
+          placeholder="请输入装配工人编码"
           clearable
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="更新人" prop="updatedBy">
+      <el-form-item label="装配工人姓名" prop="workerName">
         <el-input
-          v-model="queryParams.updatedBy"
-          placeholder="请输入更新人"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="备注" prop="remarks">
-        <el-input
-          v-model="queryParams.remarks"
-          placeholder="请输入备注"
+          v-model="queryParams.workerName"
+          placeholder="请输入装配工人姓名"
           clearable
           @keyup.enter="handleQuery"
         />
@@ -78,7 +102,7 @@
           plain
           icon="Plus"
           @click="handleAdd"
-          v-hasPermi="['order:order:add']"
+          v-hasPermi="['wo:workOrder:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -88,7 +112,7 @@
           icon="Edit"
           :disabled="single"
           @click="handleUpdate"
-          v-hasPermi="['order:order:edit']"
+          v-hasPermi="['wo:workOrder:edit']"
         >修改</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -98,7 +122,7 @@
           icon="Delete"
           :disabled="multiple"
           @click="handleDelete"
-          v-hasPermi="['order:order:remove']"
+          v-hasPermi="['wo:workOrder:remove']"
         >删除</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -107,18 +131,36 @@
           plain
           icon="Download"
           @click="handleExport"
-          v-hasPermi="['order:order:export']"
+          v-hasPermi="['wo:workOrder:export']"
         >导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="orderList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="workOrderList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="主键" align="center" prop="id" />
-      <el-table-column label="生产订单编码" align="center" prop="orderCode" />
-      <el-table-column label="产品批次" align="center" prop="productBatch" />
-      <el-table-column label="物料编码" align="center" prop="materialCode" />
+      <el-table-column label="工单编码" align="center" prop="workOrderCode" />
+      <el-table-column label="工单数量" align="center" prop="workOrderQuantity" />
+      <el-table-column label="工艺编码" align="center" prop="craftCode" />
+      <el-table-column label="工艺版本" align="center" prop="craftVersion" />
+      <el-table-column label="工单状态(1为待开始，2为进行中，3为已完成，4为BLOCKED)" align="center" prop="status" />
+      <el-table-column label="工序编码" align="center" prop="processCode" />
+      <el-table-column label="工序名称" align="center" prop="processName" />
+      <el-table-column label="派单数量" align="center" prop="dispatchQuantity" />
+      <el-table-column label="计划开始时间" align="center" prop="startTime" width="180">
+        <template #default="scope">
+          <span>{{ parseTime(scope.row.startTime, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="计划结束时间" align="center" prop="endTime" width="180">
+        <template #default="scope">
+          <span>{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="引导图url" align="center" prop="guideMapUrl" />
+      <el-table-column label="装配工人编码" align="center" prop="workerCode" />
+      <el-table-column label="装配工人姓名" align="center" prop="workerName" />
       <el-table-column label="创建时间" align="center" prop="createdTime" width="180">
         <template #default="scope">
           <span>{{ parseTime(scope.row.createdTime, '{y}-{m}-{d}') }}</span>
@@ -134,8 +176,8 @@
       <el-table-column label="备注" align="center" prop="remarks" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['order:order:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['order:order:remove']">删除</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wo:workOrder:edit']">修改</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wo:workOrder:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -148,17 +190,54 @@
       @pagination="getList"
     />
 
-    <!-- 添加或修改订单对话框 -->
+    <!-- 添加或修改工单对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-      <el-form ref="orderRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="生产订单编码" prop="orderCode">
-          <el-input v-model="form.orderCode" placeholder="请输入生产订单编码" />
+      <el-form ref="workOrderRef" :model="form" :rules="rules" label-width="80px">
+        <el-form-item label="工单编码" prop="workOrderCode">
+          <el-input v-model="form.workOrderCode" placeholder="请输入工单编码" />
         </el-form-item>
-        <el-form-item label="产品批次" prop="productBatch">
-          <el-input v-model="form.productBatch" placeholder="请输入产品批次" />
+        <el-form-item label="工单数量" prop="workOrderQuantity">
+          <el-input v-model="form.workOrderQuantity" placeholder="请输入工单数量" />
         </el-form-item>
-        <el-form-item label="物料编码" prop="materialCode">
-          <el-input v-model="form.materialCode" placeholder="请输入物料编码" />
+        <el-form-item label="工艺编码" prop="craftCode">
+          <el-input v-model="form.craftCode" placeholder="请输入工艺编码" />
+        </el-form-item>
+        <el-form-item label="工艺版本" prop="craftVersion">
+          <el-input v-model="form.craftVersion" placeholder="请输入工艺版本" />
+        </el-form-item>
+        <el-form-item label="工序编码" prop="processCode">
+          <el-input v-model="form.processCode" placeholder="请输入工序编码" />
+        </el-form-item>
+        <el-form-item label="工序名称" prop="processName">
+          <el-input v-model="form.processName" placeholder="请输入工序名称" />
+        </el-form-item>
+        <el-form-item label="派单数量" prop="dispatchQuantity">
+          <el-input v-model="form.dispatchQuantity" placeholder="请输入派单数量" />
+        </el-form-item>
+        <el-form-item label="计划开始时间" prop="startTime">
+          <el-date-picker clearable
+            v-model="form.startTime"
+            type="date"
+            value-format="YYYY-MM-DD"
+            placeholder="请选择计划开始时间">
+          </el-date-picker>
+        </el-form-item>
+        <el-form-item label="计划结束时间" prop="endTime">
+          <el-date-picker clearable
+            v-model="form.endTime"
+            type="date"
+            value-format="YYYY-MM-DD"
+            placeholder="请选择计划结束时间">
+          </el-date-picker>
+        </el-form-item>
+        <el-form-item label="引导图url" prop="guideMapUrl">
+          <el-input v-model="form.guideMapUrl" placeholder="请输入引导图url" />
+        </el-form-item>
+        <el-form-item label="装配工人编码" prop="workerCode">
+          <el-input v-model="form.workerCode" placeholder="请输入装配工人编码" />
+        </el-form-item>
+        <el-form-item label="装配工人姓名" prop="workerName">
+          <el-input v-model="form.workerName" placeholder="请输入装配工人姓名" />
         </el-form-item>
         <el-form-item label="创建时间" prop="createdTime">
           <el-date-picker clearable
@@ -196,12 +275,12 @@
   </div>
 </template>
 
-<script setup name="Order">
-import { listOrder, getOrder, delOrder, addOrder, updateOrder } from "@/api/order/order"
+<script setup name="WorkOrder">
+import { listWorkOrder, getWorkOrder, delWorkOrder, addWorkOrder, updateWorkOrder } from "@/api/order/workOrder"
 
 const { proxy } = getCurrentInstance()
 
-const orderList = ref([])
+const workOrderList = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
@@ -216,14 +295,19 @@ const data = reactive({
   queryParams: {
     pageNum: 1,
     pageSize: 10,
-    orderCode: null,
-    productBatch: null,
-    materialCode: null,
-    createdTime: null,
-    updatedTime: null,
-    createdBy: null,
-    updatedBy: null,
-    remarks: null
+    workOrderCode: null,
+    workOrderQuantity: null,
+    craftCode: null,
+    craftVersion: null,
+    status: null,
+    processCode: null,
+    processName: null,
+    dispatchQuantity: null,
+    startTime: null,
+    endTime: null,
+    guideMapUrl: null,
+    workerCode: null,
+    workerName: null,
   },
   rules: {
   }
@@ -231,11 +315,11 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data)
 
-/** 查询订单列表 */
+/** 查询工单列表 */
 function getList() {
   loading.value = true
-  listOrder(queryParams.value).then(response => {
-    orderList.value = response.rows
+  listWorkOrder(queryParams.value).then(response => {
+    workOrderList.value = response.rows
     total.value = response.total
     loading.value = false
   })
@@ -251,16 +335,21 @@ function cancel() {
 function reset() {
   form.value = {
     id: null,
-    orderCode: null,
-    productBatch: null,
-    materialCode: null,
-    createdTime: null,
-    updatedTime: null,
-    createdBy: null,
-    updatedBy: null,
-    remarks: null
+    workOrderCode: null,
+    workOrderQuantity: null,
+    craftCode: null,
+    craftVersion: null,
+    status: null,
+    processCode: null,
+    processName: null,
+    dispatchQuantity: null,
+    startTime: null,
+    endTime: null,
+    guideMapUrl: null,
+    workerCode: null,
+    workerName: null,
   }
-  proxy.resetForm("orderRef")
+  proxy.resetForm("workOrderRef")
 }
 
 /** 搜索按钮操作 */
@@ -286,32 +375,32 @@ function handleSelectionChange(selection) {
 function handleAdd() {
   reset()
   open.value = true
-  title.value = "添加订单"
+  title.value = "添加工单"
 }
 
 /** 修改按钮操作 */
 function handleUpdate(row) {
   reset()
   const _id = row.id || ids.value
-  getOrder(_id).then(response => {
+  getWorkOrder(_id).then(response => {
     form.value = response.data
     open.value = true
-    title.value = "修改订单"
+    title.value = "修改工单"
   })
 }
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs["orderRef"].validate(valid => {
+  proxy.$refs["workOrderRef"].validate(valid => {
     if (valid) {
       if (form.value.id != null) {
-        updateOrder(form.value).then(response => {
+        updateWorkOrder(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功")
           open.value = false
           getList()
         })
       } else {
-        addOrder(form.value).then(response => {
+        addWorkOrder(form.value).then(response => {
           proxy.$modal.msgSuccess("新增成功")
           open.value = false
           getList()
@@ -324,8 +413,8 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const _ids = row.id || ids.value
-  proxy.$modal.confirm('是否确认删除订单编号为"' + _ids + '"的数据项？').then(function() {
-    return delOrder(_ids)
+  proxy.$modal.confirm('是否确认删除工单编号为"' + _ids + '"的数据项？').then(function() {
+    return delWorkOrder(_ids)
   }).then(() => {
     getList()
     proxy.$modal.msgSuccess("删除成功")
@@ -334,9 +423,9 @@ function handleDelete(row) {
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download('order/order/export', {
+  proxy.download('wo/workOrder/export', {
     ...queryParams.value
-  }, `order_${new Date().getTime()}.xlsx`)
+  }, `workOrder_${new Date().getTime()}.xlsx`)
 }
 
 getList()

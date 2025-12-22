@@ -2,12 +2,13 @@ package com.imustsz.order.service;
 
 import java.util.List;
 import com.imustsz.order.domain.BizWorkOrder;
+import com.imustsz.order.domain.json.ProcessTaskSync;
 
 /**
  * 工单Service接口
  * 
  * @author imustsz
- * @date 2025-12-19
+ * @date 2025-12-22
  */
 public interface IBizWorkOrderService 
 {
@@ -58,4 +59,6 @@ public interface IBizWorkOrderService
      * @return 结果
      */
     public int deleteBizWorkOrderById(Long id);
+
+    void importOrderFromMMo(ProcessTaskSync processTaskSync);
 }

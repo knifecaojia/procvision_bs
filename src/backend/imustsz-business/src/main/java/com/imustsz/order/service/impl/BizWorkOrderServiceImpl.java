@@ -1,6 +1,12 @@
 package com.imustsz.order.service.impl;
 
 import java.util.List;
+
+import com.imustsz.common.utils.DateUtils;
+import com.imustsz.order.domain.json.DispatchTaskInfo;
+import com.imustsz.order.domain.json.ProcessTaskSync;
+import com.imustsz.order.domain.json.WorkOrder;
+import com.imustsz.order.domain.json.WorkOrderInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.imustsz.order.mapper.BizWorkOrderMapper;
@@ -11,7 +17,7 @@ import com.imustsz.order.service.IBizWorkOrderService;
  * 工单Service业务层处理
  * 
  * @author imustsz
- * @date 2025-12-19
+ * @date 2025-12-22
  */
 @Service
 public class BizWorkOrderServiceImpl implements IBizWorkOrderService 
@@ -89,5 +95,33 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
     public int deleteBizWorkOrderById(Long id)
     {
         return bizWorkOrderMapper.deleteBizWorkOrderById(id);
+    }
+
+    /**
+     * 从MMO获取订单信息
+     */
+    @Override
+    public void importOrderFromMMo(ProcessTaskSync processTaskSync) {
+        for (WorkOrder workOrder : processTaskSync.getWorkOrderList()) {
+            WorkOrderInfo workOrderInfo = workOrder.getWorkOrderInfo();
+            DispatchTaskInfo dispatchTaskInfo = workOrder.getDispatchTaskInfo();
+
+            BizWorkOrder bizWorkOrder = new BizWorkOrder();
+            bizWorkOrder.setWorkOrderCode(workOrderInfo.getWorkOrderNo());
+            bizWorkOrder.setWorkOrderQuantity(Long.parseLong(workOrderInfo.getWorkOrderQuantity()));
+            bizWorkOrder.setCraftCode(workOrderInfo.getProcessNo());
+            bizWorkOrder.setCraftVersion(workOrderInfo.getProcessVersion());
+            bizWorkOrder.setStatus(1);
+
+            bizWorkOrder.setDispatchQuantity(Long.parseLong(dispatchTaskInfo.getDispatchQuantity()));
+            bizWorkOrder.setProcessCode(dispatchTaskInfo.getOperationNo());
+            bizWorkOrder.setProcessName(dispatchTaskInfo.getOperationName());
+            bizWorkOrder.setStartTime(DateUtils.parseDate(dispatchTaskInfo.getPlannedStartTime()));
+            bizWorkOrder.setEndTime(DateUtils.parseDate(dispatchTaskInfo.getPlannedEndTime()));
+            bizWorkOrder.setWorkerCode(dispatchTaskInfo.getWorkerCode());
+            bizWorkOrder.setWorkerName(dispatchTaskInfo.getWorkerName());
+            bizWorkOrderMapper.insertBizWorkOrder(bizWorkOrder);
+        }
+
     }
 }

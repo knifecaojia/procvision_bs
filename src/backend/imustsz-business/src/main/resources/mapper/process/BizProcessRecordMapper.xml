@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.imustsz.process.mapper.BizProcessRecordMapper">
+    
+    <resultMap type="BizProcessRecord" id="BizProcessRecordResult">
+        <result property="id"    column="id"    />
+        <result property="workOrderCode"    column="work_order_code"    />
+        <result property="stepId"    column="step_id"    />
+        <result property="stepStatus"    column="step_status"    />
+        <result property="imagePath"    column="image_path"    />
+        <result property="data"    column="data"    />
+        <result property="submitTime"    column="submit_time"    />
+    </resultMap>
+
+    <sql id="selectBizProcessRecordVo">
+        select id, work_order_code, step_id, step_status, image_path, data, submit_time from biz_process_record
+    </sql>
+
+    <select id="selectBizProcessRecordList" parameterType="BizProcessRecord" resultMap="BizProcessRecordResult">
+        <include refid="selectBizProcessRecordVo"/>
+        <where>  
+            <if test="workOrderCode != null  and workOrderCode != ''"> and work_order_code = #{workOrderCode}</if>
+            <if test="stepId != null "> and step_id = #{stepId}</if>
+            <if test="stepStatus != null  and stepStatus != ''"> and step_status = #{stepStatus}</if>
+            <if test="imagePath != null  and imagePath != ''"> and image_path = #{imagePath}</if>
+            <if test="data != null  and data != ''"> and data = #{data}</if>
+            <if test="submitTime != null "> and submit_time = #{submitTime}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizProcessRecordById" parameterType="Long" resultMap="BizProcessRecordResult">
+        <include refid="selectBizProcessRecordVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertBizProcessRecord" parameterType="BizProcessRecord" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_process_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="workOrderCode != null">work_order_code,</if>
+            <if test="stepId != null">step_id,</if>
+            <if test="stepStatus != null">step_status,</if>
+            <if test="imagePath != null">image_path,</if>
+            <if test="data != null">data,</if>
+            <if test="submitTime != null">submit_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="workOrderCode != null">#{workOrderCode},</if>
+            <if test="stepId != null">#{stepId},</if>
+            <if test="stepStatus != null">#{stepStatus},</if>
+            <if test="imagePath != null">#{imagePath},</if>
+            <if test="data != null">#{data},</if>
+            <if test="submitTime != null">#{submitTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizProcessRecord" parameterType="BizProcessRecord">
+        update biz_process_record
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="workOrderCode != null">work_order_code = #{workOrderCode},</if>
+            <if test="stepId != null">step_id = #{stepId},</if>
+            <if test="stepStatus != null">step_status = #{stepStatus},</if>
+            <if test="imagePath != null">image_path = #{imagePath},</if>
+            <if test="data != null">data = #{data},</if>
+            <if test="submitTime != null">submit_time = #{submitTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBizProcessRecordById" parameterType="Long">
+        delete from biz_process_record where id = #{id}
+    </delete>
+
+    <delete id="deleteBizProcessRecordByIds" parameterType="String">
+        delete from biz_process_record where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

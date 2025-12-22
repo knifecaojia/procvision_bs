@@ -2,18 +2,12 @@ package com.imustsz.order.controller;
 
 import java.io.File;
 import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 
-import com.alibaba.fastjson2.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.imustsz.common.utils.bean.MinioUtils;
 import com.imustsz.order.domain.json.ProcessTaskSync;
-import io.minio.MinioClient;
-import io.minio.errors.MinioException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,93 +22,93 @@ import com.imustsz.common.annotation.Log;
 import com.imustsz.common.core.controller.BaseController;
 import com.imustsz.common.core.domain.AjaxResult;
 import com.imustsz.common.enums.BusinessType;
-import com.imustsz.order.domain.BizOrder;
-import com.imustsz.order.service.IBizOrderService;
+import com.imustsz.order.domain.BizWorkOrder;
+import com.imustsz.order.service.IBizWorkOrderService;
 import com.imustsz.common.utils.poi.ExcelUtil;
 import com.imustsz.common.core.page.TableDataInfo;
 
 /**
- * 订单Controller
+ * 工单Controller
  * 
  * @author imustsz
- * @date 2025-12-19
+ * @date 2025-12-22
  */
 @RestController
-@RequestMapping("/order/info")
-public class BizOrderController extends BaseController
+@RequestMapping("/workOrder")
+public class BizWorkOrderController extends BaseController
 {
     @Autowired
-    private IBizOrderService bizOrderService;
+    private IBizWorkOrderService bizWorkOrderService;
 
     @Autowired
     private ObjectMapper objectMapper;
 
     /**
-     * 查询订单列表
+     * 查询工单列表
      */
-    @PreAuthorize("@ss.hasPermi('order:order:list')")
+    @PreAuthorize("@ss.hasPermi('wo:workOrder:list')")
     @GetMapping("/list")
-    public TableDataInfo list(BizOrder bizOrder)
+    public TableDataInfo list(BizWorkOrder bizWorkOrder)
     {
         startPage();
-        List<BizOrder> list = bizOrderService.selectBizOrderList(bizOrder);
+        List<BizWorkOrder> list = bizWorkOrderService.selectBizWorkOrderList(bizWorkOrder);
         return getDataTable(list);
     }
 
     /**
-     * 导出订单列表
+     * 导出工单列表
      */
-    @PreAuthorize("@ss.hasPermi('order:order:export')")
-    @Log(title = "订单", businessType = BusinessType.EXPORT)
+    @PreAuthorize("@ss.hasPermi('wo:workOrder:export')")
+    @Log(title = "工单", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
-    public void export(HttpServletResponse response, BizOrder bizOrder)
+    public void export(HttpServletResponse response, BizWorkOrder bizWorkOrder)
     {
-        List<BizOrder> list = bizOrderService.selectBizOrderList(bizOrder);
-        ExcelUtil<BizOrder> util = new ExcelUtil<BizOrder>(BizOrder.class);
-        util.exportExcel(response, list, "订单数据");
+        List<BizWorkOrder> list = bizWorkOrderService.selectBizWorkOrderList(bizWorkOrder);
+        ExcelUtil<BizWorkOrder> util = new ExcelUtil<BizWorkOrder>(BizWorkOrder.class);
+        util.exportExcel(response, list, "工单数据");
     }
 
     /**
-     * 获取订单详细信息
+     * 获取工单详细信息
      */
-    @PreAuthorize("@ss.hasPermi('order:order:query')")
+    @PreAuthorize("@ss.hasPermi('wo:workOrder:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
-        return success(bizOrderService.selectBizOrderById(id));
+        return success(bizWorkOrderService.selectBizWorkOrderById(id));
     }
 
     /**
-     * 新增订单
+     * 新增工单
      */
-    @PreAuthorize("@ss.hasPermi('order:order:add')")
-    @Log(title = "订单", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('wo:workOrder:add')")
+    @Log(title = "工单", businessType = BusinessType.INSERT)
     @PostMapping
-    public AjaxResult add(@RequestBody BizOrder bizOrder)
+    public AjaxResult add(@RequestBody BizWorkOrder bizWorkOrder)
     {
-        return toAjax(bizOrderService.insertBizOrder(bizOrder));
+        return toAjax(bizWorkOrderService.insertBizWorkOrder(bizWorkOrder));
     }
 
     /**
-     * 修改订单
+     * 修改工单
      */
-    @PreAuthorize("@ss.hasPermi('order:order:edit')")
-    @Log(title = "订单", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('wo:workOrder:edit')")
+    @Log(title = "工单", businessType = BusinessType.UPDATE)
     @PutMapping
-    public AjaxResult edit(@RequestBody BizOrder bizOrder)
+    public AjaxResult edit(@RequestBody BizWorkOrder bizWorkOrder)
     {
-        return toAjax(bizOrderService.updateBizOrder(bizOrder));
+        return toAjax(bizWorkOrderService.updateBizWorkOrder(bizWorkOrder));
     }
 
     /**
-     * 删除订单
+     * 删除工单
      */
-    @PreAuthorize("@ss.hasPermi('order:order:remove')")
-    @Log(title = "订单", businessType = BusinessType.DELETE)
+    @PreAuthorize("@ss.hasPermi('wo:workOrder:remove')")
+    @Log(title = "工单", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)
     {
-        return toAjax(bizOrderService.deleteBizOrderByIds(ids));
+        return toAjax(bizWorkOrderService.deleteBizWorkOrderByIds(ids));
     }
 
     /**
@@ -125,7 +119,7 @@ public class BizOrderController extends BaseController
         File file = new File("MOM/工序任务同步.json");
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         ProcessTaskSync processTaskSync = objectMapper.readValue(file, ProcessTaskSync.class);
-        bizOrderService.importOrderFromMMo(processTaskSync);
+        bizWorkOrderService.importOrderFromMMo(processTaskSync);
         return success();
     }
 }

@@ -22,7 +22,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/client/auth")
-public class ClientController {
+public class ClientLoginController {
 
     @Autowired
     private SysLoginService loginService;
