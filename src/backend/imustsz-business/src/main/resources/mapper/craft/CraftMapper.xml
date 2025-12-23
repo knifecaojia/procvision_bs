@@ -19,10 +19,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectCraftList" parameterType="Craft" resultMap="CraftResult">
         <include refid="selectCraftVo"/>
         <where>  
-            <if test="code != null  and code != ''"> and code = #{code}</if>
-            <if test="name != null  and name != ''"> and name = #{name}</if>
+            <if test="code != null  and code != ''"> and code like concat('%', #{code}, '%')</if>
+            <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
             <if test="version != null  and version != ''"> and version = #{version}</if>
-            <if test="desc != null  and desc != ''"> and `desc` = #{desc}</if>
+            <if test="desc != null  and desc != ''"> and `desc` like concat('%', #{desc}, '%')</if>
         </where>
     </select>
     

@@ -46,7 +46,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="code != null">code,</if>
             <if test="name != null">name,</if>
-            <if test="desc != null">desc,</if>
+            <if test="desc != null">`desc`,</if>
             <if test="algorithmCode != null">algorithm_code,</if>
             <if test="guideGranularity != null">guide_granularity,</if>
             <if test="craftId != null">craft_id,</if>
@@ -72,7 +72,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="code != null">code = #{code},</if>
             <if test="name != null">name = #{name},</if>
-            <if test="desc != null">desc = #{desc},</if>
+            <if test="desc != null">`desc` = #{desc},</if>
             <if test="algorithmCode != null">algorithmCode = #{algorithmCode},</if>
             <if test="guideGranularity != null">guide_granularity = #{guideGranularity},</if>
             <if test="craftId != null">craft_id = #{craftId},</if>

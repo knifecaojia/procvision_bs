@@ -110,7 +110,7 @@ public class CraftController extends BaseController
      */
     @GetMapping("/getCraftFromMMO")
     public AjaxResult getCraftFromMMO() throws IOException {
-        File file = new File("MOM/产品工艺.json");
+        File file = new File("MOM/测试数据.json");
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         ProductProcess productProcess =objectMapper.readValue(file, ProductProcess.class);
         craftService.importCraftFromMMo(productProcess);

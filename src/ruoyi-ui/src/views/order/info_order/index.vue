@@ -1,58 +1,10 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="工单编码" prop="workOrderCode">
+    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="98px">
+      <el-form-item label="工单编码" style="margin-left: -26px" prop="workOrderCode">
         <el-input
           v-model="queryParams.workOrderCode"
           placeholder="请输入工单编码"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="工单数量" prop="workOrderQuantity">
-        <el-input
-          v-model="queryParams.workOrderQuantity"
-          placeholder="请输入工单数量"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="工艺编码" prop="craftCode">
-        <el-input
-          v-model="queryParams.craftCode"
-          placeholder="请输入工艺编码"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="工艺版本" prop="craftVersion">
-        <el-input
-          v-model="queryParams.craftVersion"
-          placeholder="请输入工艺版本"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="工序编码" prop="processCode">
-        <el-input
-          v-model="queryParams.processCode"
-          placeholder="请输入工序编码"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="工序名称" prop="processName">
-        <el-input
-          v-model="queryParams.processName"
-          placeholder="请输入工序名称"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="派单数量" prop="dispatchQuantity">
-        <el-input
-          v-model="queryParams.dispatchQuantity"
-          placeholder="请输入派单数量"
           clearable
           @keyup.enter="handleQuery"
         />
@@ -81,7 +33,7 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="装配工人姓名" prop="workerName">
+      <el-form-item label="装配工人姓名" prop="workerName" style="margin-right: 10px; vertical-align: bottom">
         <el-input
           v-model="queryParams.workerName"
           placeholder="请输入装配工人姓名"
@@ -89,52 +41,51 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item>
+      <div style="display: inline-flex; margin-top: -10px;">
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+      </div>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="Plus"
-          @click="handleAdd"
-          v-hasPermi="['wo:workOrder:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="Edit"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['wo:workOrder:edit']"
-        >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="Delete"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['wo:workOrder:remove']"
-        >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="Download"
-          @click="handleExport"
-          v-hasPermi="['wo:workOrder:export']"
-        >导出</el-button>
-      </el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+        <el-col :span="1.5" >
+          <el-button
+              type="primary"
+              plain
+              icon="Plus"
+              @click="handleAdd"
+              v-hasPermi="['wo:workOrder:add']"
+          >新增</el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button
+              type="success"
+              plain
+              icon="Edit"
+              :disabled="single"
+              @click="handleUpdate"
+              v-hasPermi="['wo:workOrder:edit']"
+          >修改</el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button
+              type="danger"
+              plain
+              icon="Delete"
+              :disabled="multiple"
+              @click="handleDelete"
+              v-hasPermi="['wo:workOrder:remove']"
+          >删除</el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button
+              type="warning"
+              plain
+              icon="Download"
+              @click="handleExport"
+              v-hasPermi="['wo:workOrder:export']"
+          >导出</el-button>
+        </el-col>
     </el-row>
 
     <el-table v-loading="loading" :data="workOrderList" @selection-change="handleSelectionChange">

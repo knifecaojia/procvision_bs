@@ -124,6 +124,7 @@ public class CraftServiceImpl implements ICraftService
         //导入工艺基本信息
         Craft craft = new Craft();
         craft.setCode(processInfo.getProcessNo());
+        craft.setName(processInfo.getProcessName());
         craft.setVersion(processInfo.getProcessVersion());
         craft.setDesc(processInfo.getProcessDesc());
         craft.setCreateTime(DateUtils.getNowDate());
@@ -138,6 +139,7 @@ public class CraftServiceImpl implements ICraftService
             process.setName(operationInfo.getOperationName());
             process.setCraftId(craft.getId());
             process.setCraftCode(craft.getCode());
+            process.setDesc(operationInfo.getOperationDesc());
             process.setProcessMaterialInfo(JSONObject.toJSONString(operation.getOperationMaterialInfo()));
             process.setCreateTime(DateUtils.getNowDate());
             process.setCreateBy(SecurityUtils.getUsername());

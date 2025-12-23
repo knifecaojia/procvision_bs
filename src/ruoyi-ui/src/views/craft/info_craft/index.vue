@@ -122,58 +122,34 @@
       </template>
     </el-dialog>
 
-    <el-dialog title="工序信息" v-model="processOpen" width="900px" append-to-body>
-      <el-table v-loading="loading" :data="processList" @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="55" align="center"/>
-        <el-table-column label="工序号" align="center" prop="code"/>
-        <el-table-column label="工序名称" align="center" prop="name"/>
-        <el-table-column label="说明" align="center" prop="desc"/>
-        <el-table-column label="首部检验" align="center" prop=""/>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-          <template #default="scope">
-            <el-button link type="primary" icon="Edit" @click="handleProcessUpdate(scope.row)" v-hasPermi="['craft:craft:edit']">
-              修改
-            </el-button>
-            <el-button link type="primary" icon="Delete" @click="handleProcessDelete(scope.row)"
-                       v-hasPermi="['craft:craft:remove']">删除
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <pagination
-          v-show="processTotal>0"
-          :total="processTotal"
-          v-model:page="processPageParms.pageNum"
-          v-model:limit="processPageParms.pageSize"
-          @pagination="getProcessList"
-      />
-    </el-dialog>
+    <ProcessDialog v-model="processOpen" :processOpen="processOpen" :craftId="tempCraftId" />
   </div>
 </template>
 
 <script setup name="Craft">
 import {listCraft, getCraft, delCraft, addCraft, updateCraft} from "@/api/craft/craft.js"
-import {listProcess} from "@/api/craft/process.js";
+import {listStep} from "@/api/craft/step.js";
+import ProcessDialog from "@/views/craft/info_craft/ProcessDialog.vue";
 
 const {proxy} = getCurrentInstance()
 
 const craftList = ref([])
-const processList = ref([])
+const stepList = ref([])
 const open = ref(false)
 const loading = ref(true)
-const processLoading = ref(true)
+const stepLoading = ref(true)
 const showSearch = ref(true)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
-const processTotal = ref(0)
+const stepTotal = ref(0)
 const title = ref("")
-const processOpen = ref(false)
 const tempCraftId = ref(null)
+const tempProcessId = ref(null)
 
 const data = reactive({
+  processOpen: false,
   form: {},
   queryParams: {
     pageNum: 1,
@@ -183,15 +159,20 @@ const data = reactive({
     version: null,
     desc: null
   },
-  processPageParms: {
-    pageNum: 1,
-    pageSize: 10,
-    craftId: null
-  },
-  rules: {}
+  rules: {
+    code: [
+      {required: true, message: "编码不能为空", trigger: "blur"}
+    ],
+    name: [
+      {required: true, message: "名称不能为空", trigger: "blur"}
+    ],
+    version: [
+      {required: true, message: "版本不能为空", trigger: "blur"}
+    ]
+  }
 })
 
-const {queryParams, form, rules, processPageParms} = toRefs(data)
+const {processOpen, queryParams, form, rules} = toRefs(data)
 
 /** 查询工艺信息列表 */
 function getList() {
@@ -200,16 +181,6 @@ function getList() {
     craftList.value = response.rows
     total.value = response.total
     loading.value = false
-  })
-}
-
-function getProcessList() {
-  processLoading.value = true
-  processPageParms.craftId = tempCraftId.value
-  listProcess(processPageParms.value).then(response => {
-    processList.value = response.rows
-    processTotal.value = response.total
-    processLoading.value = false
   })
 }
 
@@ -292,7 +263,7 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const _ids = row.id || ids.value
-  proxy.$modal.confirm('是否确认删除工艺信息编号为"' + _ids + '"的数据项？').then(function () {
+  proxy.$modal.confirm('是否确认删除工艺信息？').then(function () {
     return delCraft(_ids)
   }).then(() => {
     getList()
@@ -303,13 +274,18 @@ function handleDelete(row) {
 
 function showProcess(row) {
   processOpen.value = true
-  processLoading.value = true
   tempCraftId.value = row.id
-  listProcess({craftId: row.id}).then(res => {
+}
+
+function showStep(row) {
+  stepOpen.value = true
+  stepLoading.value = true
+  tempProcessId.value = row.id
+  listStep({processId: row.id}).then(res => {
     if (res.code === 200) {
-      processList.value = res.rows
-      processTotal.value = res.total
-      processLoading.value = false
+      stepList.value = res.rows
+      stepTotal.value = res.total
+      stepLoading.value = false
     }
   })
 }
