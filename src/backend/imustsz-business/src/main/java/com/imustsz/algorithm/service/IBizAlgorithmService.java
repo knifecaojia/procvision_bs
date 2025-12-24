@@ -2,6 +2,7 @@ package com.imustsz.algorithm.service;
 
 import java.util.List;
 import com.imustsz.algorithm.domain.BizAlgorithm;
+import com.imustsz.cilent.domain.vo.AlgorithmVO;
 
 /**
  * 算法Service接口
@@ -58,4 +59,6 @@ public interface IBizAlgorithmService
      * @return 结果
      */
     public int deleteBizAlgorithmById(Long id);
+
+    List<AlgorithmVO> getAlgorithmVOList();
 }

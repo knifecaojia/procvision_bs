@@ -1,7 +1,5 @@
 package com.imustsz.algorithm.domain;
 
-import java.util.Date;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.imustsz.common.core.domain.BaseEntity;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -20,6 +18,10 @@ public class BizAlgorithm extends BaseEntity
     /** 主键 */
     private Long id;
 
+    /** 算法编码 */
+    @Excel(name = "算法编码")
+    private String code;
+
     /** 算法名称 */
     @Excel(name = "算法名称")
     private String name;
@@ -36,7 +38,27 @@ public class BizAlgorithm extends BaseEntity
     @Excel(name = "minio上的算法objectName")
     private String objectName;
 
-    public void setId(Long id) 
+    /** 算法url */
+    @Excel(name = "算法url")
+    private String url;
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public void setId(Long id)
     {
         this.id = id;
     }
@@ -91,9 +113,11 @@ public class BizAlgorithm extends BaseEntity
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("id", getId())
             .append("name", getName())
+            .append("code", getCode())
             .append("version", getVersion())
             .append("desc", getDesc())
             .append("objectName", getObjectName())
+            .append("url", getUrl())
             .toString();
     }
 }

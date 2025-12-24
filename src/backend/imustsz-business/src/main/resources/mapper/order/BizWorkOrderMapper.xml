@@ -113,4 +113,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </delete>
+
+    <select id="getWorkOrderVOList" resultType="com.imustsz.cilent.domain.vo.WorkOrderVO">
+        select process_name, process_code, work_order_code, craft_code, craft_version, craft_name, status, start_time, end_time, worker_code, worker_name, algorithm_code, algorithm_name, algorithm_version
+        FROM (select DISTINCT bp.name process_name,
+                              a.work_order_code,
+                              a.craft_code,
+                              a.version craft_version,
+                              a.cname craft_name,
+                              a.start_time,
+                              a.end_time,
+                              a.worker_name,
+                              a.worker_code,
+                              a.process_code,
+                              a.status
+              from biz_process bp
+                       join(select wo.*, bc.id cid, bc.version, bc.`name` cname
+                            from biz_work_order wo
+                                     join biz_craft bc on wo.craft_code = bc.`code`) a on bp.craft_id = a.cid) t1
+                 JOIN (SELECT bp.algorithm_code, ba.`name` algorithm_name, ba.version algorithm_version, bp.`code`
+                       FROM biz_algorithm ba
+                                JOIN biz_process bp on ba.`name` = bp.algorithm_code) t2 on t1.process_code = t2.code
+    </select>
 </mapper>

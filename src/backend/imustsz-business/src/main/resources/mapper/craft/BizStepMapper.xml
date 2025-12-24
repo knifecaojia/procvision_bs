@@ -17,6 +17,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select id, code, name, content, guide_map_url, process_id from biz_step
     </sql>
 
+    <sql id="selectBizStepVo2">
+        select code step_code, name step_name, content step_content, guide_map_url guide_url from biz_step
+    </sql>
+
     <select id="selectBizStepList" parameterType="BizStep" resultMap="BizStepResult">
         <include refid="selectBizStepVo"/>
         <where>  
@@ -73,4 +77,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </delete>
+
+    <select id="selectStepByProcessId" resultType="com.imustsz.cilent.domain.vo.StepVO">
+        <include refid="selectBizStepVo2"/>
+        where process_id = #{processId}
+    </select>
 </mapper>

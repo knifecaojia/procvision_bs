@@ -59,4 +59,6 @@ public interface ProcessMapper
      * @return 结果
      */
     public int deleteProcessByIds(Long[] ids);
+
+    Process selectProcessByCode(String processCode);
 }

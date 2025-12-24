@@ -11,7 +11,7 @@
 
 ## 使用说明
 
-* 根目录下通常包含 `docker-compose.yml` 文件（待创建），用于一键启动所有服务。  
-* 将后端jar包复制到docker目录中，前端打包后将dist文件复制到docker/nginx/html目录中
+* 进入docker目录，执行docker compose up -d
+
 ### 注意
-* 部署时先执行chmod 644 ./mysql/conf/my.cnf 来将/mysql/conf目录下的my.cnf权限设置为644，否则mysql会忽略该配置文件。
+* 若要使用mysql配置文件my.cnf，要先执行chmod 644 ./mysql/conf/my.cnf 来将/mysql/conf目录下的my.cnf权限设置为644，否则mysql会忽略该配置文件。

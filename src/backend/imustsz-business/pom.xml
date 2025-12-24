@@ -76,6 +76,7 @@
             <groupId>com.imust</groupId>
             <artifactId>imustsz-generator</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

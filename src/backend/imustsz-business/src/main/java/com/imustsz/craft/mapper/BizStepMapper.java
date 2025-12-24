@@ -1,6 +1,8 @@
 package com.imustsz.craft.mapper;
 
 import java.util.List;
+
+import com.imustsz.cilent.domain.vo.StepVO;
 import com.imustsz.craft.domain.BizStep;
 
 /**
@@ -58,4 +60,6 @@ public interface BizStepMapper
      * @return 结果
      */
     public int deleteBizStepByIds(Long[] ids);
+
+    List<StepVO> selectStepByProcessId(Long id);
 }

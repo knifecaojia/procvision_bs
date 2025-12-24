@@ -93,4 +93,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </delete>
+
+    <select id="selectProcessByCode" resultType="com.imustsz.craft.domain.Process">
+        <include refid="selectProcessVo" />
+        where code = #{processCode}
+    </select>
 </mapper>

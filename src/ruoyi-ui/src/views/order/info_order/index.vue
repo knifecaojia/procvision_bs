@@ -77,25 +77,22 @@
               v-hasPermi="['wo:workOrder:remove']"
           >删除</el-button>
         </el-col>
-        <el-col :span="1.5">
-          <el-button
-              type="warning"
-              plain
-              icon="Download"
-              @click="handleExport"
-              v-hasPermi="['wo:workOrder:export']"
-          >导出</el-button>
-        </el-col>
     </el-row>
 
     <el-table v-loading="loading" :data="workOrderList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="主键" align="center" prop="id" />
       <el-table-column label="工单编码" align="center" prop="workOrderCode" />
       <el-table-column label="工单数量" align="center" prop="workOrderQuantity" />
       <el-table-column label="工艺编码" align="center" prop="craftCode" />
       <el-table-column label="工艺版本" align="center" prop="craftVersion" />
-      <el-table-column label="工单状态(1为待开始，2为进行中，3为已完成，4为BLOCKED)" align="center" prop="status" />
+      <el-table-column label="状态" align="center" prop="status" >
+        <template #default="scope">
+          <el-tag v-if="scope.row.status === 1" size="small">待派单</el-tag>
+          <el-tag v-else-if="scope.row.status === 2" size="small">进行中</el-tag>
+          <el-tag v-else-if="scope.row.status === 3" size="small">已完成</el-tag>
+          <el-tag v-else-if="scope.row.status === 4" size="small">阻塞</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="工序编码" align="center" prop="processCode" />
       <el-table-column label="工序名称" align="center" prop="processName" />
       <el-table-column label="派单数量" align="center" prop="dispatchQuantity" />
@@ -109,22 +106,8 @@
           <span>{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="引导图url" align="center" prop="guideMapUrl" />
       <el-table-column label="装配工人编码" align="center" prop="workerCode" />
       <el-table-column label="装配工人姓名" align="center" prop="workerName" />
-      <el-table-column label="创建时间" align="center" prop="createdTime" width="180">
-        <template #default="scope">
-          <span>{{ parseTime(scope.row.createdTime, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="更新时间" align="center" prop="updatedTime" width="180">
-        <template #default="scope">
-          <span>{{ parseTime(scope.row.updatedTime, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="创建人" align="center" prop="createdBy" />
-      <el-table-column label="更新人" align="center" prop="updatedBy" />
-      <el-table-column label="备注" align="center" prop="remarks" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wo:workOrder:edit']">修改</el-button>
@@ -142,8 +125,8 @@
     />
 
     <!-- 添加或修改工单对话框 -->
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-      <el-form ref="workOrderRef" :model="form" :rules="rules" label-width="80px">
+    <el-dialog :title="title" v-model="open" width="600px" append-to-body>
+      <el-form ref="workOrderRef" :model="form" :rules="rules" label-width="96px">
         <el-form-item label="工单编码" prop="workOrderCode">
           <el-input v-model="form.workOrderCode" placeholder="请输入工单编码" />
         </el-form-item>
@@ -181,39 +164,11 @@
             placeholder="请选择计划结束时间">
           </el-date-picker>
         </el-form-item>
-        <el-form-item label="引导图url" prop="guideMapUrl">
-          <el-input v-model="form.guideMapUrl" placeholder="请输入引导图url" />
-        </el-form-item>
         <el-form-item label="装配工人编码" prop="workerCode">
           <el-input v-model="form.workerCode" placeholder="请输入装配工人编码" />
         </el-form-item>
         <el-form-item label="装配工人姓名" prop="workerName">
           <el-input v-model="form.workerName" placeholder="请输入装配工人姓名" />
-        </el-form-item>
-        <el-form-item label="创建时间" prop="createdTime">
-          <el-date-picker clearable
-            v-model="form.createdTime"
-            type="date"
-            value-format="YYYY-MM-DD"
-            placeholder="请选择创建时间">
-          </el-date-picker>
-        </el-form-item>
-        <el-form-item label="更新时间" prop="updatedTime">
-          <el-date-picker clearable
-            v-model="form.updatedTime"
-            type="date"
-            value-format="YYYY-MM-DD"
-            placeholder="请选择更新时间">
-          </el-date-picker>
-        </el-form-item>
-        <el-form-item label="创建人" prop="createdBy">
-          <el-input v-model="form.createdBy" placeholder="请输入创建人" />
-        </el-form-item>
-        <el-form-item label="更新人" prop="updatedBy">
-          <el-input v-model="form.updatedBy" placeholder="请输入更新人" />
-        </el-form-item>
-        <el-form-item label="备注" prop="remarks">
-          <el-input v-model="form.remarks" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
       <template #footer>

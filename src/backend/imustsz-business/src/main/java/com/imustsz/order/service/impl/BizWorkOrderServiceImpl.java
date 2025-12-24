@@ -1,8 +1,17 @@
 package com.imustsz.order.service.impl;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.List;
 
-import com.imustsz.common.utils.DateUtils;
+import com.imustsz.cilent.domain.vo.StepVO;
+import com.imustsz.cilent.domain.vo.WorkOrderVO;
+import com.imustsz.craft.domain.BizStep;
+import com.imustsz.craft.domain.Process;
+import com.imustsz.craft.mapper.BizStepMapper;
+import com.imustsz.craft.mapper.ProcessMapper;
 import com.imustsz.order.domain.json.DispatchTaskInfo;
 import com.imustsz.order.domain.json.ProcessTaskSync;
 import com.imustsz.order.domain.json.WorkOrder;
@@ -24,6 +33,12 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
 {
     @Autowired
     private BizWorkOrderMapper bizWorkOrderMapper;
+
+    @Autowired
+    private BizStepMapper bizStepMapper;
+
+    @Autowired
+    private ProcessMapper processMapper;
 
     /**
      * 查询工单
@@ -116,12 +131,28 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
             bizWorkOrder.setDispatchQuantity(Long.parseLong(dispatchTaskInfo.getDispatchQuantity()));
             bizWorkOrder.setProcessCode(dispatchTaskInfo.getOperationNo());
             bizWorkOrder.setProcessName(dispatchTaskInfo.getOperationName());
-            bizWorkOrder.setStartTime(DateUtils.parseDate(dispatchTaskInfo.getPlannedStartTime()));
-            bizWorkOrder.setEndTime(DateUtils.parseDate(dispatchTaskInfo.getPlannedEndTime()));
+
+            LocalDateTime localDateTime1 = LocalDateTime.parse(dispatchTaskInfo.getPlannedStartTime(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            LocalDateTime localDateTime2 = LocalDateTime.parse(dispatchTaskInfo.getPlannedEndTime(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            Date date1 = Date.from(localDateTime1.atZone(ZoneId.systemDefault()).toInstant());
+            Date date2 = Date.from(localDateTime2.atZone(ZoneId.systemDefault()).toInstant());
+            bizWorkOrder.setStartTime(date1);
+            bizWorkOrder.setEndTime(date2);
+
             bizWorkOrder.setWorkerCode(dispatchTaskInfo.getWorkerCode());
             bizWorkOrder.setWorkerName(dispatchTaskInfo.getWorkerName());
             bizWorkOrderMapper.insertBizWorkOrder(bizWorkOrder);
         }
 
+    }
+
+    public List<WorkOrderVO> getWorkOrderVOList() {
+        List<WorkOrderVO> workOrderVOList = bizWorkOrderMapper.getWorkOrderVOList();
+        for (WorkOrderVO workOrderVO : workOrderVOList) {
+            Process process = processMapper.selectProcessByCode(workOrderVO.getProcess_code());
+            List<StepVO> bizSteps = bizStepMapper.selectStepByProcessId(process.getId());
+            workOrderVO.setStep_infos(bizSteps);
+        }
+        return workOrderVOList;
     }
 }

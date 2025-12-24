@@ -2,6 +2,7 @@ package com.imustsz.algorithm.mapper;
 
 import java.util.List;
 import com.imustsz.algorithm.domain.BizAlgorithm;
+import com.imustsz.cilent.domain.vo.AlgorithmVO;
 
 /**
  * 算法Mapper接口
@@ -58,4 +59,6 @@ public interface BizAlgorithmMapper
      * @return 结果
      */
     public int deleteBizAlgorithmByIds(Long[] ids);
+
+    List<AlgorithmVO> getAlgorithmVOList();
 }

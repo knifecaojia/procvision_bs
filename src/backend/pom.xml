@@ -221,12 +221,12 @@
     </dependencyManagement>
 
     <modules>
+        <module>imustsz-common</module>
         <module>imustsz-admin</module>
         <module>imustsz-framework</module>
         <module>imustsz-system</module>
         <module>imustsz-quartz</module>
         <module>imustsz-generator</module>
-        <module>imustsz-common</module>
         <module>imustsz-business</module>
     </modules>
     <packaging>pom</packaging>

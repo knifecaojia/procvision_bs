@@ -1,6 +1,8 @@
 package com.imustsz.algorithm.service.impl;
 
 import java.util.List;
+
+import com.imustsz.cilent.domain.vo.AlgorithmVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.imustsz.algorithm.mapper.BizAlgorithmMapper;
@@ -89,5 +91,11 @@ public class BizAlgorithmServiceImpl implements IBizAlgorithmService
     public int deleteBizAlgorithmById(Long id)
     {
         return bizAlgorithmMapper.deleteBizAlgorithmById(id);
+    }
+
+    @Override
+    public List<AlgorithmVO> getAlgorithmVOList() {
+        List<AlgorithmVO> algorithmVOList = bizAlgorithmMapper.getAlgorithmVOList();
+        return algorithmVOList;
     }
 }

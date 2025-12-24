@@ -25,54 +25,6 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="minio上的算法objectName" prop="objectName">
-        <el-input
-          v-model="queryParams.objectName"
-          placeholder="请输入minio上的算法objectName"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="创建时间" prop="createdTime">
-        <el-date-picker clearable
-          v-model="queryParams.createdTime"
-          type="date"
-          value-format="YYYY-MM-DD"
-          placeholder="请选择创建时间">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="更新时间" prop="updatedTime">
-        <el-date-picker clearable
-          v-model="queryParams.updatedTime"
-          type="date"
-          value-format="YYYY-MM-DD"
-          placeholder="请选择更新时间">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="创建人" prop="createdBy">
-        <el-input
-          v-model="queryParams.createdBy"
-          placeholder="请输入创建人"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="更新人" prop="updatedBy">
-        <el-input
-          v-model="queryParams.updatedBy"
-          placeholder="请输入更新人"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="备注" prop="remarks">
-        <el-input
-          v-model="queryParams.remarks"
-          placeholder="请输入备注"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -109,42 +61,20 @@
           v-hasPermi="['algorithm:algorithm:remove']"
         >删除</el-button>
       </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="Download"
-          @click="handleExport"
-          v-hasPermi="['algorithm:algorithm:export']"
-        >导出</el-button>
-      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <el-table v-loading="loading" :data="algorithmList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="主键" align="center" prop="id" />
+      <el-table-column label="算法编码" align="center" prop="code" />
       <el-table-column label="算法名称" align="center" prop="name" />
       <el-table-column label="算法版本" align="center" prop="version" />
       <el-table-column label="算法描述" align="center" prop="desc" />
-      <el-table-column label="minio上的算法objectName" align="center" prop="objectName" />
-      <el-table-column label="创建时间" align="center" prop="createdTime" width="180">
-        <template #default="scope">
-          <span>{{ parseTime(scope.row.createdTime, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="更新时间" align="center" prop="updatedTime" width="180">
-        <template #default="scope">
-          <span>{{ parseTime(scope.row.updatedTime, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="创建人" align="center" prop="createdBy" />
-      <el-table-column label="更新人" align="center" prop="updatedBy" />
-      <el-table-column label="备注" align="center" prop="remarks" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['algorithm:algorithm:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['algorithm:algorithm:remove']">删除</el-button>
+          <el-button link type="primary" icon="Download" @click="handleDownload(scope.row)" v-hasPermi="['algorithm:algorithm:remove']">下载</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -168,34 +98,6 @@
         </el-form-item>
         <el-form-item label="算法描述" prop="desc">
           <el-input v-model="form.desc" placeholder="请输入算法描述" />
-        </el-form-item>
-        <el-form-item label="minio上的算法objectName" prop="objectName">
-          <el-input v-model="form.objectName" placeholder="请输入minio上的算法objectName" />
-        </el-form-item>
-        <el-form-item label="创建时间" prop="createdTime">
-          <el-date-picker clearable
-            v-model="form.createdTime"
-            type="date"
-            value-format="YYYY-MM-DD"
-            placeholder="请选择创建时间">
-          </el-date-picker>
-        </el-form-item>
-        <el-form-item label="更新时间" prop="updatedTime">
-          <el-date-picker clearable
-            v-model="form.updatedTime"
-            type="date"
-            value-format="YYYY-MM-DD"
-            placeholder="请选择更新时间">
-          </el-date-picker>
-        </el-form-item>
-        <el-form-item label="创建人" prop="createdBy">
-          <el-input v-model="form.createdBy" placeholder="请输入创建人" />
-        </el-form-item>
-        <el-form-item label="更新人" prop="updatedBy">
-          <el-input v-model="form.updatedBy" placeholder="请输入更新人" />
-        </el-form-item>
-        <el-form-item label="备注" prop="remarks">
-          <el-input v-model="form.remarks" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -341,11 +243,14 @@ function handleDelete(row) {
   }).catch(() => {})
 }
 
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download('algorithm/algorithm/export', {
-    ...queryParams.value
-  }, `algorithm_${new Date().getTime()}.xlsx`)
+function handleDownload(row){
+  const link = document.createElement('a');
+  link.href = row.url;
+  link.download = '下载文件'; // 无自定义名称则用默认
+  link.target = '_blank'; // 部分浏览器需加此属性
+  document.body.appendChild(link);
+  link.click(); // 触发下载
+  document.body.removeChild(link); // 移除临时标签
 }
 
 getList()

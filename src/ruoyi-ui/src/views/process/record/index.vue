@@ -9,10 +9,10 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="工步编码" prop="stepId">
+      <el-form-item label="工步名称" prop="stepName">
         <el-input
           v-model="queryParams.stepId"
-          placeholder="请输入工步id"
+          placeholder="请输入工步名称"
           clearable
           @keyup.enter="handleQuery"
         />
@@ -61,15 +61,6 @@
           v-hasPermi="['process:record:remove']"
         >删除</el-button>
       </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="Download"
-          @click="handleExport"
-          v-hasPermi="['process:record:export']"
-        >导出</el-button>
-      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -77,28 +68,14 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="主键" align="center" prop="id" />
       <el-table-column label="工单编码" align="center" prop="workOrderCode" />
-      <el-table-column label="工步id" align="center" prop="stepId" />
+      <el-table-column label="工步名称" align="center" prop="stepName" />
       <el-table-column label="工步状态" align="center" prop="stepStatus" />
-      <el-table-column label="Minio Key" align="center" prop="imagePath" />
       <el-table-column label="拓展数据" align="center" prop="data" />
       <el-table-column label="提交时间" align="center" prop="submitTime" width="180">
         <template #default="scope">
           <span>{{ parseTime(scope.row.submitTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createdTime" width="180">
-        <template #default="scope">
-          <span>{{ parseTime(scope.row.createdTime, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="更新时间" align="center" prop="updatedTime" width="180">
-        <template #default="scope">
-          <span>{{ parseTime(scope.row.updatedTime, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="创建人" align="center" prop="createdBy" />
-      <el-table-column label="更新人" align="center" prop="updatedBy" />
-      <el-table-column label="备注" align="center" prop="remarks" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['process:record:edit']">修改</el-button>
@@ -121,8 +98,8 @@
         <el-form-item label="工单编码" prop="workOrderCode">
           <el-input v-model="form.workOrderCode" placeholder="请输入工单编码" />
         </el-form-item>
-        <el-form-item label="工步id" prop="stepId">
-          <el-input v-model="form.stepId" placeholder="请输入工步id" />
+        <el-form-item label="工步名称" prop="stepName">
+          <el-input v-model="form.stepId" placeholder="请输入工步名称" />
         </el-form-item>
         <el-form-item label="Minio Key" prop="imagePath">
           <el-input v-model="form.imagePath" placeholder="请输入Minio Key" />
@@ -137,31 +114,6 @@
             value-format="YYYY-MM-DD"
             placeholder="请选择提交时间">
           </el-date-picker>
-        </el-form-item>
-        <el-form-item label="创建时间" prop="createdTime">
-          <el-date-picker clearable
-            v-model="form.createdTime"
-            type="date"
-            value-format="YYYY-MM-DD"
-            placeholder="请选择创建时间">
-          </el-date-picker>
-        </el-form-item>
-        <el-form-item label="更新时间" prop="updatedTime">
-          <el-date-picker clearable
-            v-model="form.updatedTime"
-            type="date"
-            value-format="YYYY-MM-DD"
-            placeholder="请选择更新时间">
-          </el-date-picker>
-        </el-form-item>
-        <el-form-item label="创建人" prop="createdBy">
-          <el-input v-model="form.createdBy" placeholder="请输入创建人" />
-        </el-form-item>
-        <el-form-item label="更新人" prop="updatedBy">
-          <el-input v-model="form.updatedBy" placeholder="请输入更新人" />
-        </el-form-item>
-        <el-form-item label="备注" prop="remarks">
-          <el-input v-model="form.remarks" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -217,6 +169,7 @@ function getList() {
   loading.value = true
   listRecord(queryParams.value).then(response => {
     recordList.value = response.rows
+    console.log(recordList.value)
     total.value = response.total
     loading.value = false
   })

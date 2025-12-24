@@ -1,6 +1,8 @@
 package com.imustsz.order.mapper;
 
 import java.util.List;
+
+import com.imustsz.cilent.domain.vo.WorkOrderVO;
 import com.imustsz.order.domain.BizWorkOrder;
 
 /**
@@ -58,4 +60,6 @@ public interface BizWorkOrderMapper
      * @return 结果
      */
     public int deleteBizWorkOrderByIds(Long[] ids);
+
+    List<WorkOrderVO> getWorkOrderVOList();
 }

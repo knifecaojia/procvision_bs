@@ -28,6 +28,10 @@ public class BizProcessRecord extends BaseEntity
     @Excel(name = "工步id")
     private Long stepId;
 
+    /** 工步名称 */
+    @Excel(name = "工步id")
+    private Long stepName;
+
     /** 工步状态 */
     @Excel(name = "工步状态")
     private String stepStatus;
@@ -45,7 +49,15 @@ public class BizProcessRecord extends BaseEntity
     @Excel(name = "提交时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date submitTime;
 
-    public void setId(Long id) 
+    public Long getStepName() {
+        return stepName;
+    }
+
+    public void setStepName(Long stepName) {
+        this.stepName = stepName;
+    }
+
+    public void setId(Long id)
     {
         this.id = id;
     }
@@ -121,6 +133,7 @@ public class BizProcessRecord extends BaseEntity
             .append("id", getId())
             .append("workOrderCode", getWorkOrderCode())
             .append("stepId", getStepId())
+            .append("stepName", getStepName())
             .append("stepStatus", getStepStatus())
             .append("imagePath", getImagePath())
             .append("data", getData())
