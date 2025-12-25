@@ -1,8 +1,10 @@
 package com.imustsz.algorithm.service.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.imustsz.cilent.domain.vo.AlgorithmVO;
+import com.imustsz.common.utils.bean.MinioUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.imustsz.algorithm.mapper.BizAlgorithmMapper;
@@ -20,6 +22,9 @@ public class BizAlgorithmServiceImpl implements IBizAlgorithmService
 {
     @Autowired
     private BizAlgorithmMapper bizAlgorithmMapper;
+
+    @Autowired
+    private MinioUtils minioUtils;
 
     /**
      * 查询算法
@@ -40,9 +45,16 @@ public class BizAlgorithmServiceImpl implements IBizAlgorithmService
      * @return 算法
      */
     @Override
-    public List<BizAlgorithm> selectBizAlgorithmList(BizAlgorithm bizAlgorithm)
-    {
-        return bizAlgorithmMapper.selectBizAlgorithmList(bizAlgorithm);
+    public List<BizAlgorithm> selectBizAlgorithmList(BizAlgorithm bizAlgorithm) throws Exception {
+        List<BizAlgorithm> bizAlgorithms = bizAlgorithmMapper.selectBizAlgorithmList(bizAlgorithm);
+        for (BizAlgorithm bizAlg : bizAlgorithms) {
+            try {
+                bizAlg.setUrl(minioUtils.getPresignedUrl(bizAlg.getObjectName()));
+            } catch (Exception e) {
+                throw new Exception("获取预签名URL失败");
+            }
+        }
+        return bizAlgorithms;
     }
 
     /**
@@ -94,8 +106,21 @@ public class BizAlgorithmServiceImpl implements IBizAlgorithmService
     }
 
     @Override
-    public List<AlgorithmVO> getAlgorithmVOList() {
-        List<AlgorithmVO> algorithmVOList = bizAlgorithmMapper.getAlgorithmVOList();
-        return algorithmVOList;
+    public List<AlgorithmVO> getAlgorithmVOList() throws Exception {
+        List<BizAlgorithm> algorithmVOList = bizAlgorithmMapper.getAlgorithmVOList();
+        List<AlgorithmVO> algorithmVOS = new ArrayList<>();
+        for (BizAlgorithm algorithmVO : algorithmVOList) {
+            try {
+                AlgorithmVO algorithm = new AlgorithmVO();
+                algorithm.setCode(algorithmVO.getCode());
+                algorithm.setName(algorithmVO.getName());
+                algorithm.setVersion(algorithmVO.getVersion());
+                algorithm.setUrl(minioUtils.getPresignedUrl(algorithmVO.getObjectName()));
+                algorithmVOS.add(algorithm);
+            } catch (Exception e) {
+                throw new Exception("获取预签名URL失败");
+            }
+        }
+        return algorithmVOS;
     }
 }

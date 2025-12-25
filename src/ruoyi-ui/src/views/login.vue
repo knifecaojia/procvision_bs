@@ -128,7 +128,8 @@ function handleLogin() {
           }
           return acc
         }, {})
-        router.push({ path: redirect.value || "/", query: otherQueryParams })
+        // router.push({ path: redirect.value || "/", query: otherQueryParams })
+        router.push({path: '/craft/info_craft'})
       }).catch(() => {
         loading.value = false
         // 重新获取验证码

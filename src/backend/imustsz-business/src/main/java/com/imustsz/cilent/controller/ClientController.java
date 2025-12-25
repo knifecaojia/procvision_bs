@@ -44,7 +44,7 @@ public class ClientController extends BaseController {
     }
 
     @GetMapping("/algorithm/list")
-    private TableDataInfo algorithmList() {
+    private TableDataInfo algorithmList() throws Exception {
         startPage();
         List<AlgorithmVO> algorithmVOList = bizAlgorithmService.getAlgorithmVOList();
         return getDataTable(algorithmVOList);

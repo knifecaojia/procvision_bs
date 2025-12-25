@@ -14,7 +14,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizAlgorithmVo">
-        select id, code, name, version, `desc`, object_name, url from biz_algorithm
+        select id, code, name, version, `desc`, object_name from biz_algorithm
     </sql>
 
     <select id="selectBizAlgorithmList" parameterType="BizAlgorithm" resultMap="BizAlgorithmResult">
@@ -74,7 +74,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach>
     </delete>
 
-    <select id="getAlgorithmVOList" resultType="com.imustsz.cilent.domain.vo.AlgorithmVO">
-        select code, name, version, url from biz_algorithm
+    <select id="getAlgorithmVOList" resultMap="BizAlgorithmResult">
+        select code, name, version, object_name from biz_algorithm
     </select>
 </mapper>

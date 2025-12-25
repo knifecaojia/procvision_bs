@@ -40,28 +40,28 @@ public class MinioUtils {
         this.minioClient = minioClient;
     }
 
-    public String uploadFile(String originalFilename) throws IOException, NoSuchAlgorithmException, ServerException, InvalidKeyException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
-
-        boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
-        if (!found) {
-            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
-        }
-
-        String suffix = originalFilename.substring(originalFilename.lastIndexOf("."));
-
-        String objectName = LocalDate.now().toString().replace("-", "") + UUID.randomUUID().toString().replace("-", "") + suffix;
-
-        minioClient.uploadObject(
-                UploadObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object("test/" + objectName)
-                        .filename(originalFilename)
-                        .build());
-
-        log.info("文件：{} 成功上传至bucket：{}", objectName, bucketName);
-
-        return objectName;
-    }
+//    public String uploadFile(String originalFilename, String dir) throws IOException, NoSuchAlgorithmException, ServerException, InvalidKeyException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
+//
+//        boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+//        if (!found) {
+//            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+//        }
+//
+//        String suffix = originalFilename.substring(originalFilename.lastIndexOf("."));
+//
+//        String objectName = LocalDate.now().toString().replace("-", "") + UUID.randomUUID().toString().replace("-", "") + suffix;
+//
+//        minioClient.uploadObject(
+//                UploadObjectArgs.builder()
+//                        .bucket(bucketName)
+//                        .object(dir + "/" + objectName)
+//                        .filename(originalFilename)
+//                        .build());
+//
+//        log.info("文件：{} 成功上传至bucket：{}", objectName, bucketName);
+//
+//        return objectName;
+//    }
 
     /**
      * 项目启动时，自动创建默认桶（如果不存在）
@@ -127,9 +127,9 @@ public class MinioUtils {
      * @param filePath 本地文件路径
      * @throws Exception 异常
      */
-    public void uploadFile(String bucketName, String objectName, String filePath) throws Exception {
+    public void uploadFile(String objectName, String filePath) throws Exception {
         File file = new File(filePath);
-        uploadFile(bucketName, objectName, Files.newInputStream(file.toPath()), file.length(), getFileContentType(objectName));
+        uploadFile(objectName, Files.newInputStream(file.toPath()), file.length(), getFileContentType(objectName));
     }
 
     /**
@@ -141,7 +141,7 @@ public class MinioUtils {
      * @param contentType 文件类型（如：image/jpeg）
      * @throws Exception 异常
      */
-    public void uploadFile(String bucketName, String objectName, InputStream inputStream, long fileSize, String contentType) throws Exception {
+    public void uploadFile(String objectName, InputStream inputStream, long fileSize, String contentType) throws Exception {
         minioClient.putObject(
                 PutObjectArgs.builder()
                         .bucket(bucketName)
@@ -160,8 +160,8 @@ public class MinioUtils {
      * @param contentType 文件类型
      * @throws Exception 异常
      */
-    public void uploadFile(String bucketName, String objectName, byte[] bytes, String contentType) throws Exception {
-        uploadFile(bucketName, objectName, new ByteArrayInputStream(bytes), bytes.length, contentType);
+    public void uploadFile(String objectName, byte[] bytes, String contentType) throws Exception {
+        uploadFile(objectName, new ByteArrayInputStream(bytes), bytes.length, contentType);
     }
 
     /**
@@ -218,11 +218,10 @@ public class MinioUtils {
 
     /**
      * 删除文件
-     * @param bucketName 桶名称
      * @param objectName MinIO中的文件名
      * @throws Exception 异常
      */
-    public void deleteFile(String bucketName, String objectName) throws Exception {
+    public void deleteFile(String objectName) throws Exception {
         minioClient.removeObject(
                 RemoveObjectArgs.builder()
                         .bucket(bucketName)
@@ -329,12 +328,11 @@ public class MinioUtils {
 
     /**
      * 获取文件的预签名访问链接（使用配置文件中的默认有效期）
-     * @param bucketName 桶名称
      * @param objectName MinIO中的文件名
      * @return 预签名访问链接
      * @throws Exception 异常
      */
-    public String getPresignedUrl(String bucketName, String objectName) throws Exception {
+    public String getPresignedUrl(String objectName) throws Exception {
         return getPresignedUrl(bucketName, objectName, presignedUrlExpire);
     }
 

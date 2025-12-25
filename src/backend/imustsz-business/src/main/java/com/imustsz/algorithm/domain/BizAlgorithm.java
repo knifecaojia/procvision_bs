@@ -4,6 +4,7 @@ import com.imustsz.common.core.domain.BaseEntity;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.imustsz.common.annotation.Excel;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 算法对象 biz_algorithm

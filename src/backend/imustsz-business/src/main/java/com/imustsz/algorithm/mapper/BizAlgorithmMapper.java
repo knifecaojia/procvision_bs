@@ -60,5 +60,5 @@ public interface BizAlgorithmMapper
      */
     public int deleteBizAlgorithmByIds(Long[] ids);
 
-    List<AlgorithmVO> getAlgorithmVOList();
+    List<BizAlgorithm> getAlgorithmVOList();
 }

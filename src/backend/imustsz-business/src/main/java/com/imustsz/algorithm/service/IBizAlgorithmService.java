@@ -26,7 +26,7 @@ public interface IBizAlgorithmService
      * @param bizAlgorithm 算法
      * @return 算法集合
      */
-    public List<BizAlgorithm> selectBizAlgorithmList(BizAlgorithm bizAlgorithm);
+    public List<BizAlgorithm> selectBizAlgorithmList(BizAlgorithm bizAlgorithm) throws Exception;
 
     /**
      * 新增算法
@@ -60,5 +60,5 @@ public interface IBizAlgorithmService
      */
     public int deleteBizAlgorithmById(Long id);
 
-    List<AlgorithmVO> getAlgorithmVOList();
+    List<AlgorithmVO> getAlgorithmVOList() throws Exception;
 }

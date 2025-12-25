@@ -62,16 +62,16 @@ export const constantRoutes = [
         component: Layout,
         // redirect: '/index',
         redirect: '/craft/info_craft',
-        children: [
-            {
-                // path: '/index',
-                path: '/craft/info_craft',
-                // component: () => import('@/views/index'),
-                component: () => import('@/views/craft/info_craft/index'),
-                name: 'Index',
-                // meta: { title: '首页', icon: 'dashboard', affix: true }
-            }
-        ]
+        // children: [
+        //     {
+        //         // path: '/index',
+        //         path: '/craft/info_craft',
+        //         // component: () => import('@/views/index'),
+        //         component: () => import('@/views/craft/info_craft/index'),
+        //         name: 'Index',
+        //         meta: { title: '首页', icon: 'dashboard', affix: true }
+        //     }
+        // ]
     },
     {
         path: '/user',
