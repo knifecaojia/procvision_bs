@@ -7,10 +7,7 @@ import com.imustsz.common.utils.DateUtils;
 import com.imustsz.framework.web.service.SysLoginService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,5 +37,10 @@ public class ClientLoginController {
         data.put("expire_time", DateUtils.addMinutes(DateUtils.getNowDate(), expireTime.intValue()).getTime());
 
         return AjaxResult.success("登录成功", data);
+    }
+
+    @GetMapping("/health")
+    public AjaxResult health() {
+        return AjaxResult.success("ok");
     }
 }
