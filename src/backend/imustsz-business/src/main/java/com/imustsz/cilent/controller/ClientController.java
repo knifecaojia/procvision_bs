@@ -1,7 +1,7 @@
 package com.imustsz.cilent.controller;
 
 import com.imustsz.algorithm.service.IBizAlgorithmService;
-import com.imustsz.cilent.domain.dto.PageProperties;
+import com.imustsz.cilent.domain.dto.WorkOrderProperties;
 import com.imustsz.cilent.domain.vo.AlgorithmVO;
 import com.imustsz.cilent.domain.vo.PendingTaskVO;
 import com.imustsz.cilent.domain.vo.WorkOrderVO;
@@ -37,9 +37,9 @@ public class ClientController extends BaseController {
     }
 
     @GetMapping("/workorder/list")
-    private TableDataInfo workOrderList() {
+    private TableDataInfo workOrderList(WorkOrderProperties workOrderProperties) {
         startPage();
-        List<WorkOrderVO> workOrderVOList = bizWorkOrderService.getWorkOrderVOList();
+        List<WorkOrderVO> workOrderVOList = bizWorkOrderService.getWorkOrderVOList(workOrderProperties);
         return getDataTable(workOrderVOList);
     }
 

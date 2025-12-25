@@ -134,5 +134,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                  JOIN (SELECT bp.algorithm_code, ba.`name` algorithm_name, ba.version algorithm_version, bp.`code`
                        FROM biz_algorithm ba
                                 JOIN biz_process bp on ba.`name` = bp.algorithm_code) t2 on t1.process_code = t2.code
+        <where>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+        </where>
     </select>
 </mapper>

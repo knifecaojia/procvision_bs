@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 
+import com.imustsz.cilent.domain.dto.WorkOrderProperties;
 import com.imustsz.cilent.domain.vo.StepVO;
 import com.imustsz.cilent.domain.vo.WorkOrderVO;
 import com.imustsz.craft.domain.BizStep;
@@ -146,8 +147,8 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
 
     }
 
-    public List<WorkOrderVO> getWorkOrderVOList() {
-        List<WorkOrderVO> workOrderVOList = bizWorkOrderMapper.getWorkOrderVOList();
+    public List<WorkOrderVO> getWorkOrderVOList(WorkOrderProperties workOrderProperties) {
+        List<WorkOrderVO> workOrderVOList = bizWorkOrderMapper.getWorkOrderVOList(workOrderProperties.getStatus());
         for (WorkOrderVO workOrderVO : workOrderVOList) {
             Process process = processMapper.selectProcessByCode(workOrderVO.getProcess_code());
             List<StepVO> bizSteps = bizStepMapper.selectStepByProcessId(process.getId());

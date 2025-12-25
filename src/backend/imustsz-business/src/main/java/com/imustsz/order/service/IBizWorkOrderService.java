@@ -2,6 +2,7 @@ package com.imustsz.order.service;
 
 import java.util.List;
 
+import com.imustsz.cilent.domain.dto.WorkOrderProperties;
 import com.imustsz.cilent.domain.vo.WorkOrderVO;
 import com.imustsz.order.domain.BizWorkOrder;
 import com.imustsz.order.domain.json.ProcessTaskSync;
@@ -64,5 +65,5 @@ public interface IBizWorkOrderService
 
     void importOrderFromMMo(ProcessTaskSync processTaskSync);
 
-    List<WorkOrderVO> getWorkOrderVOList();
+    List<WorkOrderVO> getWorkOrderVOList(WorkOrderProperties workOrderProperties);
 }

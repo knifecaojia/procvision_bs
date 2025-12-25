@@ -61,5 +61,5 @@ public interface BizWorkOrderMapper
      */
     public int deleteBizWorkOrderByIds(Long[] ids);
 
-    List<WorkOrderVO> getWorkOrderVOList();
+    List<WorkOrderVO> getWorkOrderVOList(Integer status);
 }
