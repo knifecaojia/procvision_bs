@@ -89,8 +89,7 @@
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
                      v-hasPermi="['algorithm:algorithm:remove']">删除
           </el-button>
-          <el-button link type="primary" icon="Download" @click="handleDownload(scope.row)"
-                     v-hasPermi="['algorithm:algorithm:remove']">下载
+          <el-button link type="primary" icon="Download" @click="handleDownload(scope.row)">下载
           </el-button>
         </template>
       </el-table-column>
@@ -105,7 +104,7 @@
     />
 
     <!-- 添加或修改算法对话框 -->
-<!--    <AddAlgorithm v-model="open" :formData="form" :fileList="fileList"></AddAlgorithm>-->
+    <!--    <AddAlgorithm v-model="open" :formData="form" :fileList="fileList"></AddAlgorithm>-->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
       <el-form ref="algorithmRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="算法编码" prop="code">
@@ -120,16 +119,38 @@
         <el-form-item label="算法描述" prop="desc">
           <el-input v-model="form.desc" placeholder="请输入算法描述"/>
         </el-form-item>
-        <el-form-item label="算法上传" prop="file">
-          <el-upload ref="file" :file-list="fileList" :auto-upload="false"
-                     :before-upload="fileBeforeUpload" @change="handleFileChange">
-            <el-button plain size="small" type="primary" >点击上传</el-button>
+        <el-form-item label="上传文件" prop="file">
+          <el-upload
+              ref="uploadRef"
+              :action="null"
+              :http-request="customUpload"
+              :on-change="handleFileChange"
+              :auto-upload="false"
+              :file-list="fileList"
+              accept=".pdf,.doc,.docx,.jpg,.png,.zip,.rar"
+              class="file-upload"
+          >
+            <el-button type="primary">
+              <el-icon class="el-icon--upload">
+                <upload-filled/>
+              </el-icon>
+              点击上传
+            </el-button>
           </el-upload>
+          <div v-if="uploadProgress > 0" class="upload-progress">
+            <el-progress
+                :percentage="uploadProgress"
+                :status="uploadProgress === 100 ? 'success' : 'normal'"
+                stroke-width="6"
+                show-text
+            />
+            <div class="progress-text">文件上传中：{{ uploadProgress }}%</div>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button type="primary" @click="submitForm" :loading="submitLoading">确 定</el-button>
           <el-button @click="cancel">取 消</el-button>
         </div>
       </template>
@@ -138,13 +159,10 @@
 </template>
 
 <script setup name="Algorithm">
-import {
-  listAlgorithm,
-  getAlgorithm,
-  delAlgorithm,
-  addAlgorithm,
-  updateAlgorithm
-} from "@/api/algorithm/algorithm"
+import {addAlgorithm, delAlgorithm, getAlgorithm, listAlgorithm, updateAlgorithm} from "@/api/algorithm/algorithm"
+import axios from "axios";
+import {UploadFilled} from "@element-plus/icons-vue";
+import {ElMessage} from 'element-plus'
 
 const {proxy} = getCurrentInstance()
 
@@ -158,6 +176,12 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
 const fileList = ref([])
+const uploadRef = ref(null)
+// 提交加载状态
+const submitLoading = ref(false)
+// 选中的文件对象
+const selectedFile = ref(null)
+const uploadProgress = ref(0)
 
 const data = reactive({
   form: {
@@ -185,10 +209,7 @@ const data = reactive({
     ],
     version: [
       {required: true, message: "算法版本不能为空", trigger: "blur"}
-    ],
-    desc: [
-      {required: true, message: "算法描述不能为空", trigger: "blur"}
-    ],
+    ]
   }
 })
 
@@ -204,17 +225,41 @@ function getList() {
   })
 }
 
-function fileBeforeUpload(file) {
-  let isRightSize = file.size / 1024 / 1024 < 2
-  if (!isRightSize) {
-    proxy.$modal.msgError('文件大小超过 2MB')
-  }
-  return isRightSize
+// 处理文件选择
+const handleFileChange = (file) => {
+  fileList.value = [file]
+  selectedFile.value = file.raw
+  uploadProgress.value = 0
 }
 
-function handleFileChange(file, fileList) {
-  // 将选中的文件赋值给 formData.file（取最后一个选中的文件）
-  form.value.file = fileList.length > 0 ? fileList[fileList.length - 1].raw : null;
+// 自定义上传逻辑：通过MinIO预签名URL上传文件
+const customUpload = async (url) => {
+  if (!selectedFile.value) {
+    ElMessage.warning('请先选择要上传的文件')
+    return
+  }
+
+  uploadProgress.value = 0
+
+  try {
+    await axios.put(url, selectedFile.value, {
+      headers: {
+        'Content-Type': selectedFile.value.type
+      },
+      timeout: 60000,
+      onUploadProgress: (progressEvent) => {
+        // 3. 监听上传进度
+        uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+      }
+    })
+    uploadProgress.value = 100
+    ElMessage.success('文件上传成功')
+  } catch (error) {
+    console.error('文件上传失败：', error)
+    ElMessage.error('文件上传失败：' + (error.message || '网络异常'))
+    uploadProgress.value = 0
+    throw error
+  }
 }
 
 // 取消按钮
@@ -231,7 +276,7 @@ function reset() {
     code: null,
     version: null,
     desc: null,
-    file: null
+    fileName: null
   }
   proxy.resetForm("algorithmRef")
 }
@@ -275,19 +320,31 @@ function handleUpdate(row) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs["algorithmRef"].validate(valid => {
+  proxy.$refs["algorithmRef"].validate(async valid => {
     if (valid) {
       if (form.value.id != null) {
-        updateAlgorithm(form.value).then(response => {
+        form.value.fileName = selectedFile.value == null ? null : selectedFile.value.name
+        updateAlgorithm(form.value).then(async response => {
+          if (response.data != null) {
+            const url = response.data
+            await customUpload(url)
+          }
           proxy.$modal.msgSuccess("修改成功")
+          fileList.value = []
+          selectedFile.value = null
           open.value = false
           getList()
         })
       } else {
-        addAlgorithm(form.value).then(response => {
-          proxy.$modal.msgSuccess("新增成功")
+        submitLoading.value = true
+        addAlgorithm(form.value).then(async response => {
+          const url = response.data
+          await customUpload(url)
+          submitLoading.value = false
           open.value = false
           fileList.value = []
+          selectedFile.value = null
+          uploadProgress.value = 0
           getList()
         })
       }

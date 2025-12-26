@@ -66,7 +66,6 @@
 
     <el-table v-loading="loading" :data="recordList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="主键" align="center" prop="id" />
       <el-table-column label="工单编码" align="center" prop="workOrderCode" />
       <el-table-column label="工步名称" align="center" prop="stepName" />
       <el-table-column label="工步状态" align="center" prop="stepStatus" />
@@ -269,12 +268,6 @@ function handleDelete(row) {
   }).catch(() => {})
 }
 
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download('process/record/export', {
-    ...queryParams.value
-  }, `record_${new Date().getTime()}.xlsx`)
-}
 
 getList()
 </script>

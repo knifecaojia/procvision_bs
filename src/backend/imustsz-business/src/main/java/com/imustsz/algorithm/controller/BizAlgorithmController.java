@@ -73,27 +73,12 @@ public class BizAlgorithmController extends BaseController {
     /**
      * 新增算法
      */
-    @PreAuthorize("@ss.hasPermi('algorithm:algorithm:add')")
-    @Log(title = "算法", businessType = BusinessType.INSERT)
     @PostMapping
-    public AjaxResult add(@RequestParam("file") MultipartFile file,
-                          @RequestParam("code") String code,
-                          @RequestParam("name") String name,
-                          @RequestParam("version") String version,
-                          @RequestParam("desc") String desc) throws Exception {
-        BizAlgorithm bizAlgorithm = new BizAlgorithm();
-        bizAlgorithm.setCode(code);
-        bizAlgorithm.setName(name);
-        bizAlgorithm.setVersion(version);
-        bizAlgorithm.setDesc(desc);
-
+    public AjaxResult add(@RequestBody BizAlgorithm bizAlgorithm) throws MinioException, NoSuchAlgorithmException, IOException, InvalidKeyException {
         String objectName = DateUtils.getDate() + UUID.randomUUID().toString();
         bizAlgorithm.setObjectName(objectName);
-
-        minioUtils.uploadFile(objectName, file.getInputStream(), file.getSize(), file.getContentType());
-
-
-        return toAjax(bizAlgorithmService.insertBizAlgorithm(bizAlgorithm));
+        bizAlgorithmService.insertBizAlgorithm(bizAlgorithm);
+        return AjaxResult.success("新增成功",minioUtils.generatePresignedUploadUrl(objectName));
     }
 
     /**
@@ -102,29 +87,14 @@ public class BizAlgorithmController extends BaseController {
     @PreAuthorize("@ss.hasPermi('algorithm:algorithm:edit')")
     @Log(title = "算法", businessType = BusinessType.UPDATE)
     @PutMapping
-    public AjaxResult edit(@RequestParam("file") MultipartFile file,
-                           @RequestParam("code") String code,
-                           @RequestParam("name") String name,
-                           @RequestParam("version") String version,
-                           @RequestParam("desc") String desc,
-                           @RequestParam("id") Long id) throws Exception {
-        BizAlgorithm bizAlgorithm = bizAlgorithmService.selectBizAlgorithmById(id);
-        bizAlgorithm.setCode(code);
-        bizAlgorithm.setName(name);
-        bizAlgorithm.setVersion(version);
-        bizAlgorithm.setDesc(desc);
-
-        if (file == null)
-            return toAjax(bizAlgorithmService.updateBizAlgorithm(bizAlgorithm));
-        else{
-            minioUtils.deleteFile(bizAlgorithm.getObjectName());
-            String objectName = DateUtils.getDate() + UUID.randomUUID().toString();
-            bizAlgorithm.setObjectName(objectName);
-            minioUtils.uploadFile(objectName, file.getInputStream(), file.getSize(), file.getContentType());
-
-            return toAjax(bizAlgorithmService.updateBizAlgorithm(bizAlgorithm));
+    public AjaxResult edit(BizAlgorithm bizAlgorithm) throws Exception {
+        BizAlgorithm bizAlg = bizAlgorithmService.selectBizAlgorithmById(bizAlgorithm.getId());
+        String objectName = bizAlg.getObjectName();
+        if (bizAlgorithm.getFileName() != null) {
+            minioUtils.deleteFile(objectName);
+            return AjaxResult.success("修改成功", minioUtils.generatePresignedUploadUrl(objectName));
         }
-
+        return toAjax(bizAlgorithmService.updateBizAlgorithm(bizAlgorithm));
     }
 
     /**
@@ -133,7 +103,11 @@ public class BizAlgorithmController extends BaseController {
     @PreAuthorize("@ss.hasPermi('algorithm:algorithm:remove')")
     @Log(title = "算法", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
-    public AjaxResult remove(@PathVariable Long[] ids) {
+    public AjaxResult remove(@PathVariable Long[] ids) throws Exception {
+        for (Long id : ids) {
+            BizAlgorithm bizAlgorithm = bizAlgorithmService.selectBizAlgorithmById(id);
+            minioUtils.deleteFile(bizAlgorithm.getObjectName());
+        }
         return toAjax(bizAlgorithmService.deleteBizAlgorithmByIds(ids));
     }
 }

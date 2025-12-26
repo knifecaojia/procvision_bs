@@ -43,6 +43,16 @@ public class BizAlgorithm extends BaseEntity
     @Excel(name = "算法url")
     private String url;
 
+    private String fileName;
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
     public String getUrl() {
         return url;
     }

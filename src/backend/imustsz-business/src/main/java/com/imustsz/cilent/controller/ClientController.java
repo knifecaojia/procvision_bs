@@ -9,12 +9,17 @@ import com.imustsz.cilent.service.IClientTaskService;
 import com.imustsz.common.core.controller.BaseController;
 import com.imustsz.common.core.domain.AjaxResult;
 import com.imustsz.common.core.page.TableDataInfo;
+import com.imustsz.common.utils.bean.MinioUtils;
 import com.imustsz.order.service.IBizWorkOrderService;
+import io.minio.errors.MinioException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 @RestController
@@ -29,6 +34,9 @@ public class ClientController extends BaseController {
 
     @Autowired
     private IBizAlgorithmService bizAlgorithmService;
+
+    @Autowired
+    private MinioUtils minioUtils;
 
     @GetMapping("/task/list")
     private AjaxResult pendingList() {
@@ -48,5 +56,10 @@ public class ClientController extends BaseController {
         startPage();
         List<AlgorithmVO> algorithmVOList = bizAlgorithmService.getAlgorithmVOList();
         return getDataTable(algorithmVOList);
+    }
+
+    @GetMapping("/minio/upload")
+    private AjaxResult getUploadUrl() throws MinioException, NoSuchAlgorithmException, IOException, InvalidKeyException {
+        return AjaxResult.success(minioUtils.generatePresignedUploadUrl("test1"));
     }
 }
