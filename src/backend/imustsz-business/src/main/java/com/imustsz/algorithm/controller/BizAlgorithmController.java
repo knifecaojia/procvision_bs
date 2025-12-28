@@ -3,7 +3,9 @@ package com.imustsz.algorithm.controller;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.servlet.http.HttpServletResponse;
 
@@ -75,10 +77,7 @@ public class BizAlgorithmController extends BaseController {
      */
     @PostMapping
     public AjaxResult add(@RequestBody BizAlgorithm bizAlgorithm) throws MinioException, NoSuchAlgorithmException, IOException, InvalidKeyException {
-        String objectName = DateUtils.getDate() + UUID.randomUUID().toString();
-        bizAlgorithm.setObjectName(objectName);
-        bizAlgorithmService.insertBizAlgorithm(bizAlgorithm);
-        return AjaxResult.success("新增成功",minioUtils.generatePresignedUploadUrl(objectName));
+        return toAjax(bizAlgorithmService.insertBizAlgorithm(bizAlgorithm));
     }
 
     /**
@@ -88,12 +87,12 @@ public class BizAlgorithmController extends BaseController {
     @Log(title = "算法", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(BizAlgorithm bizAlgorithm) throws Exception {
-        BizAlgorithm bizAlg = bizAlgorithmService.selectBizAlgorithmById(bizAlgorithm.getId());
-        String objectName = bizAlg.getObjectName();
-        if (bizAlgorithm.getFileName() != null) {
-            minioUtils.deleteFile(objectName);
-            return AjaxResult.success("修改成功", minioUtils.generatePresignedUploadUrl(objectName));
+        BizAlgorithm algorithm = bizAlgorithmService.selectBizAlgorithmById(bizAlgorithm.getId());
+
+        if (!algorithm.getObjectName().equals(bizAlgorithm.getObjectName())){
+            minioUtils.deleteFile(algorithm.getObjectName());
         }
+
         return toAjax(bizAlgorithmService.updateBizAlgorithm(bizAlgorithm));
     }
 
@@ -109,5 +108,14 @@ public class BizAlgorithmController extends BaseController {
             minioUtils.deleteFile(bizAlgorithm.getObjectName());
         }
         return toAjax(bizAlgorithmService.deleteBizAlgorithmByIds(ids));
+    }
+
+    @GetMapping("/getUrl")
+    public AjaxResult getUrl() throws Exception {
+        String objectName = DateUtils.getDate() + UUID.randomUUID().toString();
+        Map<String, String> map = new HashMap<>();
+        map.put("url", minioUtils.generatePresignedUploadUrl(objectName));
+        map.put("objectName", objectName);
+        return success(map);
     }
 }

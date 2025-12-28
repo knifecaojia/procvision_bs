@@ -70,13 +70,9 @@ export function delAlgorithm(id) {
     })
 }
 
-export function handleUpload(url, data){
+export function getUploadUrl(){
     return request({
-        url: url,
-        method: 'put',
-        data: data,
-        // headers: {
-        //     'Content-Type': 'application/octet-stream'
-        // },
+        url: '/algorithm/getUrl',
+        method: 'get'
     })
 }

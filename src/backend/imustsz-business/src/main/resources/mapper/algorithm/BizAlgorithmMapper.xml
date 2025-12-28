@@ -8,13 +8,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="id"    column="id"    />
         <result property="code"    column="code"    />
         <result property="name"    column="name"    />
+        <result property="size"    column="size"    />
         <result property="version"    column="version"    />
         <result property="desc"    column="desc"    />
         <result property="objectName"    column="object_name"    />
     </resultMap>
 
     <sql id="selectBizAlgorithmVo">
-        select id, code, name, version, `desc`, object_name from biz_algorithm
+        select id, code, name, version, size, `desc`, object_name from biz_algorithm
     </sql>
 
     <select id="selectBizAlgorithmList" parameterType="BizAlgorithm" resultMap="BizAlgorithmResult">
@@ -23,6 +24,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
             <if test="code != null  and code != ''"> and name like concat('%', #{code}, '%')</if>
             <if test="version != null  and version != ''"> and version = #{version}</if>
+            <if test="size != null  and version != ''"> and size = #{size}</if>
             <if test="desc != null  and desc != ''"> and `desc` = #{desc}</if>
             <if test="objectName != null  and objectName != ''"> and object_name like concat('%', #{objectName}, '%')</if>
         </where>
@@ -39,6 +41,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null">code,</if>
             <if test="name != null">name,</if>
             <if test="version != null">version,</if>
+            <if test="size != null">size,</if>
             <if test="desc != null">`desc`,</if>
             <if test="objectName != null">object_name,</if>
          </trim>
@@ -46,6 +49,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null">#{code},</if>
             <if test="name != null">#{name},</if>
             <if test="version != null">#{version},</if>
+            <if test="size != null">#{size},</if>
             <if test="desc != null">#{desc},</if>
             <if test="objectName != null">#{objectName},</if>
          </trim>
@@ -57,6 +61,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null">name = #{code},</if>
             <if test="name != null">name = #{name},</if>
             <if test="version != null">version = #{version},</if>
+            <if test="size != null">size = #{size},</if>
             <if test="desc != null">`desc` = #{desc},</if>
             <if test="objectName != null">object_name = #{objectName},</if>
         </trim>
@@ -75,6 +80,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <select id="getAlgorithmVOList" resultMap="BizAlgorithmResult">
-        select code, name, version, object_name from biz_algorithm
+        select code, name, size, version, object_name from biz_algorithm
     </select>
 </mapper>
