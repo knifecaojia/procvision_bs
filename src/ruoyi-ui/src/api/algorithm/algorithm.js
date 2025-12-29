@@ -45,7 +45,7 @@ export function delAlgorithm(id) {
 
 export function getUploadUrl(){
     return request({
-        url: '/algorithm/getUrl',
+        url: '/client/getUrl',
         method: 'get'
     })
 }

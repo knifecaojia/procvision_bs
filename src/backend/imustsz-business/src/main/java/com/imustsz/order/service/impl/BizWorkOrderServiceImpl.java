@@ -14,11 +14,13 @@ import com.imustsz.cilent.domain.vo.WorkOrderVO;
 import com.imustsz.craft.domain.BizStep;
 import com.imustsz.craft.domain.Process;
 import com.imustsz.craft.mapper.BizStepMapper;
+import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
 import com.imustsz.order.domain.json.DispatchTaskInfo;
 import com.imustsz.order.domain.json.ProcessTaskSync;
 import com.imustsz.order.domain.json.WorkOrder;
 import com.imustsz.order.domain.json.WorkOrderInfo;
+import com.imustsz.process.domain.BizProcessRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.imustsz.order.mapper.BizWorkOrderMapper;
@@ -43,6 +45,9 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
 
     @Autowired
     private ProcessMapper processMapper;
+
+    @Autowired
+    private CraftMapper craftMapper;
 
     /**
      * 查询工单
@@ -174,5 +179,25 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
         bizWorkOrder.setGuideMapUrl(resultDTO.getObject_name());
         bizWorkOrder.setWorkOrderCode(resultDTO.getWork_order_code());
         return bizWorkOrderMapper.updateBizWorkOrderByCode(bizWorkOrder);
+    }
+
+    @Override
+    public StepVO getStepByWorkOrderCode(String workOrderCode, String stepCode) {
+        BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCode(workOrderCode);
+        Long craftId = craftMapper.selectCraftIdByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
+        Long processId = processMapper.selectProcessIdByCodeAndCraftId(bizWorkOrder.getProcessCode(), craftId);
+        BizStep bizStep = bizStepMapper.selectBizStepByStepCodeAndProcessId(stepCode, processId);
+
+        StepVO step = new StepVO();
+        step.setStep_code(bizStep.getCode());
+        step.setStep_name(bizStep.getName());
+        step.setStep_content(bizStep.getContent());
+
+        return step;
+    }
+
+    @Override
+    public BizWorkOrder selectBizWorkOrderByCode(String workOrderCode) {
+        return bizWorkOrderMapper.selectBizWorkOrderByCode(workOrderCode);
     }
 }

@@ -7,7 +7,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="BizProcessRecord" id="BizProcessRecordResult">
         <result property="id"    column="id"    />
         <result property="workOrderCode"    column="work_order_code"    />
-        <result property="stepId"    column="step_id"    />
+        <result property="stepCode"    column="step_code"    />
         <result property="stepName"    column="step_name"    />
         <result property="stepStatus"    column="step_status"    />
         <result property="imagePath"    column="image_path"    />
@@ -16,14 +16,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizProcessRecordVo">
-        select id, work_order_code, step_id, step_name, step_status, image_path, data, submit_time from biz_process_record
+        select id, work_order_code, step_code, step_name, step_status, image_path, data, submit_time from biz_process_record
     </sql>
 
     <select id="selectBizProcessRecordList" parameterType="BizProcessRecord" resultMap="BizProcessRecordResult">
         <include refid="selectBizProcessRecordVo"/>
         <where>  
             <if test="workOrderCode != null  and workOrderCode != ''"> and work_order_code = #{workOrderCode}</if>
-            <if test="stepId != null "> and step_id = #{stepId}</if>
+            <if test="stepCode != null "> and step_code = #{stepCode}</if>
             <if test="stepName != null "> and step_name = #{stepName}</if>
             <if test="stepStatus != null  and stepStatus != ''"> and step_status = #{stepStatus}</if>
             <if test="imagePath != null  and imagePath != ''"> and image_path = #{imagePath}</if>
@@ -46,7 +46,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into biz_process_record
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="workOrderCode != null">work_order_code,</if>
-            <if test="stepId != null">step_id,</if>
+            <if test="stepCode != null">step_code,</if>
             <if test="stepName != null">step_name,</if>
             <if test="stepStatus != null">step_status,</if>
             <if test="imagePath != null">image_path,</if>
@@ -60,7 +60,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="workOrderCode != null">#{workOrderCode},</if>
-            <if test="stepId != null">#{stepId},</if>
+            <if test="stepCode != null">#{stepCode},</if>
             <if test="stepName != null">#{stepName},</if>
             <if test="stepStatus != null">#{stepStatus},</if>
             <if test="imagePath != null">#{imagePath},</if>
@@ -78,7 +78,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update biz_process_record
         <trim prefix="SET" suffixOverrides=",">
             <if test="workOrderCode != null">work_order_code = #{workOrderCode},</if>
-            <if test="stepId != null">step_id = #{stepId},</if>
+            <if test="stepCode != null">step_code = #{stepCode},</if>
             <if test="stepName != null">step_name = #{stepName},</if>
             <if test="stepStatus != null">step_status = #{stepStatus},</if>
             <if test="imagePath != null">image_path = #{imagePath},</if>

@@ -11,6 +11,7 @@ import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
 import com.imustsz.order.domain.BizWorkOrder;
 import com.imustsz.order.mapper.BizWorkOrderMapper;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.imustsz.process.mapper.BizProcessRecordMapper;
@@ -128,14 +129,21 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService
         Long processId = processMapper.selectProcessIdByCodeAndCraftId(bizWorkOrder.getProcessCode(), craftId);
         BizStep bizStep = bizStepMapper.selectBizStepByStepCodeAndProcessId(processDTO.getStep_code(), processId);
 
+        BizProcessRecord bizProcessRecord = getBizProcessRecord(processDTO, bizStep);
+
+        return bizProcessRecordMapper.insertBizProcessRecord(bizProcessRecord);
+    }
+
+    @NotNull
+    private static BizProcessRecord getBizProcessRecord(ProcessDTO processDTO, BizStep bizStep) {
         BizProcessRecord bizProcessRecord = new BizProcessRecord();
         bizProcessRecord.setWorkOrderCode(processDTO.getWork_order_code());
         bizProcessRecord.setStepName(bizStep.getName());
+        bizProcessRecord.setStepCode(bizStep.getCode());
         bizProcessRecord.setStepStatus(processDTO.getStep_status());
         bizProcessRecord.setImagePath(processDTO.getObject_name());
         bizProcessRecord.setData(processDTO.getData());
         bizProcessRecord.setSubmitTime(DateUtils.getNowDate());
-
-        return bizProcessRecordMapper.insertBizProcessRecord(bizProcessRecord);
+        return bizProcessRecord;
     }
 }

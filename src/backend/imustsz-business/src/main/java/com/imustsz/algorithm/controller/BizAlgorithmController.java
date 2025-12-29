@@ -110,15 +110,6 @@ public class BizAlgorithmController extends BaseController {
         return toAjax(bizAlgorithmService.deleteBizAlgorithmByIds(ids));
     }
 
-    @GetMapping("/getUrl")
-    public AjaxResult getUrl() throws Exception {
-        String objectName = DateUtils.getDate() + UUID.randomUUID().toString();
-        Map<String, String> map = new HashMap<>();
-        map.put("url", minioUtils.generatePresignedUploadUrl(objectName));
-        map.put("objectName", objectName);
-        return success(map);
-    }
-
     @PostMapping("/remove")
     public AjaxResult removeMinioFile(@RequestParam("objectName") String objectName) throws Exception {
         minioUtils.deleteFile(objectName);

@@ -5,7 +5,9 @@ import java.util.List;
 import com.imustsz.cilent.domain.dto.ProcessDTO;
 import com.imustsz.cilent.domain.dto.ResultDTO;
 import com.imustsz.cilent.domain.dto.WorkOrderProperties;
+import com.imustsz.cilent.domain.vo.StepVO;
 import com.imustsz.cilent.domain.vo.WorkOrderVO;
+import com.imustsz.craft.domain.BizStep;
 import com.imustsz.order.domain.BizWorkOrder;
 import com.imustsz.order.domain.json.ProcessTaskSync;
 
@@ -72,4 +74,8 @@ public interface IBizWorkOrderService
     int changeWorkOrderStatusByCode(String workOrderCode, String statusCode);
 
     int updateBizWorkOrderResultByUpload(ResultDTO resultDTO);
+
+    StepVO getStepByWorkOrderCode(String workOrderCode, String stepCode);
+
+    BizWorkOrder selectBizWorkOrderByCode(String workOrderCode);
 }

@@ -25,8 +25,8 @@ public class BizProcessRecord extends BaseEntity
     private String workOrderCode;
 
     /** 工步id */
-    @Excel(name = "工步id")
-    private Long stepId;
+    @Excel(name = "工步编码")
+    private String stepCode;
 
     /** 工步名称 */
     @Excel(name = "工步名称")
@@ -77,17 +77,15 @@ public class BizProcessRecord extends BaseEntity
         return workOrderCode;
     }
 
-    public void setStepId(Long stepId) 
-    {
-        this.stepId = stepId;
+    public String getStepCode() {
+        return stepCode;
     }
 
-    public Long getStepId() 
-    {
-        return stepId;
+    public void setStepCode(String stepCode) {
+        this.stepCode = stepCode;
     }
 
-    public void setStepStatus(String stepStatus) 
+    public void setStepStatus(String stepStatus)
     {
         this.stepStatus = stepStatus;
     }
@@ -132,7 +130,7 @@ public class BizProcessRecord extends BaseEntity
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("id", getId())
             .append("workOrderCode", getWorkOrderCode())
-            .append("stepId", getStepId())
+            .append("stepId", getStepCode())
             .append("stepName", getStepName())
             .append("stepStatus", getStepStatus())
             .append("imagePath", getImagePath())
