@@ -118,4 +118,10 @@ public class BizAlgorithmController extends BaseController {
         map.put("objectName", objectName);
         return success(map);
     }
+
+    @PostMapping("/remove")
+    public AjaxResult removeMinioFile(@RequestParam("objectName") String objectName) throws Exception {
+        minioUtils.deleteFile(objectName);
+        return success();
+    }
 }

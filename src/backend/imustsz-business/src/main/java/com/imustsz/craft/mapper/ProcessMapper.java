@@ -1,6 +1,7 @@
 package com.imustsz.craft.mapper;
 
 import com.imustsz.craft.domain.Process;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -61,4 +62,6 @@ public interface ProcessMapper
     public int deleteProcessByIds(Long[] ids);
 
     Process selectProcessByCode(String processCode);
+
+    Long selectProcessIdByCodeAndCraftId(@Param("processCode") String processCode, @Param("craftId") Long craftId);
 }

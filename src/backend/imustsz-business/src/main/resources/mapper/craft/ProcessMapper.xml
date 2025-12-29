@@ -33,6 +33,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="craftCode != null  and craftCode != ''"> and craft_code = #{craftCode}</if>
             <if test="guideMapUrl != null  and guideMapUrl != ''"> and guide_map_url = #{guideMapUrl}</if>
             <if test="processMaterialInfo != null  and processMaterialInfo != ''"> and process_material_info = #{processMaterialInfo}</if>
+            <if test="createTime != null and createTime != ''"> and create_time = #{createTime}</if>
+            <if test="createTime != null and createTime != ''"> and update_time = #{updateTime}</if>
+            <if test="createBy != null and createBy != ''"> and create_by = #{createBy}</if>
+            <if test="updateBy != null and updateBy != ''"> and update_by = #{updateBy}</if>
+            <if test="remark != null and remark != ''"> and remark = #{remark}</if>
         </where>
     </select>
     
@@ -53,6 +58,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="craftCode != null">craft_code,</if>
             <if test="guideMapUrl != null">guide_map_url,</if>
             <if test="processMaterialInfo != null">process_material_info,</if>
+            <if test="createdTime != null">created_time,</if>
+            <if test="updatedTime != null">updated_time,</if>
+            <if test="createdBy != null">created_by,</if>
+            <if test="updatedBy != null">updated_by,</if>
+            <if test="remarks != null">remarks,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="code != null">#{code},</if>
@@ -64,6 +74,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="craftCode != null">#{craftCode},</if>
             <if test="guideMapUrl != null">#{guideMapUrl},</if>
             <if test="processMaterialInfo != null">#{processMaterialInfo},</if>
+            <if test="createdTime != null">#{createdTime},</if>
+            <if test="updatedTime != null">#{updatedTime},</if>
+            <if test="createdBy != null">#{createdBy},</if>
+            <if test="updatedBy != null">#{updatedBy},</if>
+            <if test="remarks != null">#{remarks},</if>
          </trim>
     </insert>
 
@@ -79,6 +94,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="craftCode != null">craft_code = #{craftCode},</if>
             <if test="guideMapUrl != null">guide_map_url = #{guideMapUrl},</if>
             <if test="processMaterialInfo != null">process_material_info = #{processMaterialInfo},</if>
+            <if test="createdTime != null">created_time = #{createdTime},</if>
+            <if test="updatedTime != null">updated_time = #{updatedTime},</if>
+            <if test="createdBy != null">created_by = #{createdBy},</if>
+            <if test="updatedBy != null">updated_by = #{updatedBy},</if>
+            <if test="remarks != null">remarks = #{remarks},</if>
         </trim>
         where id = #{id}
     </update>
@@ -97,5 +117,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectProcessByCode" resultType="com.imustsz.craft.domain.Process">
         <include refid="selectProcessVo" />
         where code = #{processCode}
+    </select>
+
+    <select id="selectProcessIdByCodeAndCraftId" resultType="java.lang.Long">
+        select id from biz_process where code = #{processCode} and craft_id = #{craftId}
     </select>
 </mapper>

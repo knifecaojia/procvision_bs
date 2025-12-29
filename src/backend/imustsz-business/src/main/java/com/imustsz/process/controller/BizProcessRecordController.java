@@ -39,8 +39,7 @@ public class BizProcessRecordController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('process:record:list')")
     @GetMapping("/list")
-    public TableDataInfo list(BizProcessRecord bizProcessRecord)
-    {
+    public TableDataInfo list(BizProcessRecord bizProcessRecord) throws Exception {
         startPage();
         List<BizProcessRecord> list = bizProcessRecordService.selectBizProcessRecordList(bizProcessRecord);
         return getDataTable(list);
@@ -52,8 +51,7 @@ public class BizProcessRecordController extends BaseController
     @PreAuthorize("@ss.hasPermi('process:record:export')")
     @Log(title = "过程记录", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
-    public void export(HttpServletResponse response, BizProcessRecord bizProcessRecord)
-    {
+    public void export(HttpServletResponse response, BizProcessRecord bizProcessRecord) throws Exception {
         List<BizProcessRecord> list = bizProcessRecordService.selectBizProcessRecordList(bizProcessRecord);
         ExcelUtil<BizProcessRecord> util = new ExcelUtil<BizProcessRecord>(BizProcessRecord.class);
         util.exportExcel(response, list, "过程记录数据");

@@ -69,7 +69,6 @@
 
     <el-table v-loading="loading" :data="algorithmList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center"/>
-      <el-table-column label="算法编码" align="center" prop="code"/>
       <el-table-column label="算法名称" align="center" prop="name"/>
       <el-table-column label="算法版本" align="center" prop="version"/>
       <el-table-column label="算法大小" align="center" prop="size">
@@ -102,11 +101,8 @@
 
     <!-- 添加或修改算法对话框 -->
     <!--    <AddAlgorithm v-model="open" :formData="form" :fileList="fileList"></AddAlgorithm>-->
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="500px" append-to-body @close="onClose">
       <el-form ref="algorithmRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="算法编码" prop="code">
-          <el-input v-model="form.code" placeholder="请输入算法编码"/>
-        </el-form-item>
         <el-form-item label="算法名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入算法名称"/>
         </el-form-item>
@@ -114,7 +110,7 @@
           <el-input v-model="form.version" placeholder="请输入算法版本"/>
         </el-form-item>
         <el-form-item label="算法描述" prop="desc">
-          <el-input v-model="form.desc" placeholder="请输入算法描述"/>
+          <el-input type="textarea" v-model="form.desc" placeholder="请输入算法描述"/>
         </el-form-item>
         <el-form-item label="上传算法">
           <el-upload
@@ -159,7 +155,7 @@ import {
   delAlgorithm,
   getAlgorithm,
   getUploadUrl,
-  listAlgorithm,
+  listAlgorithm, removeUploadFile,
   updateAlgorithm
 } from "@/api/algorithm/algorithm"
 import axios from "axios";
@@ -184,6 +180,8 @@ const submitLoading = ref(false)
 // 选中的文件对象
 const selectedFile = ref(null)
 const uploadProgress = ref(0)
+const upLoadFlag = ref(false)
+const tempObj = ref(null)
 
 const data = reactive({
   form: {
@@ -241,6 +239,7 @@ const customUpload = async () => {
   await getUploadUrl().then(res => {
     url = res.data.url
     form.value.objectName = res.data.objectName
+    tempObj.value = res.data.objectName
   })
 
   if (!url) {
@@ -261,7 +260,7 @@ const customUpload = async () => {
       }
     })
     uploadProgress.value = 100
-
+    upLoadFlag.value = true
     ElMessage.success('文件上传成功')
   } catch (error) {
     ElMessage.error('文件上传失败：' + (error.message || '网络异常'))
@@ -273,6 +272,15 @@ const customUpload = async () => {
 function cancel() {
   open.value = false
   reset()
+}
+
+function onClose(){
+  if (upLoadFlag.value) {
+    console.log(tempObj.value)
+    removeUploadFile(tempObj.value)
+  }
+  upLoadFlag.value = false
+  tempObj.value = null
 }
 
 // 表单重置
@@ -338,6 +346,7 @@ function submitForm() {
       if (form.value.id != null) {
         updateAlgorithm(form.value).then(async response => {
           proxy.$modal.msgSuccess("修改成功")
+          upLoadFlag.value = false
           open.value = false
           getList()
         })
@@ -345,6 +354,7 @@ function submitForm() {
         if(selectedFile.value != null) {
           addAlgorithm(form.value).then(async response => {
             proxy.$modal.msgSuccess("新增成功")
+            upLoadFlag.value = false
             open.value = false
             getList()
           })

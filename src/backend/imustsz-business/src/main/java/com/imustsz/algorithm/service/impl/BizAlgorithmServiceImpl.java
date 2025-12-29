@@ -112,10 +112,11 @@ public class BizAlgorithmServiceImpl implements IBizAlgorithmService
         for (BizAlgorithm algorithmVO : algorithmVOList) {
             try {
                 AlgorithmVO algorithm = new AlgorithmVO();
-                algorithm.setCode(algorithmVO.getCode());
+                algorithm.setId(algorithmVO.getId());
                 algorithm.setName(algorithmVO.getName());
                 algorithm.setVersion(algorithmVO.getVersion());
                 algorithm.setUrl(minioUtils.getPresignedUrl(algorithmVO.getObjectName()));
+                algorithm.setDesc(algorithmVO.getDesc());
                 algorithmVOS.add(algorithm);
             } catch (Exception e) {
                 throw new Exception("获取预签名URL失败");

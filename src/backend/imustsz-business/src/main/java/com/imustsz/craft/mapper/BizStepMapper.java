@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.imustsz.cilent.domain.vo.StepVO;
 import com.imustsz.craft.domain.BizStep;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 工步信息Mapper接口
@@ -62,4 +63,6 @@ public interface BizStepMapper
     public int deleteBizStepByIds(Long[] ids);
 
     List<StepVO> selectStepByProcessId(Long id);
+
+    BizStep selectBizStepByStepCodeAndProcessId(@Param("stepCode") String stepCode, @Param("processId") Long processId);
 }

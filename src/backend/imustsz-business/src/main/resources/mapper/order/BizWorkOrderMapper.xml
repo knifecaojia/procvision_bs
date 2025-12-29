@@ -41,6 +41,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="guideMapUrl != null  and guideMapUrl != ''"> and guide_map_url = #{guideMapUrl}</if>
             <if test="workerCode != null  and workerCode != ''"> and worker_code = #{workerCode}</if>
             <if test="workerName != null  and workerName != ''"> and worker_name like concat('%', #{workerName}, '%')</if>
+            <if test="createTime != null and createTime != ''"> and create_time = #{createTime}</if>
+            <if test="createTime != null and createTime != ''"> and update_time = #{updateTime}</if>
+            <if test="createBy != null and createBy != ''"> and create_by = #{createBy}</if>
+            <if test="updateBy != null and updateBy != ''"> and update_by = #{updateBy}</if>
+            <if test="remark != null and remark != ''"> and remark = #{remark}</if>
         </where>
     </select>
     
@@ -65,6 +70,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="guideMapUrl != null">guide_map_url,</if>
             <if test="workerCode != null">worker_code,</if>
             <if test="workerName != null">worker_name,</if>
+            <if test="createdTime != null">created_time,</if>
+            <if test="updatedTime != null">updated_time,</if>
+            <if test="createdBy != null">created_by,</if>
+            <if test="updatedBy != null">updated_by,</if>
+            <if test="remarks != null">remarks,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="workOrderCode != null">#{workOrderCode},</if>
@@ -80,6 +90,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="guideMapUrl != null">#{guideMapUrl},</if>
             <if test="workerCode != null">#{workerCode},</if>
             <if test="workerName != null">#{workerName},</if>
+            <if test="createdTime != null">#{createdTime},</if>
+            <if test="updatedTime != null">#{updatedTime},</if>
+            <if test="createdBy != null">#{createdBy},</if>
+            <if test="updatedBy != null">#{updatedBy},</if>
+            <if test="remarks != null">#{remarks},</if>
          </trim>
     </insert>
 
@@ -99,6 +114,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="guideMapUrl != null">guide_map_url = #{guideMapUrl},</if>
             <if test="workerCode != null">worker_code = #{workerCode},</if>
             <if test="workerName != null">worker_name = #{workerName},</if>
+            <if test="createdTime != null">created_time = #{createdTime},</if>
+            <if test="updatedTime != null">updated_time = #{updatedTime},</if>
+            <if test="createdBy != null">created_by = #{createdBy},</if>
+            <if test="updatedBy != null">updated_by = #{updatedBy},</if>
+            <if test="remarks != null">remarks = #{remarks},</if>
         </trim>
         where id = #{id}
     </update>
@@ -115,7 +135,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <select id="getWorkOrderVOList" resultType="com.imustsz.cilent.domain.vo.WorkOrderVO">
-        select process_name, process_code, work_order_code, craft_code, craft_version, craft_name, status, start_time, end_time, worker_code, worker_name, algorithm_code, algorithm_name, algorithm_version
+        select process_name, process_code, work_order_code, craft_code, craft_version, craft_name, status, start_time, end_time, worker_code, worker_name, algorithm_id
         FROM (select DISTINCT bp.name process_name,
                               a.work_order_code,
                               a.craft_code,
@@ -131,7 +151,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                        join(select wo.*, bc.id cid, bc.version, bc.`name` cname
                             from biz_work_order wo
                                      join biz_craft bc on wo.craft_code = bc.`code`) a on bp.craft_id = a.cid) t1
-                 JOIN (SELECT bp.algorithm_code, ba.`name` algorithm_name, ba.version algorithm_version, bp.`code`
+                 JOIN (SELECT ba.id algorithm_id, bp.algorithm_code, ba.`name` algorithm_name, ba.version algorithm_version, bp.`code`
                        FROM biz_algorithm ba
                                 JOIN biz_process bp on ba.`name` = bp.algorithm_code) t2 on t1.process_code = t2.code
         <where>
@@ -140,4 +160,38 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </if>
         </where>
     </select>
+
+    <delete id="changeWorkOrderStatusByCode">
+        update biz_work_order set status = #{statusCode} where work_order_code = #{workOrderCode}
+    </delete>
+
+    <select id="selectBizWorkOrderByCode" resultMap="BizWorkOrderResult">
+        <include refid="selectBizWorkOrderVo"/>
+        where work_order_code = #{workOrderCode}
+    </select>
+
+    <update id="updateBizWorkOrderByCode" parameterType="BizWorkOrder">
+        update biz_work_order
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="workOrderCode != null">work_order_code = #{workOrderCode},</if>
+            <if test="workOrderQuantity != null">work_order_quantity = #{workOrderQuantity},</if>
+            <if test="craftCode != null">craft_code = #{craftCode},</if>
+            <if test="craftVersion != null">craft_version = #{craftVersion},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="processCode != null">process_code = #{processCode},</if>
+            <if test="processName != null">process_name = #{processName},</if>
+            <if test="dispatchQuantity != null">dispatch_quantity = #{dispatchQuantity},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="guideMapUrl != null">guide_map_url = #{guideMapUrl},</if>
+            <if test="workerCode != null">worker_code = #{workerCode},</if>
+            <if test="workerName != null">worker_name = #{workerName},</if>
+            <if test="createdTime != null">created_time = #{createdTime},</if>
+            <if test="updatedTime != null">updated_time = #{updatedTime},</if>
+            <if test="createdBy != null">created_by = #{createdBy},</if>
+            <if test="updatedBy != null">updated_by = #{updatedBy},</if>
+            <if test="remarks != null">remarks = #{remarks},</if>
+        </trim>
+        where work_order_code = #{workOrderCode}
+    </update>
 </mapper>

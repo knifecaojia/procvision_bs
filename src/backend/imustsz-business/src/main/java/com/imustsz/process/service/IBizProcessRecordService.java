@@ -1,6 +1,8 @@
 package com.imustsz.process.service;
 
 import java.util.List;
+
+import com.imustsz.cilent.domain.dto.ProcessDTO;
 import com.imustsz.process.domain.BizProcessRecord;
 
 /**
@@ -25,7 +27,7 @@ public interface IBizProcessRecordService
      * @param bizProcessRecord 过程记录
      * @return 过程记录集合
      */
-    public List<BizProcessRecord> selectBizProcessRecordList(BizProcessRecord bizProcessRecord);
+    public List<BizProcessRecord> selectBizProcessRecordList(BizProcessRecord bizProcessRecord) throws Exception;
 
     /**
      * 新增过程记录
@@ -58,4 +60,6 @@ public interface IBizProcessRecordService
      * @return 结果
      */
     public int deleteBizProcessRecordById(Long id);
+
+    int insertBizProcessRecordByUpload(ProcessDTO processDTO);
 }

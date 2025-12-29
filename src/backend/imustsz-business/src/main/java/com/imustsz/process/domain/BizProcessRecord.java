@@ -29,8 +29,8 @@ public class BizProcessRecord extends BaseEntity
     private Long stepId;
 
     /** 工步名称 */
-    @Excel(name = "工步id")
-    private Long stepName;
+    @Excel(name = "工步名称")
+    private String stepName;
 
     /** 工步状态 */
     @Excel(name = "工步状态")
@@ -49,11 +49,11 @@ public class BizProcessRecord extends BaseEntity
     @Excel(name = "提交时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date submitTime;
 
-    public Long getStepName() {
+    public String getStepName() {
         return stepName;
     }
 
-    public void setStepName(Long stepName) {
+    public void setStepName(String stepName) {
         this.stepName = stepName;
     }
 

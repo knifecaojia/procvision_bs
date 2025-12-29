@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.imustsz.cilent.domain.vo.WorkOrderVO;
 import com.imustsz.order.domain.BizWorkOrder;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 工单Mapper接口
@@ -62,4 +63,10 @@ public interface BizWorkOrderMapper
     public int deleteBizWorkOrderByIds(Long[] ids);
 
     List<WorkOrderVO> getWorkOrderVOList(Integer status);
+
+    int changeWorkOrderStatusByCode(@Param("workOrderCode") String workOrderCode, @Param("statusCode") String statusCode);
+
+    BizWorkOrder selectBizWorkOrderByCode(@Param("workOrderCode") String workOrderCode);
+
+    int updateBizWorkOrderByCode(BizWorkOrder bizWorkOrder);
 }

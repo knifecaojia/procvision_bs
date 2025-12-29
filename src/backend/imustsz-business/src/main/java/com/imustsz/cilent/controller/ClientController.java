@@ -1,6 +1,8 @@
 package com.imustsz.cilent.controller;
 
 import com.imustsz.algorithm.service.IBizAlgorithmService;
+import com.imustsz.cilent.domain.dto.ProcessDTO;
+import com.imustsz.cilent.domain.dto.ResultDTO;
 import com.imustsz.cilent.domain.dto.WorkOrderProperties;
 import com.imustsz.cilent.domain.vo.AlgorithmVO;
 import com.imustsz.cilent.domain.vo.PendingTaskVO;
@@ -9,17 +11,11 @@ import com.imustsz.cilent.service.IClientTaskService;
 import com.imustsz.common.core.controller.BaseController;
 import com.imustsz.common.core.domain.AjaxResult;
 import com.imustsz.common.core.page.TableDataInfo;
-import com.imustsz.common.utils.bean.MinioUtils;
 import com.imustsz.order.service.IBizWorkOrderService;
-import io.minio.errors.MinioException;
+import com.imustsz.process.service.IBizProcessRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 @RestController
@@ -36,7 +32,7 @@ public class ClientController extends BaseController {
     private IBizAlgorithmService bizAlgorithmService;
 
     @Autowired
-    private MinioUtils minioUtils;
+    private IBizProcessRecordService bizProcessRecordService;
 
     @GetMapping("/task/list")
     private AjaxResult pendingList() {
@@ -58,8 +54,18 @@ public class ClientController extends BaseController {
         return getDataTable(algorithmVOList);
     }
 
-    @GetMapping("/minio/upload")
-    private AjaxResult getUploadUrl() throws MinioException, NoSuchAlgorithmException, IOException, InvalidKeyException {
-        return AjaxResult.success(minioUtils.generatePresignedUploadUrl("test1"));
+    @GetMapping("/workorder/status/{workOrderCode}/{statusCode}")
+    private AjaxResult changeWorkOrderStatus(@PathVariable String workOrderCode,@PathVariable String statusCode) {
+        return toAjax(bizWorkOrderService.changeWorkOrderStatusByCode(workOrderCode, statusCode));
+    }
+
+    @PostMapping("/process")
+    private AjaxResult upLoadProcess(@RequestBody ProcessDTO processDTO) {
+        return toAjax(bizProcessRecordService.insertBizProcessRecordByUpload(processDTO));
+    }
+
+    @PostMapping("/result")
+    private AjaxResult upLoadResult(@RequestBody ResultDTO resultDTO) {
+        return toAjax(bizWorkOrderService.updateBizWorkOrderResultByUpload(resultDTO));
     }
 }

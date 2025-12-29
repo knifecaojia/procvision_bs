@@ -1,6 +1,7 @@
 package com.imustsz.craft.mapper;
 
 import com.imustsz.craft.domain.Craft;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -59,4 +60,6 @@ public interface CraftMapper
      * @return 结果
      */
     public int deleteCraftByIds(Long[] ids);
+
+    Long selectCraftIdByCodeAndVersion(@Param("code") String code, @Param("version") String version);
 }

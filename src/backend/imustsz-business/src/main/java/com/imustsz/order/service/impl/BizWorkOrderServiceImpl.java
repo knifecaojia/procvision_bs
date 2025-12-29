@@ -6,6 +6,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 
+import com.imustsz.cilent.domain.dto.ProcessDTO;
+import com.imustsz.cilent.domain.dto.ResultDTO;
 import com.imustsz.cilent.domain.dto.WorkOrderProperties;
 import com.imustsz.cilent.domain.vo.StepVO;
 import com.imustsz.cilent.domain.vo.WorkOrderVO;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import com.imustsz.order.mapper.BizWorkOrderMapper;
 import com.imustsz.order.domain.BizWorkOrder;
 import com.imustsz.order.service.IBizWorkOrderService;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 工单Service业务层处理
@@ -30,7 +33,7 @@ import com.imustsz.order.service.IBizWorkOrderService;
  * @date 2025-12-22
  */
 @Service
-public class BizWorkOrderServiceImpl implements IBizWorkOrderService 
+public class BizWorkOrderServiceImpl implements IBizWorkOrderService
 {
     @Autowired
     private BizWorkOrderMapper bizWorkOrderMapper;
@@ -155,5 +158,21 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
             workOrderVO.setStep_infos(bizSteps);
         }
         return workOrderVOList;
+    }
+
+    @Override
+    @Transactional
+    public int changeWorkOrderStatusByCode(String workOrderCode, String statusCode) {
+        return bizWorkOrderMapper.changeWorkOrderStatusByCode(workOrderCode, statusCode);
+    }
+
+    @Override
+    @Transactional
+    public int updateBizWorkOrderResultByUpload(ResultDTO resultDTO) {
+        BizWorkOrder bizWorkOrder = new BizWorkOrder();
+        bizWorkOrder.setStatus(resultDTO.getResult_status());
+        bizWorkOrder.setGuideMapUrl(resultDTO.getObject_name());
+        bizWorkOrder.setWorkOrderCode(resultDTO.getWork_order_code());
+        return bizWorkOrderMapper.updateBizWorkOrderByCode(bizWorkOrder);
     }
 }

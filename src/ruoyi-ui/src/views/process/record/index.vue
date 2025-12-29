@@ -34,15 +34,6 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="Plus"
-          @click="handleAdd"
-          v-hasPermi="['process:record:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
           type="success"
           plain
           icon="Edit"
@@ -63,13 +54,16 @@
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
-
     <el-table v-loading="loading" :data="recordList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="工单编码" align="center" prop="workOrderCode" />
       <el-table-column label="工步名称" align="center" prop="stepName" />
       <el-table-column label="工步状态" align="center" prop="stepStatus" />
-      <el-table-column label="拓展数据" align="center" prop="data" />
+      <el-table-column label="引导图片" align="center">
+        <template #default="scope">
+          <el-button type="primary" size="small" plain @click="handleImagePreview(scope.row.imagePath)">查看</el-button>
+        </template>
+      </el-table-column>
       <el-table-column label="提交时间" align="center" prop="submitTime" width="180">
         <template #default="scope">
           <span>{{ parseTime(scope.row.submitTime, '{y}-{m}-{d}') }}</span>
@@ -100,12 +94,6 @@
         <el-form-item label="工步名称" prop="stepName">
           <el-input v-model="form.stepId" placeholder="请输入工步名称" />
         </el-form-item>
-        <el-form-item label="Minio Key" prop="imagePath">
-          <el-input v-model="form.imagePath" placeholder="请输入Minio Key" />
-        </el-form-item>
-        <el-form-item label="拓展数据" prop="data">
-          <el-input v-model="form.data" type="textarea" placeholder="请输入内容" />
-        </el-form-item>
         <el-form-item label="提交时间" prop="submitTime">
           <el-date-picker clearable
             v-model="form.submitTime"
@@ -121,6 +109,14 @@
           <el-button @click="cancel">取 消</el-button>
         </div>
       </template>
+    </el-dialog>
+
+    <el-dialog title="引导图查看" v-model="imageVisible" width="800px" append-to-body>
+      <el-image
+        :src="imageUrl"
+        :preview-src-list="[imageUrl]"
+        style="width: 100%; height: 100%"
+      ></el-image>
     </el-dialog>
   </div>
 </template>
@@ -139,6 +135,8 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
+const imageVisible = ref(false)
+const imageUrl = ref("")
 
 const data = reactive({
   form: {},
@@ -150,12 +148,7 @@ const data = reactive({
     stepStatus: null,
     imagePath: null,
     data: null,
-    submitTime: null,
-    createdTime: null,
-    updatedTime: null,
-    createdBy: null,
-    updatedBy: null,
-    remarks: null
+    submitTime: null
   },
   rules: {
   }
@@ -189,12 +182,7 @@ function reset() {
     stepStatus: null,
     imagePath: null,
     data: null,
-    submitTime: null,
-    createdTime: null,
-    updatedTime: null,
-    createdBy: null,
-    updatedBy: null,
-    remarks: null
+    submitTime: null
   }
   proxy.resetForm("recordRef")
 }
@@ -268,6 +256,10 @@ function handleDelete(row) {
   }).catch(() => {})
 }
 
+function handleImagePreview(imagePath){
+  imageVisible.value = true
+  imageUrl.value = imagePath
+}
 
 getList()
 </script>

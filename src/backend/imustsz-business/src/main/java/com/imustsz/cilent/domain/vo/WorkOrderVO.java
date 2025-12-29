@@ -21,8 +21,6 @@ public class WorkOrderVO {
     private String worker_code;
     private String worker_name;
     private String status;
-    private String algorithm_code;
-    private String algorithm_name;
-    private String algorithm_version;
+    private String algorithm_id;
     private List<StepVO> step_infos;
 }

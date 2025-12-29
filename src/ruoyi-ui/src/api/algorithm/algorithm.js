@@ -19,46 +19,19 @@ export function getAlgorithm(id) {
 
 // 新增算法
 export function addAlgorithm(data) {
-    // const formData = new FormData();
-    // formData.append('code', data.code);
-    // formData.append('name', data.name);
-    // formData.append('version', data.version);
-    // formData.append('desc', data.desc);
-    //
-    // if (data.file) {
-    //     formData.append('file', data.file);
-    // }
-
     return request({
         url: '/algorithm',
         method: 'post',
-        data: data,
-        // headers: {
-        //     'Content-Type': 'multipart/form-data'
-        // }
+        data: data
     })
 }
 
 // 修改算法
 export function updateAlgorithm(data) {
-    const formData = new FormData();
-    formData.append('code', data.code);
-    formData.append('name', data.name);
-    formData.append('version', data.version);
-    formData.append('desc', data.desc);
-    formData.append('id', data.id)
-
-    if (data.file) {
-        formData.append('file', data.file);
-    }
-
     return request({
         url: '/algorithm',
         method: 'put',
         data: data,
-        headers: {
-            'Content-Type': 'multipart/form-data'
-        }
     })
 }
 
@@ -74,5 +47,15 @@ export function getUploadUrl(){
     return request({
         url: '/algorithm/getUrl',
         method: 'get'
+    })
+}
+
+export function removeUploadFile(objectName){
+    return request({
+        url: '/algorithm/remove',
+        method: 'post',
+        params:{
+            'objectName':objectName
+        }
     })
 }

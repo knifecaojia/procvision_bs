@@ -87,10 +87,10 @@
       <el-table-column label="工艺版本" align="center" prop="craftVersion" />
       <el-table-column label="状态" align="center" prop="status" >
         <template #default="scope">
-          <el-tag v-if="scope.row.status === 1" size="small">待派单</el-tag>
-          <el-tag v-else-if="scope.row.status === 2" size="small">进行中</el-tag>
-          <el-tag v-else-if="scope.row.status === 3" size="small">已完成</el-tag>
-          <el-tag v-else-if="scope.row.status === 4" size="small">阻塞</el-tag>
+          <el-tag v-if="scope.row.status === 1" size="small" type="info">待派单</el-tag>
+          <el-tag v-else-if="scope.row.status === 2" size="small" type="primary">进行中</el-tag>
+          <el-tag v-else-if="scope.row.status === 3" size="small" type="success">已完成</el-tag>
+          <el-tag v-else-if="scope.row.status === 4" size="small" type="warning">阻塞</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="工序编码" align="center" prop="processCode" />
