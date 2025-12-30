@@ -1,6 +1,7 @@
 package com.imustsz.craft.service.impl;
 
 import com.imustsz.craft.domain.Process;
+import com.imustsz.craft.mapper.BizStepMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
 import com.imustsz.craft.service.IProcessService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,9 @@ public class ProcessServiceImpl implements IProcessService
 {
     @Autowired
     private ProcessMapper processMapper;
+
+    @Autowired
+    private BizStepMapper bizStepMapper;
 
     /**
      * 查询工序信息
@@ -90,5 +94,14 @@ public class ProcessServiceImpl implements IProcessService
     public int deleteProcessById(Long id)
     {
         return processMapper.deleteProcessById(id);
+    }
+
+    @Override
+    public int deleteProcessByCraftId(Long id) {
+        Long[] ids = processMapper.getDelIdsByCraftId(id);
+        for (Long id1 : ids){
+            bizStepMapper.deleteBizStepByProcessId(id1);
+        }
+        return processMapper.deleteProcessByIds(ids);
     }
 }

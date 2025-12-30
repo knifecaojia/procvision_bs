@@ -61,7 +61,7 @@
       <el-table-column label="工步状态" align="center" prop="stepStatus" />
       <el-table-column label="引导图片" align="center">
         <template #default="scope">
-          <el-button type="primary" size="small" plain @click="handleImagePreview(scope.row.imagePath)">查看</el-button>
+          <el-button link type="primary" icon="view" plain @click="handleImagePreview(scope.row.imagePath)">查看</el-button>
         </template>
       </el-table-column>
       <el-table-column label="提交时间" align="center" prop="submitTime" width="180">

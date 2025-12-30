@@ -1,85 +1,91 @@
 <template>
-  <el-dialog title="工序信息" v-model="processOpen" width="900px" @close="onClose">
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-            size="small"
-            type="primary"
-            plain
-            icon="Plus"
-            @click="handleAdd"
-            v-hasPermi="['process:process:add']"
-        >新增
-        </el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-            size="small"
-            type="danger"
-            plain
-            icon="Delete"
-            :disabled="multiple"
-            @click="handleDelete"
-            v-hasPermi="['process:process:remove']"
-        >删除
-        </el-button>
-      </el-col>
-    </el-row>
-    <el-table :data="processList" v-loading="processLoading" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center"/>
-      <el-table-column label="工序号" align="center" prop="code"/>
-      <el-table-column label="工序名称" align="center" prop="name"/>
-      <el-table-column label="说明" align="center" prop="desc"/>
-      <el-table-column label="首部检验" align="center" prop=""/>
-      <el-table-column label="详细" align="center" prop="">
-        <template #default="scope">
-          <el-button link type="primary" @click="showStep(scope.row)">查看工步</el-button>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleProcessUpdate(scope.row)" v-hasPermi="['process:process:edit']">
-            修改
+  <div>
+    <el-dialog title="工序信息" v-model="processOpen" width="900px" @close="onClose">
+      <el-row :gutter="10" class="mb8">
+        <el-col :span="1.5">
+          <el-button
+              size="small"
+              type="primary"
+              plain
+              icon="Plus"
+              @click="handleAdd"
+              v-hasPermi="['process:process:add']"
+          >新增
           </el-button>
-          <el-button link type="primary" icon="Delete" @click="handleProcessDelete(scope.row)"
-                     v-hasPermi="['craft:craft:remove']">删除
+        </el-col>
+        <el-col :span="1.5">
+          <el-button
+              size="small"
+              type="danger"
+              plain
+              icon="Delete"
+              :disabled="multiple"
+              @click="handleDelete"
+              v-hasPermi="['process:process:remove']"
+          >删除
           </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+        </el-col>
+      </el-row>
+      <el-table :data="processList" v-loading="processLoading" @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" align="center"/>
+        <el-table-column label="工序号" align="center" prop="code"/>
+        <el-table-column label="工序名称" align="center" prop="name"/>
+        <el-table-column label="说明" align="center" prop="desc"/>
+        <el-table-column label="查看引导图" align="center">
+          <template #default="scope">
+            <el-button link type="primary" @click="showStep(scope.row)">查看引导图</el-button>
+          </template>
+        </el-table-column>
+        <el-table-column label="详细" align="center" prop="">
+          <template #default="scope">
+            <el-button link type="primary" @click="showStep(scope.row)">查看工步</el-button>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+          <template #default="scope">
+            <el-button link type="primary" icon="Edit" @click="handleProcessUpdate(scope.row)" v-hasPermi="['process:process:edit']">
+              修改
+            </el-button>
+            <el-button link type="primary" icon="Delete" @click="handleProcessDelete(scope.row)"
+                       v-hasPermi="['craft:craft:remove']">删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <pagination
-        v-show="processTotal>0"
-        :total="processTotal"
-        v-model:page="processPageParms.pageNum"
-        v-model:limit="processPageParms.pageSize"
-        @pagination="getProcessList"
-    />
-  </el-dialog>
+      <pagination
+          v-show="processTotal>0"
+          :total="processTotal"
+          v-model:page="processPageParms.pageNum"
+          v-model:limit="processPageParms.pageSize"
+          @pagination="getProcessList"
+      />
+    </el-dialog>
 
-  <StepDialog v-model="stepOpen" :stepOpen="stepOpen" :processId="tempProcessId"></StepDialog>
+    <StepDialog v-model="stepOpen" :stepOpen="stepOpen" :processId="tempProcessId"></StepDialog>
 
-  <!-- 添加或修改工序信息对话框 -->
-  <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-    <el-form ref="processRef" :model="form" :rules="rules" label-width="80px">
-      <el-form-item label="编码" prop="code">
-        <el-input v-model="form.code" placeholder="请输入编码"/>
-      </el-form-item>
-      <el-form-item label="名称" prop="code">
-        <el-input v-model="form.name" placeholder="请输入名称"/>
-      </el-form-item>
-      <el-form-item label="说明" prop="desc">
-        <el-input v-model="form.desc" type="textarea" placeholder="请输入内容"/>
-      </el-form-item>
-    </el-form>
-    <template #footer>
-      <div class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
-      </div>
-    </template>
-  </el-dialog>
+    <!-- 添加或修改工序信息对话框 -->
+    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
+      <el-form ref="processRef" :model="form" :rules="rules" label-width="80px">
+        <el-form-item label="编码" prop="code">
+          <el-input v-model="form.code" placeholder="请输入编码"/>
+        </el-form-item>
+        <el-form-item label="名称" prop="code">
+          <el-input v-model="form.name" placeholder="请输入名称"/>
+        </el-form-item>
+        <el-form-item label="说明" prop="desc">
+          <el-input v-model="form.desc" type="textarea" placeholder="请输入内容"/>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
+      </template>
+    </el-dialog>
 
+  </div>
 </template>
 
 <script setup name="Process">
@@ -209,6 +215,18 @@ function submitForm() {
         })
       }
     }
+  })
+}
+
+/** 删除按钮操作 */
+function handleProcessDelete(row) {
+  const _ids = row.id || ids.value
+  proxy.$modal.confirm('是否确认删除工艺信息？').then(function () {
+    return delProcess(_ids)
+  }).then(() => {
+    getList()
+    proxy.$modal.msgSuccess("删除成功")
+  }).catch(() => {
   })
 }
 

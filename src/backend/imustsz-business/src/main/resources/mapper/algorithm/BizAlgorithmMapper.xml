@@ -27,11 +27,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="size != null  and version != ''"> and size = #{size}</if>
             <if test="desc != null  and desc != ''"> and `desc` = #{desc}</if>
             <if test="objectName != null  and objectName != ''"> and object_name like concat('%', #{objectName}, '%')</if>
-            <if test="createTime != null and createTime != ''"> and create_time = #{createTime}</if>
-            <if test="createTime != null and createTime != ''"> and update_time = #{updateTime}</if>
-            <if test="createBy != null and createBy != ''"> and create_by = #{createBy}</if>
-            <if test="updateBy != null and updateBy != ''"> and update_by = #{updateBy}</if>
-            <if test="remark != null and remark != ''"> and remark = #{remark}</if>
+            <if test="createTime != null "> and create_time = #{createTime}</if>
+            <if test="updateTime != null "> and update_time = #{updateTime}</if>
+            <if test="createBy != null  and createBy != ''"> and create_by = #{createBy}</if>
+            <if test="updateBy != null  and updateBy != ''"> and update_by = #{updateBy}</if>
+            <if test="remark != null  and remark != ''"> and remark = #{remark}</if>
         </where>
     </select>
     
@@ -50,7 +50,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="desc != null">`desc`,</if>
             <if test="objectName != null">object_name,</if>
             <if test="createTime != null and createTime != ''">create_time,</if>
-            <if test="createTime != null and createTime != ''">update_time,</if>
+            <if test="updateTime != null and updateTime != ''">update_time,</if>
             <if test="createBy != null and createBy != ''">create_by,</if>
             <if test="updateBy != null and updateBy != ''">update_by,</if>
             <if test="remark != null and remark != ''">remark,</if>
@@ -63,7 +63,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="desc != null">#{desc},</if>
             <if test="objectName != null">#{objectName},</if>
             <if test="createTime != null and createTime != ''">#{createTime},</if>
-            <if test="createTime != null and createTime != ''">#{updateTime},</if>
+            <if test="updateTime != null and updateTime != ''">#{updateTime},</if>
             <if test="createBy != null and createBy != ''">#{createBy},</if>
             <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
             <if test="remark != null and remark != ''">#{remark},</if>
@@ -80,7 +80,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="desc != null">`desc` = #{desc},</if>
             <if test="objectName != null">object_name = #{objectName},</if>
             <if test="createTime != null and createTime != ''">create_time = #{createTime},</if>
-            <if test="createTime != null and createTime != ''">update_time = #{updateTime},</if>
+            <if test="updateTime != null and updateTime != ''">update_time = #{updateTime},</if>
             <if test="createBy != null and createBy != ''">create_by = #{createBy},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             <if test="remark != null and remark != ''">remark = #{remark},</if>

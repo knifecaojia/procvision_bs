@@ -48,8 +48,7 @@ public class BizWorkOrderController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('wo:workOrder:list')")
     @GetMapping("/list")
-    public TableDataInfo list(BizWorkOrder bizWorkOrder)
-    {
+    public TableDataInfo list(BizWorkOrder bizWorkOrder) throws Exception {
         startPage();
         List<BizWorkOrder> list = bizWorkOrderService.selectBizWorkOrderList(bizWorkOrder);
         return getDataTable(list);
@@ -61,8 +60,7 @@ public class BizWorkOrderController extends BaseController
     @PreAuthorize("@ss.hasPermi('wo:workOrder:export')")
     @Log(title = "工单", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
-    public void export(HttpServletResponse response, BizWorkOrder bizWorkOrder)
-    {
+    public void export(HttpServletResponse response, BizWorkOrder bizWorkOrder) throws Exception {
         List<BizWorkOrder> list = bizWorkOrderService.selectBizWorkOrderList(bizWorkOrder);
         ExcelUtil<BizWorkOrder> util = new ExcelUtil<BizWorkOrder>(BizWorkOrder.class);
         util.exportExcel(response, list, "工单数据");

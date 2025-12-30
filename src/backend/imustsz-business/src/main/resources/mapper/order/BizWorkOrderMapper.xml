@@ -42,7 +42,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="workerCode != null  and workerCode != ''"> and worker_code = #{workerCode}</if>
             <if test="workerName != null  and workerName != ''"> and worker_name like concat('%', #{workerName}, '%')</if>
             <if test="createTime != null and createTime != ''"> and create_time = #{createTime}</if>
-            <if test="createTime != null and createTime != ''"> and update_time = #{updateTime}</if>
+            <if test="updateTime != null and updateTime != ''"> and update_time = #{updateTime}</if>
             <if test="createBy != null and createBy != ''"> and create_by = #{createBy}</if>
             <if test="updateBy != null and updateBy != ''"> and update_by = #{updateBy}</if>
             <if test="remark != null and remark != ''"> and remark = #{remark}</if>
@@ -70,11 +70,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="guideMapUrl != null">guide_map_url,</if>
             <if test="workerCode != null">worker_code,</if>
             <if test="workerName != null">worker_name,</if>
-            <if test="createdTime != null">created_time,</if>
-            <if test="updatedTime != null">updated_time,</if>
-            <if test="createdBy != null">created_by,</if>
-            <if test="updatedBy != null">updated_by,</if>
-            <if test="remarks != null">remarks,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="remark != null">remark,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="workOrderCode != null">#{workOrderCode},</if>
@@ -90,11 +90,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="guideMapUrl != null">#{guideMapUrl},</if>
             <if test="workerCode != null">#{workerCode},</if>
             <if test="workerName != null">#{workerName},</if>
-            <if test="createdTime != null">#{createdTime},</if>
-            <if test="updatedTime != null">#{updatedTime},</if>
-            <if test="createdBy != null">#{createdBy},</if>
-            <if test="updatedBy != null">#{updatedBy},</if>
-            <if test="remarks != null">#{remarks},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="remark != null">#{remark},</if>
          </trim>
     </insert>
 
@@ -114,11 +114,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="guideMapUrl != null">guide_map_url = #{guideMapUrl},</if>
             <if test="workerCode != null">worker_code = #{workerCode},</if>
             <if test="workerName != null">worker_name = #{workerName},</if>
-            <if test="createdTime != null">created_time = #{createdTime},</if>
-            <if test="updatedTime != null">updated_time = #{updatedTime},</if>
-            <if test="createdBy != null">created_by = #{createdBy},</if>
-            <if test="updatedBy != null">updated_by = #{updatedBy},</if>
-            <if test="remarks != null">remarks = #{remarks},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
         </trim>
         where id = #{id}
     </update>
@@ -186,11 +186,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="guideMapUrl != null">guide_map_url = #{guideMapUrl},</if>
             <if test="workerCode != null">worker_code = #{workerCode},</if>
             <if test="workerName != null">worker_name = #{workerName},</if>
-            <if test="createdTime != null">created_time = #{createdTime},</if>
-            <if test="updatedTime != null">updated_time = #{updatedTime},</if>
-            <if test="createdBy != null">created_by = #{createdBy},</if>
-            <if test="updatedBy != null">updated_by = #{updatedBy},</if>
-            <if test="remarks != null">remarks = #{remarks},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
         </trim>
         where work_order_code = #{workOrderCode}
     </update>

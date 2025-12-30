@@ -9,22 +9,6 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="计划开始时间" prop="startTime">
-        <el-date-picker clearable
-          v-model="queryParams.startTime"
-          type="date"
-          value-format="YYYY-MM-DD"
-          placeholder="请选择计划开始时间">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="计划结束时间" prop="endTime">
-        <el-date-picker clearable
-          v-model="queryParams.endTime"
-          type="date"
-          value-format="YYYY-MM-DD"
-          placeholder="请选择计划结束时间">
-        </el-date-picker>
-      </el-form-item>
       <el-form-item label="装配工人编码" prop="workerCode">
         <el-input
           v-model="queryParams.workerCode"
@@ -41,10 +25,10 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <div style="display: inline-flex; margin-top: -10px;">
+      <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </div>
+      </el-form-item>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -83,8 +67,6 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="工单编码" align="center" prop="workOrderCode" />
       <el-table-column label="工单数量" align="center" prop="workOrderQuantity" />
-      <el-table-column label="工艺编码" align="center" prop="craftCode" />
-      <el-table-column label="工艺版本" align="center" prop="craftVersion" />
       <el-table-column label="状态" align="center" prop="status" >
         <template #default="scope">
           <el-tag v-if="scope.row.status === 1" size="small" type="info">待派单</el-tag>
@@ -93,8 +75,6 @@
           <el-tag v-else-if="scope.row.status === 4" size="small" type="warning">阻塞</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="工序编码" align="center" prop="processCode" />
-      <el-table-column label="工序名称" align="center" prop="processName" />
       <el-table-column label="派单数量" align="center" prop="dispatchQuantity" />
       <el-table-column label="计划开始时间" align="center" prop="startTime" width="180">
         <template #default="scope">
@@ -106,10 +86,16 @@
           <span>{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="装配工人编码" align="center" prop="workerCode" />
-      <el-table-column label="装配工人姓名" align="center" prop="workerName" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="工单详情" align="center">
         <template #default="scope">
+          <el-button type="primary" link icon="view" plain @click="handleDetail(scope.row)">查看</el-button>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" width="250px" class-name="small-padding fixed-width">
+        <template #default="scope">
+          <el-config-provider :message="config">
+            <el-button link type="primary" icon="View" @click="handleResultShow(scope.row)">引导图查看</el-button>
+          </el-config-provider>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wo:workOrder:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wo:workOrder:remove']">删除</el-button>
         </template>
@@ -178,6 +164,47 @@
         </div>
       </template>
     </el-dialog>
+
+    <el-dialog title="工单详情" v-model="isWorkOrderInfoOpen" width="500px">
+      <el-form :model="workOrderInfo">
+        <el-row :gutter="15">
+          <el-col :span="12">
+            <el-form-item label="工艺编码">
+              {{workOrderInfo.craftCode}}
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="工艺版本">
+              {{workOrderInfo.craftVersion}}
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="工序编码">
+              {{workOrderInfo.processCode}}
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="工序名称">
+              {{workOrderInfo.processName}}
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="装配工人编码">
+              {{workOrderInfo.workerCode}}
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="装配工人姓名">
+              {{workOrderInfo.workerName}}
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </el-dialog>
+
+    <el-dialog title="工单结果" v-model="isWorkOrderResult" width="600px">
+      <el-image :src="imageUrl" style="width: 100%; height: 100%;"/>
+    </el-dialog>
   </div>
 </template>
 
@@ -195,6 +222,9 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
+const isWorkOrderInfoOpen = ref(false)
+const isWorkOrderResult = ref(false)
+const imageUrl = ref("")
 
 const data = reactive({
   form: {},
@@ -216,10 +246,17 @@ const data = reactive({
     workerName: null,
   },
   rules: {
-  }
+  },
+  workOrderInfo:{}
 })
 
-const { queryParams, form, rules } = toRefs(data)
+const config = reactive({
+  max: 3,
+  plain: true,
+  placement: 'bottom',
+})
+
+const { queryParams, form, rules, workOrderInfo} = toRefs(data)
 
 /** 查询工单列表 */
 function getList() {
@@ -235,6 +272,15 @@ function getList() {
 function cancel() {
   open.value = false
   reset()
+}
+
+function handleResultShow(row){
+  if (row.status === 3){
+    isWorkOrderResult.value = true
+    imageUrl.value = row.guideMapUrl
+  }else
+    proxy.$modal.msgWarning("工单未完成")
+
 }
 
 // 表单重置
@@ -285,10 +331,10 @@ function handleAdd() {
 }
 
 /** 修改按钮操作 */
-function handleUpdate(row) {
+async function handleUpdate(row) {
   reset()
   const _id = row.id || ids.value
-  getWorkOrder(_id).then(response => {
+  await getWorkOrder(_id).then(response => {
     form.value = response.data
     open.value = true
     title.value = "修改工单"
@@ -327,11 +373,9 @@ function handleDelete(row) {
   }).catch(() => {})
 }
 
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download('wo/workOrder/export', {
-    ...queryParams.value
-  }, `workOrder_${new Date().getTime()}.xlsx`)
+function handleDetail(row){
+  isWorkOrderInfoOpen.value = true
+  workOrderInfo.value = row
 }
 
 getList()

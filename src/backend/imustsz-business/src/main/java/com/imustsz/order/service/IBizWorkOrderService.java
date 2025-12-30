@@ -33,7 +33,7 @@ public interface IBizWorkOrderService
      * @param bizWorkOrder 工单
      * @return 工单集合
      */
-    public List<BizWorkOrder> selectBizWorkOrderList(BizWorkOrder bizWorkOrder);
+    public List<BizWorkOrder> selectBizWorkOrderList(BizWorkOrder bizWorkOrder) throws Exception;
 
     /**
      * 新增工单

@@ -1,4 +1,5 @@
 <template>
+  <div>
   <el-dialog title="工步信息" v-model="stepOpen" width="800px" @close="onClose">
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
@@ -64,6 +65,7 @@
         </div>
       </template>
     </el-dialog>
+  </div>
 </template>
 
 <script setup name="Step">

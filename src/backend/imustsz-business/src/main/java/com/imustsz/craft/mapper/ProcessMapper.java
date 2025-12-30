@@ -64,4 +64,6 @@ public interface ProcessMapper
     Process selectProcessByCode(String processCode);
 
     Long selectProcessIdByCodeAndCraftId(@Param("processCode") String processCode, @Param("craftId") Long craftId);
+
+    Long[] getDelIdsByCraftId(Long craftId);
 }

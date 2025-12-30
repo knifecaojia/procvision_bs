@@ -59,4 +59,6 @@ public interface IProcessService
      * @return 结果
      */
     public int deleteProcessById(Long id);
+
+    int deleteProcessByCraftId(Long id);
 }

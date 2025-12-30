@@ -15,6 +15,7 @@ import com.imustsz.craft.mapper.BizStepMapper;
 import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
 import com.imustsz.craft.service.ICraftService;
+import com.imustsz.craft.service.IProcessService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +40,9 @@ public class CraftServiceImpl implements ICraftService
 
     @Autowired
     private BizStepMapper bizStepMapper;
+
+    @Autowired
+    private IProcessService processService;
 
     /**
      * 查询工艺信息
@@ -97,6 +101,9 @@ public class CraftServiceImpl implements ICraftService
     @Override
     public int deleteCraftByIds(Long[] ids)
     {
+        for (Long id : ids) {
+            processService.deleteProcessByCraftId(id);
+         }
         return craftMapper.deleteCraftByIds(ids);
     }
 

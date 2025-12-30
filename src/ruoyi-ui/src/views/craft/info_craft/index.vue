@@ -30,7 +30,6 @@
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
-
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
@@ -229,10 +228,10 @@ function handleAdd() {
 }
 
 /** 修改按钮操作 */
-function handleUpdate(row) {
+async function handleUpdate(row) {
   reset()
   const _id = row.id || ids.value
-  getCraft(_id).then(response => {
+  await getCraft(_id).then(response => {
     form.value = response.data
     open.value = true
     title.value = "修改工艺信息"

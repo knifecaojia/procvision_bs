@@ -11,6 +11,7 @@ import com.imustsz.cilent.domain.dto.ResultDTO;
 import com.imustsz.cilent.domain.dto.WorkOrderProperties;
 import com.imustsz.cilent.domain.vo.StepVO;
 import com.imustsz.cilent.domain.vo.WorkOrderVO;
+import com.imustsz.common.utils.bean.MinioUtils;
 import com.imustsz.craft.domain.BizStep;
 import com.imustsz.craft.domain.Process;
 import com.imustsz.craft.mapper.BizStepMapper;
@@ -49,6 +50,9 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
     @Autowired
     private CraftMapper craftMapper;
 
+    @Autowired
+    private MinioUtils minioUtils;
+
     /**
      * 查询工单
      * 
@@ -68,9 +72,13 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
      * @return 工单
      */
     @Override
-    public List<BizWorkOrder> selectBizWorkOrderList(BizWorkOrder bizWorkOrder)
-    {
-        return bizWorkOrderMapper.selectBizWorkOrderList(bizWorkOrder);
+    public List<BizWorkOrder> selectBizWorkOrderList(BizWorkOrder bizWorkOrder) throws Exception {
+        List<BizWorkOrder> bizWorkOrders = bizWorkOrderMapper.selectBizWorkOrderList(bizWorkOrder);
+        for (BizWorkOrder order : bizWorkOrders){
+            if (order.getGuideMapUrl() != null)
+                order.setGuideMapUrl(minioUtils.getPresignedUrl(order.getGuideMapUrl()));
+        }
+        return bizWorkOrders;
     }
 
     /**
