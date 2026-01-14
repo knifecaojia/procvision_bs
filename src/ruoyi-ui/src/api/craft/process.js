@@ -42,3 +42,10 @@ export function delProcess(id) {
     method: 'delete'
   })
 }
+
+export function bindProcessAlgorithm(id, algId){
+    return request({
+        url: '/craft/process/bindAlg/'+id+'/' + algId,
+        method: 'get'
+    })
+}

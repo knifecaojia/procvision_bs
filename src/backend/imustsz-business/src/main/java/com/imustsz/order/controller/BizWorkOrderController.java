@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.imustsz.order.domain.json.ProcessTaskSync;
+import com.imustsz.order.domain.json.Task;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -82,9 +84,13 @@ public class BizWorkOrderController extends BaseController
     @PreAuthorize("@ss.hasPermi('wo:workOrder:add')")
     @Log(title = "工单", businessType = BusinessType.INSERT)
     @PostMapping
-    public AjaxResult add(@RequestBody BizWorkOrder bizWorkOrder)
-    {
-        return toAjax(bizWorkOrderService.insertBizWorkOrder(bizWorkOrder));
+    public AjaxResult add(@RequestBody BizWorkOrder bizWorkOrder) {
+        int status = bizWorkOrderService.insertBizWorkOrder(bizWorkOrder);
+        if (status == -1) {
+            return error("未找到该工艺");
+        }else if (status == -2)
+            return error("未找到该工序");
+        return toAjax(status);
     }
 
     /**
@@ -114,10 +120,9 @@ public class BizWorkOrderController extends BaseController
      */
     @GetMapping("/getOrderFromMMO")
     public AjaxResult getOrderFromMMO() throws IOException {
-        File file = new File("MOM/工序任务同步.json");
+        File file = new File("MOM/装配任务同步.json");
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-        ProcessTaskSync processTaskSync = objectMapper.readValue(file, ProcessTaskSync.class);
-        bizWorkOrderService.importOrderFromMMo(processTaskSync);
-        return success();
+        List<Task> taskSync = objectMapper.readValue(file, new TypeReference<List<Task>>() {});
+        return toAjax(bizWorkOrderService.importOrderFromMMo(taskSync));
     }
 }

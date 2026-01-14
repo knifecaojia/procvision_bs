@@ -61,4 +61,6 @@ public interface IProcessService
     public int deleteProcessById(Long id);
 
     int deleteProcessByCraftId(Long id);
+
+    int bindAlg(Long id, Long algId);
 }

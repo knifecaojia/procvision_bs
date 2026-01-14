@@ -8,8 +8,8 @@ import java.util.List;
 
 @Data
 public class WorkOrderVO {
-    private String work_order_code;
-    private String craft_code;
+    private String task_no;
+    private String craft_no;
     private String craft_version;
     private String craft_name;
     private String process_code;
@@ -20,7 +20,10 @@ public class WorkOrderVO {
     private Date end_time;
     private String worker_code;
     private String worker_name;
-    private String status;
-    private String algorithm_id;
+    private Integer status;
+    private Long algorithm_id;
+    private String prod_order_no;
+    private String prod_batch_no;
+    private String project_no;
     private List<StepVO> step_infos;
 }

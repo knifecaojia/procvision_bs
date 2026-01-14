@@ -3,6 +3,7 @@ package com.imustsz.order.domain;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.imustsz.common.core.domain.BaseEntity;
+import lombok.Data;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.imustsz.common.annotation.Excel;
@@ -13,6 +14,7 @@ import com.imustsz.common.annotation.Excel;
  * @author imustsz
  * @date 2025-12-22
  */
+@Data
 public class BizWorkOrder extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
@@ -74,163 +76,14 @@ public class BizWorkOrder extends BaseEntity
     @Excel(name = "装配工人姓名")
     private String workerName;
 
-    public void setId(Long id) 
-    {
-        this.id = id;
-    }
+    private String projectNo;
 
-    public Long getId() 
-    {
-        return id;
-    }
+    private String prodOrderNo;
 
-    public void setWorkOrderCode(String workOrderCode) 
-    {
-        this.workOrderCode = workOrderCode;
-    }
+    private String prodBatchNo;
 
-    public String getWorkOrderCode() 
-    {
-        return workOrderCode;
-    }
+    private String materialNo;
 
-    public void setWorkOrderQuantity(Long workOrderQuantity) 
-    {
-        this.workOrderQuantity = workOrderQuantity;
-    }
+    private String materialName;
 
-    public Long getWorkOrderQuantity() 
-    {
-        return workOrderQuantity;
-    }
-
-    public void setCraftCode(String craftCode) 
-    {
-        this.craftCode = craftCode;
-    }
-
-    public String getCraftCode() 
-    {
-        return craftCode;
-    }
-
-    public void setCraftVersion(String craftVersion) 
-    {
-        this.craftVersion = craftVersion;
-    }
-
-    public String getCraftVersion() 
-    {
-        return craftVersion;
-    }
-
-    public void setStatus(Integer status)
-    {
-        this.status = status;
-    }
-
-    public Integer getStatus()
-    {
-        return status;
-    }
-
-    public void setProcessCode(String processCode) 
-    {
-        this.processCode = processCode;
-    }
-
-    public String getProcessCode() 
-    {
-        return processCode;
-    }
-
-    public void setProcessName(String processName) 
-    {
-        this.processName = processName;
-    }
-
-    public String getProcessName() 
-    {
-        return processName;
-    }
-
-    public void setDispatchQuantity(Long dispatchQuantity) 
-    {
-        this.dispatchQuantity = dispatchQuantity;
-    }
-
-    public Long getDispatchQuantity() 
-    {
-        return dispatchQuantity;
-    }
-
-    public void setStartTime(Date startTime) 
-    {
-        this.startTime = startTime;
-    }
-
-    public Date getStartTime() 
-    {
-        return startTime;
-    }
-
-    public void setEndTime(Date endTime) 
-    {
-        this.endTime = endTime;
-    }
-
-    public Date getEndTime() 
-    {
-        return endTime;
-    }
-
-    public void setGuideMapUrl(String guideMapUrl) 
-    {
-        this.guideMapUrl = guideMapUrl;
-    }
-
-    public String getGuideMapUrl() 
-    {
-        return guideMapUrl;
-    }
-
-    public void setWorkerCode(String workerCode) 
-    {
-        this.workerCode = workerCode;
-    }
-
-    public String getWorkerCode() 
-    {
-        return workerCode;
-    }
-
-    public void setWorkerName(String workerName) 
-    {
-        this.workerName = workerName;
-    }
-
-    public String getWorkerName() 
-    {
-        return workerName;
-    }
-
-    @Override
-    public String toString() {
-        return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
-            .append("id", getId())
-            .append("workOrderCode", getWorkOrderCode())
-            .append("workOrderQuantity", getWorkOrderQuantity())
-            .append("craftCode", getCraftCode())
-            .append("craftVersion", getCraftVersion())
-            .append("status", getStatus())
-            .append("processCode", getProcessCode())
-            .append("processName", getProcessName())
-            .append("dispatchQuantity", getDispatchQuantity())
-            .append("startTime", getStartTime())
-            .append("endTime", getEndTime())
-            .append("guideMapUrl", getGuideMapUrl())
-            .append("workerCode", getWorkerCode())
-            .append("workerName", getWorkerName())
-            .toString();
-    }
 }

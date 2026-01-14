@@ -56,9 +56,14 @@
     </el-row>
     <el-table v-loading="loading" :data="recordList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="工单编码" align="center" prop="workOrderCode" />
+      <el-table-column label="装配任务编码" align="center" prop="workOrderCode" />
       <el-table-column label="工步名称" align="center" prop="stepName" />
-      <el-table-column label="工步状态" align="center" prop="stepStatus" />
+      <el-table-column label="工步状态" align="center">
+        <template #default="scope">
+          <el-tag v-if="scope.row.stepStatus === 1" size="small" type="info">未完成</el-tag>
+          <el-tag v-if="scope.row.stepStatus === 2" size="small" type="success">已完成</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="引导图片" align="center">
         <template #default="scope">
           <el-button link type="primary" icon="view" plain @click="handleImagePreview(scope.row.imagePath)">查看</el-button>
@@ -112,11 +117,11 @@
     </el-dialog>
 
     <el-dialog title="引导图查看" v-model="imageVisible" width="800px" append-to-body>
-      <el-image
-        :src="imageUrl"
-        :preview-src-list="[imageUrl]"
-        style="width: 100%; height: 100%"
-      ></el-image>
+      <el-image :src="imageUrl" style="width: 100%; height: 100%">
+        <template #placeholder>
+          <div class="image-slot">Loading<span class="dot">...</span></div>
+        </template>
+      </el-image>
     </el-dialog>
   </div>
 </template>
@@ -161,7 +166,6 @@ function getList() {
   loading.value = true
   listRecord(queryParams.value).then(response => {
     recordList.value = response.rows
-    console.log(recordList.value)
     total.value = response.total
     loading.value = false
   })
@@ -263,3 +267,19 @@ function handleImagePreview(imagePath){
 
 getList()
 </script>
+<style scoped>
+.dot {
+  animation: dot 2s infinite steps(3, start);
+  overflow: hidden;
+}
+.image-slot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-secondary);
+  font-size: 14px;
+}
+</style>

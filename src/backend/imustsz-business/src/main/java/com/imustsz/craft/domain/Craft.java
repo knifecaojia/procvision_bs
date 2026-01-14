@@ -33,6 +33,10 @@ public class Craft extends BaseEntity
     @Excel(name = "说明")
     private String desc;
 
+    /** 状态 */
+    @Excel(name = "状态")
+    private Integer status;
+
     public String getName() {
         return name;
     }
@@ -79,6 +83,14 @@ public class Craft extends BaseEntity
     public String getDesc()
     {
         return desc;
+    }
+
+    public Integer getStatus() {
+        return status;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
     }
 
     @Override

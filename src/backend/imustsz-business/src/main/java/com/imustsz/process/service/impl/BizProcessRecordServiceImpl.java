@@ -6,6 +6,7 @@ import com.imustsz.cilent.domain.dto.ProcessDTO;
 import com.imustsz.common.utils.DateUtils;
 import com.imustsz.common.utils.bean.MinioUtils;
 import com.imustsz.craft.domain.BizStep;
+import com.imustsz.craft.domain.Process;
 import com.imustsz.craft.mapper.BizStepMapper;
 import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
@@ -124,10 +125,13 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService
     @Override
     @Transactional
     public int insertBizProcessRecordByUpload(ProcessDTO processDTO) {
-        BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCode((processDTO.getWork_order_code()));
+        BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCode((processDTO.getTask_no()));
+
         Long craftId = craftMapper.selectCraftIdByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
-        Long processId = processMapper.selectProcessIdByCodeAndCraftId(bizWorkOrder.getProcessCode(), craftId);
-        BizStep bizStep = bizStepMapper.selectBizStepByStepCodeAndProcessId(processDTO.getStep_code(), processId);
+
+        Process process = processMapper.selectProcessIdByCodeAndCraftId(bizWorkOrder.getProcessCode(), craftId);
+
+        BizStep bizStep = bizStepMapper.selectBizStepByStepCodeAndProcessId(processDTO.getStep_code(), process.getId());
 
         BizProcessRecord bizProcessRecord = getBizProcessRecord(processDTO, bizStep);
 
@@ -137,7 +141,7 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService
     @NotNull
     private static BizProcessRecord getBizProcessRecord(ProcessDTO processDTO, BizStep bizStep) {
         BizProcessRecord bizProcessRecord = new BizProcessRecord();
-        bizProcessRecord.setWorkOrderCode(processDTO.getWork_order_code());
+        bizProcessRecord.setWorkOrderCode(processDTO.getTask_no());
         bizProcessRecord.setStepName(bizStep.getName());
         bizProcessRecord.setStepCode(bizStep.getCode());
         bizProcessRecord.setStepStatus(processDTO.getStep_status());

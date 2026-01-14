@@ -7,40 +7,46 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="BizWorkOrder" id="BizWorkOrderResult">
         <result property="id"    column="id"    />
         <result property="workOrderCode"    column="work_order_code"    />
-        <result property="workOrderQuantity"    column="work_order_quantity"    />
+        <result property="projectNo"    column="project_no"    />
         <result property="craftCode"    column="craft_code"    />
         <result property="craftVersion"    column="craft_version"    />
         <result property="status"    column="status"    />
         <result property="processCode"    column="process_code"    />
         <result property="processName"    column="process_name"    />
-        <result property="dispatchQuantity"    column="dispatch_quantity"    />
+        <result property="prodOrderNo"    column="prod_order_no"    />
+        <result property="prodBatchNo"    column="prod_batch_no"    />
         <result property="startTime"    column="start_time"    />
         <result property="endTime"    column="end_time"    />
         <result property="guideMapUrl"    column="guide_map_url"    />
         <result property="workerCode"    column="worker_code"    />
         <result property="workerName"    column="worker_name"    />
+        <result property="materialNo"    column="material_no"    />
+        <result property="materialName"    column="material_name"    />
     </resultMap>
 
     <sql id="selectBizWorkOrderVo">
-        select id, work_order_code, work_order_quantity, craft_code, craft_version, status, process_code, process_name, dispatch_quantity, start_time, end_time, guide_map_url, worker_code, worker_name from biz_work_order
+        select id, work_order_code, craft_code, craft_version, status, process_code, process_name, start_time, end_time, guide_map_url, worker_code, worker_name, project_no, prod_order_no, prod_batch_no, material_no, material_name from biz_work_order
     </sql>
 
     <select id="selectBizWorkOrderList" parameterType="BizWorkOrder" resultMap="BizWorkOrderResult">
         <include refid="selectBizWorkOrderVo"/>
         <where>  
             <if test="workOrderCode != null  and workOrderCode != ''"> and work_order_code = #{workOrderCode}</if>
-            <if test="workOrderQuantity != null "> and work_order_quantity = #{workOrderQuantity}</if>
+            <if test="prodOrderNo != null "> and prod_order_no = #{prodOrderNo}</if>
+            <if test="prodBatchNo != null "> and prod_batch_no = #{prodBatchNo}</if>
             <if test="craftCode != null  and craftCode != ''"> and craft_code = #{craftCode}</if>
             <if test="craftVersion != null  and craftVersion != ''"> and craft_version = #{craftVersion}</if>
             <if test="status != null "> and status = #{status}</if>
             <if test="processCode != null  and processCode != ''"> and process_code = #{processCode}</if>
             <if test="processName != null  and processName != ''"> and process_name like concat('%', #{processName}, '%')</if>
-            <if test="dispatchQuantity != null "> and dispatch_quantity = #{dispatchQuantity}</if>
+            <if test="projectNo != null "> and project_no = #{projectNo}</if>
             <if test="startTime != null "> and start_time = #{startTime}</if>
             <if test="endTime != null "> and end_time = #{endTime}</if>
             <if test="guideMapUrl != null  and guideMapUrl != ''"> and guide_map_url = #{guideMapUrl}</if>
             <if test="workerCode != null  and workerCode != ''"> and worker_code = #{workerCode}</if>
             <if test="workerName != null  and workerName != ''"> and worker_name like concat('%', #{workerName}, '%')</if>
+            <if test="materialNo != null and materialNo != ''"> and material_no = #{materialNo}</if>
+            <if test="materialName != null and materialName != ''"> and material_name = #{materialName}</if>
             <if test="createTime != null and createTime != ''"> and create_time = #{createTime}</if>
             <if test="updateTime != null and updateTime != ''"> and update_time = #{updateTime}</if>
             <if test="createBy != null and createBy != ''"> and create_by = #{createBy}</if>
@@ -58,18 +64,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into biz_work_order
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="workOrderCode != null">work_order_code,</if>
-            <if test="workOrderQuantity != null">work_order_quantity,</if>
+            <if test="prodOrderNo != null">prod_order_no,</if>
+            <if test="prodBatchNo != null">prod_batch_no,</if>
             <if test="craftCode != null">craft_code,</if>
             <if test="craftVersion != null">craft_version,</if>
             <if test="status != null">status,</if>
             <if test="processCode != null">process_code,</if>
             <if test="processName != null">process_name,</if>
-            <if test="dispatchQuantity != null">dispatch_quantity,</if>
+            <if test="projectNo != null">project_no,</if>
             <if test="startTime != null">start_time,</if>
             <if test="endTime != null">end_time,</if>
             <if test="guideMapUrl != null">guide_map_url,</if>
             <if test="workerCode != null">worker_code,</if>
             <if test="workerName != null">worker_name,</if>
+            <if test="materialNo != null">material_no,</if>
+            <if test="materialName != null">material_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="createBy != null">create_by,</if>
@@ -78,18 +87,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="workOrderCode != null">#{workOrderCode},</if>
-            <if test="workOrderQuantity != null">#{workOrderQuantity},</if>
+            <if test="prodOrderNo != null">#{prodOrderNo},</if>
+            <if test="prodBatchNo != null">#{prodBatchNo},</if>
             <if test="craftCode != null">#{craftCode},</if>
             <if test="craftVersion != null">#{craftVersion},</if>
             <if test="status != null">#{status},</if>
             <if test="processCode != null">#{processCode},</if>
             <if test="processName != null">#{processName},</if>
-            <if test="dispatchQuantity != null">#{dispatchQuantity},</if>
+            <if test="projectNo != null">#{projectNo},</if>
             <if test="startTime != null">#{startTime},</if>
             <if test="endTime != null">#{endTime},</if>
             <if test="guideMapUrl != null">#{guideMapUrl},</if>
             <if test="workerCode != null">#{workerCode},</if>
             <if test="workerName != null">#{workerName},</if>
+            <if test="materialNo != null">#{materialNo},</if>
+            <if test="materialName != null">#{materialName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="createBy != null">#{createBy},</if>
@@ -102,18 +114,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update biz_work_order
         <trim prefix="SET" suffixOverrides=",">
             <if test="workOrderCode != null">work_order_code = #{workOrderCode},</if>
-            <if test="workOrderQuantity != null">work_order_quantity = #{workOrderQuantity},</if>
+            <if test="prodOrderNo != null">prod_order_no = #{prodOrderNo},</if>
+            <if test="prodBatchNo != null">prod_batch_no = #{prodBatchNo},</if>
             <if test="craftCode != null">craft_code = #{craftCode},</if>
             <if test="craftVersion != null">craft_version = #{craftVersion},</if>
             <if test="status != null">status = #{status},</if>
             <if test="processCode != null">process_code = #{processCode},</if>
             <if test="processName != null">process_name = #{processName},</if>
-            <if test="dispatchQuantity != null">dispatch_quantity = #{dispatchQuantity},</if>
+            <if test="projectNo != null">project_no = #{projectNo},</if>
             <if test="startTime != null">start_time = #{startTime},</if>
             <if test="endTime != null">end_time = #{endTime},</if>
             <if test="guideMapUrl != null">guide_map_url = #{guideMapUrl},</if>
             <if test="workerCode != null">worker_code = #{workerCode},</if>
             <if test="workerName != null">worker_name = #{workerName},</if>
+            <if test="materialNo != null and materialNo != ''">material_no = #{materialNo},</if>
+            <if test="materialName != null and materialName != ''">material_name = #{materialName},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
@@ -151,9 +166,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                        join(select wo.*, bc.id cid, bc.version, bc.`name` cname
                             from biz_work_order wo
                                      join biz_craft bc on wo.craft_code = bc.`code`) a on bp.craft_id = a.cid) t1
-                 JOIN (SELECT ba.id algorithm_id, bp.algorithm_code, ba.`name` algorithm_name, ba.version algorithm_version, bp.`code`
+                 JOIN (SELECT ba.id algorithm_id, ba.`name` algorithm_name, ba.version algorithm_version, bp.`code`
                        FROM biz_algorithm ba
-                                JOIN biz_process bp on ba.`name` = bp.algorithm_code) t2 on t1.process_code = t2.code
+                                JOIN biz_process bp on ba.id = bp.algorithm_id) t2 on t1.process_code = t2.code
         <where>
             <if test="status != null">
                 and status = #{status}
@@ -174,18 +189,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update biz_work_order
         <trim prefix="SET" suffixOverrides=",">
             <if test="workOrderCode != null">work_order_code = #{workOrderCode},</if>
-            <if test="workOrderQuantity != null">work_order_quantity = #{workOrderQuantity},</if>
+            <if test="prodOrderNo != null">prod_order_no = #{prodOrderNo},</if>
+            <if test="prodBatchNo != null">prod_batch_no = #{prodBatchNo},</if>
             <if test="craftCode != null">craft_code = #{craftCode},</if>
             <if test="craftVersion != null">craft_version = #{craftVersion},</if>
             <if test="status != null">status = #{status},</if>
             <if test="processCode != null">process_code = #{processCode},</if>
             <if test="processName != null">process_name = #{processName},</if>
-            <if test="dispatchQuantity != null">dispatch_quantity = #{dispatchQuantity},</if>
+            <if test="projectNo != null">project_no = #{projectNo},</if>
             <if test="startTime != null">start_time = #{startTime},</if>
             <if test="endTime != null">end_time = #{endTime},</if>
             <if test="guideMapUrl != null">guide_map_url = #{guideMapUrl},</if>
             <if test="workerCode != null">worker_code = #{workerCode},</if>
             <if test="workerName != null">worker_name = #{workerName},</if>
+            <if test="materialNo != null and materialNo != ''">material_no = #{materialNo},</if>
+            <if test="materialName != null and materialName != ''">material_name = #{materialName},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="createBy != null">create_by = #{createBy},</if>

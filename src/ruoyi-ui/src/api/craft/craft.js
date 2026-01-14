@@ -42,3 +42,24 @@ export function delCraft(id) {
     method: 'delete'
   })
 }
+
+export function changeStatus(id) {
+  return request({
+    url: '/craft/info/checkStatus/' + id,
+    method: 'get'
+  })
+}
+
+export function getCraftSelector(){
+    return request({
+        url: '/craft/info/craftSelector',
+        method: 'get'
+    })
+}
+
+export function checkCamera(){
+    return request({
+        url: '/camera/check',
+        method: 'get',
+    })
+}

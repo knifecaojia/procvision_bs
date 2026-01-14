@@ -62,4 +62,12 @@ public interface CraftMapper
     public int deleteCraftByIds(Long[] ids);
 
     Long selectCraftIdByCodeAndVersion(@Param("code") String code, @Param("version") String version);
+
+    int changeCraftStatus(@Param("id") Long id, @Param("status") Integer status);
+
+    Craft selectCraftByCode(String code);
+
+    List<String> getCodeList();
+
+    List<String> getVersionByCode(String code);
 }

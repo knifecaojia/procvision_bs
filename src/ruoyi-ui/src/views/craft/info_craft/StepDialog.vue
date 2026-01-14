@@ -26,11 +26,25 @@
     </el-row>
     <el-table v-loading="loading" :data="stepList" height="600px" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="编码" align="center" prop="code" />
       <el-table-column label="名称" align="center" prop="name" />
-      <el-table-column label="内容" align="center" show-overflow-tooltip prop="content" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="引导图" align="center">
         <template #default="scope">
+          <el-tag type="danger" v-if="scope.row.guideMapUrl === '' || scope.row.guideMapUrl === null">未绑定</el-tag>
+          <el-tag v-else type="success">已绑定</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="内容" align="center">
+        <template #default="scope">
+          <el-popover width="200" title="内容" placement="top" :content="scope.row.content">
+            <template #reference>
+              <el-button link type="primary" icon="view">查看</el-button>
+            </template>
+          </el-popover>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" width="300px" class-name="small-padding fixed-width">
+        <template #default="scope">
+          <el-button link type="primary" icon="pointer" @click="handleBind(scope.row)">绑定引导图</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['craft:step:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['craft:step:remove']">删除</el-button>
         </template>
@@ -65,11 +79,15 @@
         </div>
       </template>
     </el-dialog>
+
+    <LabelDialog v-model="labelVisible" :visible="labelVisible" :stepIds="ids" :stepId="tempStepId" @change-status="changeStepStatus"/>
   </div>
 </template>
 
 <script setup name="Step">
 import { listStep, getStep, delStep, addStep, updateStep } from "@/api/craft/step"
+import LabelDialog from "@/views/craft/info_craft/LabelDialog.vue";
+import {changeStatus} from "@/api/craft/craft.js";
 
 const { proxy } = getCurrentInstance()
 
@@ -82,6 +100,8 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
 const stepOpen = defineModel()
+const labelVisible = ref(false)
+const tempStepId = ref(null)
 
 const data = reactive({
   form: {},
@@ -98,7 +118,8 @@ const data = reactive({
 
 const props = defineProps({
   stepOpen: Boolean,
-  processId: Number
+  processId: Number,
+  craftId: Number
 })
 
 const { queryParams, form, rules } = toRefs(data)
@@ -183,6 +204,7 @@ function submitForm() {
         form.value.processId = props.processId
         addStep(form.value).then(response => {
           proxy.$modal.msgSuccess("新增成功")
+          changeStatus(props.craftId)
           open.value = false
           getList()
         })
@@ -204,6 +226,20 @@ function handleDelete(row) {
 
 function onClose(){
   stepOpen.value = false
+}
+
+function handleBind(row){
+  labelVisible.value = true
+  tempStepId.value = row.id
+  // ids.value = []
+  // stepList.value.forEach(item => {
+  //   ids.value.push(item.id)
+  // })
+}
+
+function changeStepStatus(){
+  changeStatus(props.craftId)
+  getList()
 }
 
 watch(() => stepOpen.value, (value) => {

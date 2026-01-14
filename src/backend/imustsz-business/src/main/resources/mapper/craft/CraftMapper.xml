@@ -8,12 +8,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="id"    column="id"    />
         <result property="code"    column="code"    />
         <result property="name"    column="name"    />
+        <result property="status"    column="status"    />
         <result property="version"    column="version"    />
         <result property="desc"    column="desc"    />
     </resultMap>
 
     <sql id="selectCraftVo">
-        select id, code, name, version, `desc` from biz_craft
+        select id, code, name, version, status, `desc` from biz_craft
     </sql>
 
     <select id="selectCraftList" parameterType="Craft" resultMap="CraftResult">
@@ -22,6 +23,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null  and code != ''"> and code like concat('%', #{code}, '%')</if>
             <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
             <if test="version != null  and version != ''"> and version = #{version}</if>
+            <if test="status != null  and status != ''"> and status = #{status}</if>
             <if test="desc != null  and desc != ''"> and `desc` like concat('%', #{desc}, '%')</if>
             <if test="createTime != null "> and create_time = #{createTime}</if>
             <if test="updateTime != null "> and update_time = #{updateTime}</if>
@@ -43,6 +45,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="name != null">name,</if>
             <if test="version != null">version,</if>
             <if test="desc != null">`desc`,</if>
+            <if test="status != null">status,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="createBy != null">create_by,</if>
@@ -54,6 +57,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="name != null">#{name},</if>
             <if test="version != null">#{version},</if>
             <if test="desc != null">#{desc},</if>
+            <if test="status != null">#{status},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="createBy != null">#{createBy},</if>
@@ -69,6 +73,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="name != null">name = #{name},</if>
             <if test="version != null">version = #{version},</if>
             <if test="desc != null">`desc` = #{desc},</if>
+            <if test="status != null">status = #{status},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
@@ -91,5 +96,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectCraftIdByCodeAndVersion" resultType="java.lang.Long">
         select id from biz_craft where code = #{code} and version = #{version}
+    </select>
+
+    <update id="changeCraftStatus">
+        update biz_craft set status = #{status} where id = #{id}
+    </update>
+
+    <select id="selectCraftByCode" resultType="com.imustsz.craft.domain.Craft">
+        <include refid="selectCraftVo" />
+        where code = #{code}
+    </select>
+
+    <select id="getCodeList" resultType="java.lang.String">
+        select distinct code from biz_craft
+    </select>
+
+    <select id="getVersionByCode" resultType="java.lang.String">
+        select version from biz_craft where code = #{code}
     </select>
 </mapper>

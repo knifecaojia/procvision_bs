@@ -1,5 +1,6 @@
 <template>
   <div class="app-container">
+    <div v-if="isPageAlive">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="编码" prop="code">
         <el-input
@@ -70,11 +71,19 @@
       <el-table-column type="selection" width="55" align="center"/>
       <el-table-column label="编码" align="center" prop="code"/>
       <el-table-column label="名称" align="center" prop="name"/>
+      <el-table-column label="状态" align="center">
+        <template #default="scope">
+          <el-tag v-if="scope.row.status === 1" size="small" type="info">待处理</el-tag>
+          <el-tag v-if="scope.row.status === 2" size="small" type="danger">未配置引导信息</el-tag>
+          <el-tag v-if="scope.row.status === 3" size="small" type="danger">未配置检测算法</el-tag>
+          <el-tag v-if="scope.row.status === 4" size="small" type="success">已就绪</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="版本" align="center" prop="version"/>
       <el-table-column label="说明" align="center" prop="desc"/>
       <el-table-column label="详细" align="center" prop="">
         <template #default="scope">
-          <el-button link type="primary" @click="showProcess(scope.row)">查看工序</el-button>
+          <el-button link icon="view" type="primary" @click="showProcess(scope.row)">查看工序</el-button>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
@@ -121,31 +130,28 @@
       </template>
     </el-dialog>
 
-    <ProcessDialog v-model="processOpen" :processOpen="processOpen" :craftId="tempCraftId" />
+    <ProcessDialog v-model="processOpen" :processOpen="processOpen" :craftId="tempCraftId" @check-status="checkStatus" />
+    </div>
   </div>
 </template>
 
 <script setup name="Craft">
-import {listCraft, getCraft, delCraft, addCraft, updateCraft} from "@/api/craft/craft.js"
-import {listStep} from "@/api/craft/step.js";
+import {listCraft, getCraft, delCraft, addCraft, updateCraft, changeStatus} from "@/api/craft/craft.js"
 import ProcessDialog from "@/views/craft/info_craft/ProcessDialog.vue";
 
 const {proxy} = getCurrentInstance()
 
 const craftList = ref([])
-const stepList = ref([])
 const open = ref(false)
 const loading = ref(true)
-const stepLoading = ref(true)
 const showSearch = ref(true)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
-const stepTotal = ref(0)
 const title = ref("")
 const tempCraftId = ref(null)
-const tempProcessId = ref(null)
+const isPageAlive = ref(true)
 
 const data = reactive({
   processOpen: false,
@@ -181,6 +187,7 @@ function getList() {
     total.value = response.total
     loading.value = false
   })
+
 }
 
 // 取消按钮
@@ -276,17 +283,10 @@ function showProcess(row) {
   tempCraftId.value = row.id
 }
 
-function showStep(row) {
-  stepOpen.value = true
-  stepLoading.value = true
-  tempProcessId.value = row.id
-  listStep({processId: row.id}).then(res => {
-    if (res.code === 200) {
-      stepList.value = res.rows
-      stepTotal.value = res.total
-      stepLoading.value = false
-    }
-  })
+function checkStatus(){
+  processOpen.value = false
+  craftList.value = []
+  getList()
 }
 
 getList()

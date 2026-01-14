@@ -1,6 +1,7 @@
 package com.imustsz.craft.service;
 
 import com.imustsz.craft.domain.Craft;
+import com.imustsz.craft.domain.dto.SelectorInfoVO;
 import com.imustsz.craft.domain.json.ProductProcess;
 
 import java.util.List;
@@ -62,4 +63,10 @@ public interface ICraftService
     public int deleteCraftById(Long id);
 
     void importCraftFromMMo(ProductProcess productProcess);
+
+    void checkStatus(Long id);
+
+    List<String> getCraftSelector();
+
+    List<SelectorInfoVO> getSelectorOptions();
 }

@@ -9,7 +9,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="code"    column="code"    />
         <result property="name"    column="name"    />
         <result property="desc"    column="desc"    />
-        <result property="algorithmCode"    column="algorithm_code"    />
+        <result property="algorithmId"    column="algorithm_id"    />
         <result property="guideGranularity"    column="guide_granularity"    />
         <result property="craftId"    column="craft_id"    />
         <result property="craftCode"    column="craft_code"    />
@@ -18,7 +18,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectProcessVo">
-        select id, code, name, algorithm_code, `desc`, guide_granularity, craft_id, craft_code, guide_map_url, process_material_info from biz_process
+        select id, code, name, algorithm_id, `desc`, guide_granularity, craft_id, craft_code, guide_map_url, process_material_info from biz_process
     </sql>
 
     <select id="selectProcessList" parameterType="Process" resultMap="ProcessResult">
@@ -27,7 +27,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null  and code != ''"> and code = #{code}</if>
             <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
             <if test="desc != null  and desc != ''"> and `desc` = #{desc}</if>
-            <if test="algorithmCode != null  and algorithmCode != ''"> and algorithm_code = #{algorithmCode}</if>
+            <if test="algorithmId != null  and algorithmId != ''"> and algorithm_id = #{algorithmId}</if>
             <if test="guideGranularity != null "> and guide_granularity = #{guideGranularity}</if>
             <if test="craftId != null "> and craft_id = #{craftId}</if>
             <if test="craftCode != null  and craftCode != ''"> and craft_code = #{craftCode}</if>
@@ -52,7 +52,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null">code,</if>
             <if test="name != null">name,</if>
             <if test="desc != null">`desc`,</if>
-            <if test="algorithmCode != null">algorithm_code,</if>
+            <if test="algorithmId != null">algorithm_id,</if>
             <if test="guideGranularity != null">guide_granularity,</if>
             <if test="craftId != null">craft_id,</if>
             <if test="craftCode != null">craft_code,</if>
@@ -68,7 +68,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null">#{code},</if>
             <if test="name != null">#{name},</if>
             <if test="desc != null">#{desc},</if>
-            <if test="algorithmCode != null">#{algorithmCode},</if>
+            <if test="algorithmId != null">#{algorithmId},</if>
             <if test="guideGranularity != null">#{guideGranularity},</if>
             <if test="craftId != null">#{craftId},</if>
             <if test="craftCode != null">#{craftCode},</if>
@@ -88,7 +88,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null">code = #{code},</if>
             <if test="name != null">name = #{name},</if>
             <if test="desc != null">`desc` = #{desc},</if>
-            <if test="algorithmCode != null">algorithmCode = #{algorithmCode},</if>
+            <if test="algorithmId != null">algorithmId = #{algorithmId},</if>
             <if test="guideGranularity != null">guide_granularity = #{guideGranularity},</if>
             <if test="craftId != null">craft_id = #{craftId},</if>
             <if test="craftCode != null">craft_code = #{craftCode},</if>
@@ -119,11 +119,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where code = #{processCode}
     </select>
 
-    <select id="selectProcessIdByCodeAndCraftId" resultType="java.lang.Long">
-        select id from biz_process where code = #{processCode} and craft_id = #{craftId}
+    <select id="selectProcessIdByCodeAndCraftId" resultMap="ProcessResult">
+        <include refid="selectProcessVo" />
+        where code = #{processCode} and craft_id = #{craftId}
     </select>
 
     <select id="getDelIdsByCraftId" resultType="java.lang.Long">
         select id from biz_process where craft_id = #{craftId}
+    </select>
+
+    <update id="bindAlg">
+        update biz_process set algorithm_id = #{algId} where id = #{id}
+    </update>
+
+    <select id="selectProcessByCraftId" resultMap="ProcessResult">
+        <include refid="selectProcessVo" />
+        where craft_id = #{craftId}
+    </select>
+
+    <select id="getCodeAndNameByCraftCode" resultType="com.imustsz.craft.domain.dto.ProcessCodeAndNameVO">
+        select code, name from biz_process where craft_code = #{code}
+    </select>
+
+    <select id="selectProcessByCodeAndNameAndCraftId" resultMap="ProcessResult">
+        <include refid="selectProcessVo" />
+        where code = #{code} and name = #{name} and craft_id = #{craftId}
     </select>
 </mapper>

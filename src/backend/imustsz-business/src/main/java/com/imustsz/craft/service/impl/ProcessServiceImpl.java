@@ -104,4 +104,9 @@ public class ProcessServiceImpl implements IProcessService
         }
         return processMapper.deleteProcessByIds(ids);
     }
+
+    @Override
+    public int bindAlg(Long id, Long algId) {
+        return processMapper.bindAlg(id, algId);
+    }
 }

@@ -8,4 +8,5 @@ public class StepVO {
     private String step_name;
     private String step_content;
     private String guide_url;
+    private String guide_info;
 }

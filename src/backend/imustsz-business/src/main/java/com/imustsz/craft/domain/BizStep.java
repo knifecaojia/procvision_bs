@@ -40,6 +40,9 @@ public class BizStep extends BaseEntity
     @Excel(name = "工序id")
     private Long processId;
 
+    @Excel(name = "坐标信息")
+    private String guideInfo;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -96,6 +99,14 @@ public class BizStep extends BaseEntity
     public String getGuideMapUrl()
     {
         return guideMapUrl;
+    }
+
+    public String getCoordsInfo() {
+        return guideInfo;
+    }
+
+    public void setCoordsInfo(String coordsInfo) {
+        this.guideInfo = coordsInfo;
     }
 
     @Override

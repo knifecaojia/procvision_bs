@@ -1,11 +1,14 @@
 package com.imustsz.craft.service.impl;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.imustsz.cilent.domain.vo.StepVO;
 import com.imustsz.common.constant.UserConstants;
 import com.imustsz.common.utils.DateUtils;
 import com.imustsz.common.utils.SecurityUtils;
 import com.imustsz.craft.domain.BizStep;
 import com.imustsz.craft.domain.Craft;
+import com.imustsz.craft.domain.dto.ProcessCodeAndNameVO;
+import com.imustsz.craft.domain.dto.SelectorInfoVO;
 import com.imustsz.craft.domain.json.Operation;
 import com.imustsz.craft.domain.json.OperationInfo;
 import com.imustsz.craft.domain.json.ProcessInfo;
@@ -22,16 +25,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 工艺信息Service业务层处理
- * 
+ *
  * @author imustsz
  * @date 2025-12-18
  */
 @Service
-public class CraftServiceImpl implements ICraftService 
-{
+public class CraftServiceImpl implements ICraftService {
     @Autowired
     private CraftMapper craftMapper;
 
@@ -46,81 +50,76 @@ public class CraftServiceImpl implements ICraftService
 
     /**
      * 查询工艺信息
-     * 
+     *
      * @param id 工艺信息主键
      * @return 工艺信息
      */
     @Override
-    public Craft selectCraftById(Long id)
-    {
+    public Craft selectCraftById(Long id) {
         return craftMapper.selectCraftById(id);
     }
 
     /**
      * 查询工艺信息列表
-     * 
+     *
      * @param craft 工艺信息
      * @return 工艺信息
      */
     @Override
-    public List<Craft> selectCraftList(Craft craft)
-    {
+    public List<Craft> selectCraftList(Craft craft) {
         return craftMapper.selectCraftList(craft);
     }
 
     /**
      * 新增工艺信息
-     * 
+     *
      * @param craft 工艺信息
      * @return 结果
      */
     @Override
-    public int insertCraft(Craft craft)
-    {
+    public int insertCraft(Craft craft) {
         return craftMapper.insertCraft(craft);
     }
 
     /**
      * 修改工艺信息
-     * 
+     *
      * @param craft 工艺信息
      * @return 结果
      */
     @Override
-    public int updateCraft(Craft craft)
-    {
+    public int updateCraft(Craft craft) {
         return craftMapper.updateCraft(craft);
     }
 
     /**
      * 批量删除工艺信息
-     * 
+     *
      * @param ids 需要删除的工艺信息主键
      * @return 结果
      */
     @Override
-    public int deleteCraftByIds(Long[] ids)
-    {
+    public int deleteCraftByIds(Long[] ids) {
         for (Long id : ids) {
             processService.deleteProcessByCraftId(id);
-         }
+        }
         return craftMapper.deleteCraftByIds(ids);
     }
 
     /**
      * 删除工艺信息信息
-     * 
+     *
      * @param id 工艺信息主键
      * @return 结果
      */
     @Override
-    public int deleteCraftById(Long id)
-    {
+    public int deleteCraftById(Long id) {
         return craftMapper.deleteCraftById(id);
     }
 
     /**
      * 从MMO导入工艺信息
+     *
      * @param productProcess MMO工艺信息
      */
     @Override
@@ -166,5 +165,45 @@ public class CraftServiceImpl implements ICraftService
 
         });
 
+    }
+
+    @Override
+    public void checkStatus(Long id) {
+        boolean isNotAlg = false;
+        boolean isNotGuide = false;
+        List<Process> processes = processMapper.selectProcessByCraftId(id);
+        for (Process process : processes) {
+            if (process.getAlgorithmId() == null) {
+                isNotAlg = true;
+                break;
+            }
+        }
+        for (Process process : processes) {
+            List<StepVO> steps = bizStepMapper.selectStepByProcessId(process.getId());
+            for (StepVO step : steps)
+                if (step.getGuide_url() == null) {
+                    isNotGuide = true;
+                    break;
+                }
+            if (isNotGuide)
+                break;
+        }
+        if (isNotAlg)
+            craftMapper.changeCraftStatus(id, 3);
+        else if (isNotGuide)
+            craftMapper.changeCraftStatus(id, 2);
+        else
+            craftMapper.changeCraftStatus(id, 4);
+    }
+
+    @Override
+    public List<String> getCraftSelector() {
+        return craftMapper.getCodeList();
+    }
+
+    @Override
+    public List<SelectorInfoVO> getSelectorOptions() {
+
+        return List.of();
     }
 }

@@ -1,10 +1,10 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="98px">
-      <el-form-item label="工单编码" style="margin-left: -26px" prop="workOrderCode">
+      <el-form-item label="装配任务编码" prop="workOrderCode">
         <el-input
           v-model="queryParams.workOrderCode"
-          placeholder="请输入工单编码"
+          placeholder="请输入任务编码"
           clearable
           @keyup.enter="handleQuery"
         />
@@ -65,8 +65,8 @@
 
     <el-table v-loading="loading" :data="workOrderList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="工单编码" align="center" prop="workOrderCode" />
-      <el-table-column label="工单数量" align="center" prop="workOrderQuantity" />
+      <el-table-column label="装配任务编码" align="center" prop="workOrderCode" />
+      <el-table-column label="项目号" align="center" prop="projectNo" />
       <el-table-column label="状态" align="center" prop="status" >
         <template #default="scope">
           <el-tag v-if="scope.row.status === 1" size="small" type="info">待派单</el-tag>
@@ -75,7 +75,6 @@
           <el-tag v-else-if="scope.row.status === 4" size="small" type="warning">阻塞</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="派单数量" align="center" prop="dispatchQuantity" />
       <el-table-column label="计划开始时间" align="center" prop="startTime" width="180">
         <template #default="scope">
           <span>{{ parseTime(scope.row.startTime, '{y}-{m}-{d}') }}</span>
@@ -94,7 +93,7 @@
       <el-table-column label="操作" align="center" width="250px" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-config-provider :message="config">
-            <el-button link type="primary" icon="View" @click="handleResultShow(scope.row)">引导图查看</el-button>
+            <el-button link type="primary" icon="View" @click="handleResultShow(scope.row)">结果查看</el-button>
           </el-config-provider>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wo:workOrder:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wo:workOrder:remove']">删除</el-button>
@@ -113,27 +112,66 @@
     <!-- 添加或修改工单对话框 -->
     <el-dialog :title="title" v-model="open" width="600px" append-to-body>
       <el-form ref="workOrderRef" :model="form" :rules="rules" label-width="96px">
-        <el-form-item label="工单编码" prop="workOrderCode">
-          <el-input v-model="form.workOrderCode" placeholder="请输入工单编码" />
-        </el-form-item>
-        <el-form-item label="工单数量" prop="workOrderQuantity">
-          <el-input v-model="form.workOrderQuantity" placeholder="请输入工单数量" />
-        </el-form-item>
-        <el-form-item label="工艺编码" prop="craftCode">
-          <el-input v-model="form.craftCode" placeholder="请输入工艺编码" />
-        </el-form-item>
-        <el-form-item label="工艺版本" prop="craftVersion">
-          <el-input v-model="form.craftVersion" placeholder="请输入工艺版本" />
-        </el-form-item>
-        <el-form-item label="工序编码" prop="processCode">
-          <el-input v-model="form.processCode" placeholder="请输入工序编码" />
-        </el-form-item>
-        <el-form-item label="工序名称" prop="processName">
-          <el-input v-model="form.processName" placeholder="请输入工序名称" />
-        </el-form-item>
-        <el-form-item label="派单数量" prop="dispatchQuantity">
-          <el-input v-model="form.dispatchQuantity" placeholder="请输入派单数量" />
-        </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="工单编码" prop="workOrderCode">
+              <el-input v-model="form.workOrderCode" placeholder="请输入工单编码" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="工单数量" prop="workOrderQuantity">
+              <el-input v-model="form.workOrderQuantity" placeholder="请输入工单数量" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="工艺编码" prop="craftCode">
+              <el-input v-model="form.craftCode" placeholder="请输入工艺编码" />
+<!--              <el-select v-model="form.craftCode" placeholder="请选择工艺编码">-->
+<!--                <el-option v-for="item in craftList" :key="item.craftCode" :label="item.craftCode" :value="item.craftCode">-->
+<!--                </el-option>-->
+<!--              </el-select>-->
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="工艺版本" prop="craftVersion">
+              <el-input v-model="form.craftVersion" placeholder="请输入工艺版本" />
+<!--              <el-select v-model="form.craftVersion" placeholder="请选择工艺版本">-->
+<!--                <el-option v-for="item in craftVersionList" :key="item.craftVersion" :label="item.craftVersion" :value="item.craftVersion">-->
+<!--                </el-option>-->
+<!--              </el-select>-->
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="工序编码" prop="processCode">
+              <el-input v-model="form.processCode" placeholder="请输入工序编码" />
+<!--              <el-select v-model="form.processCode" placeholder="请选择工序编码">-->
+<!--                <el-option v-for="item in processList" :key="item.processCode" :label="item.processName" :value="item.processCode">-->
+<!--                </el-option>-->
+<!--              </el-select>-->
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="工序名称" prop="processName">
+              <el-input v-model="form.processName" placeholder="请输入工序名称" />
+<!--              <el-select v-model="form.processName" placeholder="请选择工序名称" >-->
+<!--                <el-option v-for="item in processNameList" :key="item.processName" :label="item.processName" :value="item.processName">-->
+<!--                </el-option>-->
+<!--              </el-select>-->
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="装配工人姓名" prop="workerName">
+              <el-input v-model="form.workerName" placeholder="请输入装配工人姓名" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="装配工人编码" prop="workerCode">
+              <el-input v-model="form.workerCode" placeholder="请输入装配工人编码" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+        </el-col>
+        </el-row>
         <el-form-item label="计划开始时间" prop="startTime">
           <el-date-picker clearable
             v-model="form.startTime"
@@ -150,12 +188,6 @@
             placeholder="请选择计划结束时间">
           </el-date-picker>
         </el-form-item>
-        <el-form-item label="装配工人编码" prop="workerCode">
-          <el-input v-model="form.workerCode" placeholder="请输入装配工人编码" />
-        </el-form-item>
-        <el-form-item label="装配工人姓名" prop="workerName">
-          <el-input v-model="form.workerName" placeholder="请输入装配工人姓名" />
-        </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -165,7 +197,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog title="工单详情" v-model="isWorkOrderInfoOpen" width="500px">
+    <el-dialog title="任务详情" v-model="isWorkOrderInfoOpen" width="580px">
       <el-form :model="workOrderInfo">
         <el-row :gutter="15">
           <el-col :span="12">
@@ -198,11 +230,31 @@
               {{workOrderInfo.workerName}}
             </el-form-item>
           </el-col>
+          <el-col :span="12">
+            <el-form-item label="生产订单号">
+              {{workOrderInfo.prodOrderNo}}
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="生产批次号">
+              {{workOrderInfo.prodBatchNo}}
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="材料号">
+              {{workOrderInfo.materialNo}}
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="材料名称">
+              {{workOrderInfo.materialName}}
+            </el-form-item>
+          </el-col>
         </el-row>
       </el-form>
     </el-dialog>
 
-    <el-dialog title="工单结果" v-model="isWorkOrderResult" width="600px">
+    <el-dialog title="任务结果" v-model="isWorkOrderResult" width="600px">
       <el-image :src="imageUrl" style="width: 100%; height: 100%;"/>
     </el-dialog>
   </div>
@@ -268,6 +320,20 @@ function getList() {
   })
 }
 
+// async function getCraftList() {
+//   craftList.value = []
+//   await getCraftSelector().then(response => {
+//     if (response.code === 200) {
+//       response.data.forEach((item, idx) => {
+//         craftList.value.push({
+//           id: idx,
+//           craftCode: item
+//         })
+//       })
+//     }
+//   })
+// }
+
 // 取消按钮
 function cancel() {
   open.value = false
@@ -328,6 +394,7 @@ function handleAdd() {
   reset()
   open.value = true
   title.value = "添加工单"
+  getCraftList()
 }
 
 /** 修改按钮操作 */

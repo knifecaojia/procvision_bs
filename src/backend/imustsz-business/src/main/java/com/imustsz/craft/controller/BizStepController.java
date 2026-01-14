@@ -2,6 +2,8 @@ package com.imustsz.craft.controller;
 
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
+
+import com.imustsz.craft.domain.dto.GuideInfoDTO;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -86,8 +88,7 @@ public class BizStepController extends BaseController
     @PreAuthorize("@ss.hasPermi('craft:step:edit')")
     @Log(title = "工步信息", businessType = BusinessType.UPDATE)
     @PutMapping
-    public AjaxResult edit(@RequestBody BizStep bizStep)
-    {
+    public AjaxResult edit(@RequestBody BizStep bizStep) throws Exception {
         return toAjax(bizStepService.updateBizStep(bizStep));
     }
 
@@ -100,5 +101,10 @@ public class BizStepController extends BaseController
     public AjaxResult remove(@PathVariable Long[] ids)
     {
         return toAjax(bizStepService.deleteBizStepByIds(ids));
+    }
+
+    @PostMapping("/bindImg")
+    public AjaxResult bindImgAndInfo(@RequestBody GuideInfoDTO guideInfoDTO) throws Exception {
+        return toAjax(bizStepService.bindImgAndInfo(guideInfoDTO));
     }
 }

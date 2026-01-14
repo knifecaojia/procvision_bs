@@ -19,6 +19,13 @@
     </properties>
     <dependencies>
 
+        <!--海康摄像头        -->
+        <dependency>
+            <groupId>com.hikvision</groupId>
+            <artifactId>MvCameraControlWrapper</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
         <!-- OkHttp 依赖 -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>

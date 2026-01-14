@@ -34,7 +34,7 @@ public class BizProcessRecord extends BaseEntity
 
     /** 工步状态 */
     @Excel(name = "工步状态")
-    private String stepStatus;
+    private Integer stepStatus;
 
     /** Minio Key */
     @Excel(name = "Minio Key")
@@ -85,12 +85,12 @@ public class BizProcessRecord extends BaseEntity
         this.stepCode = stepCode;
     }
 
-    public void setStepStatus(String stepStatus)
+    public void setStepStatus(Integer stepStatus)
     {
         this.stepStatus = stepStatus;
     }
 
-    public String getStepStatus() 
+    public Integer getStepStatus()
     {
         return stepStatus;
     }

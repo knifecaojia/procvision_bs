@@ -86,7 +86,7 @@ public class BizAlgorithmController extends BaseController {
     @PreAuthorize("@ss.hasPermi('algorithm:algorithm:edit')")
     @Log(title = "算法", businessType = BusinessType.UPDATE)
     @PutMapping
-    public AjaxResult edit(BizAlgorithm bizAlgorithm) throws Exception {
+    public AjaxResult edit(@RequestBody BizAlgorithm bizAlgorithm) throws Exception {
         BizAlgorithm algorithm = bizAlgorithmService.selectBizAlgorithmById(bizAlgorithm.getId());
 
         if (!algorithm.getObjectName().equals(bizAlgorithm.getObjectName())){

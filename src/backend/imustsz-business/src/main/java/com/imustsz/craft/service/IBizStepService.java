@@ -1,7 +1,10 @@
 package com.imustsz.craft.service;
 
 import java.util.List;
+
+import com.imustsz.common.core.domain.AjaxResult;
 import com.imustsz.craft.domain.BizStep;
+import com.imustsz.craft.domain.dto.GuideInfoDTO;
 
 /**
  * 工步信息Service接口
@@ -41,7 +44,7 @@ public interface IBizStepService
      * @param bizStep 工步信息
      * @return 结果
      */
-    public int updateBizStep(BizStep bizStep);
+    public int updateBizStep(BizStep bizStep) throws Exception;
 
     /**
      * 批量删除工步信息
@@ -58,4 +61,6 @@ public interface IBizStepService
      * @return 结果
      */
     public int deleteBizStepById(Long id);
+
+    int bindImgAndInfo(GuideInfoDTO guideInfoDTO);
 }

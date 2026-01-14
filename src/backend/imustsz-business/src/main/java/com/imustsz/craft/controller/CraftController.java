@@ -116,4 +116,20 @@ public class CraftController extends BaseController
         craftService.importCraftFromMMo(productProcess);
         return success(productProcess);
     }
+
+    @GetMapping("/checkStatus/{id}")
+    public AjaxResult changeCraftStatus(@PathVariable Long id) {
+        craftService.checkStatus(id);
+        return success();
+    }
+
+    @GetMapping("/options")
+    public AjaxResult getOptions() {
+        return success(craftService.getSelectorOptions());
+    }
+
+    @GetMapping("/craftSelector")
+    public AjaxResult getSelectorInfo() {
+        return success(craftService.getCraftSelector());
+    }
 }

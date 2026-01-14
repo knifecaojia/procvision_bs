@@ -1,6 +1,6 @@
 <template>
   <div>
-    <el-dialog title="工序信息" v-model="processOpen" width="900px" @close="onClose">
+    <el-dialog title="工序信息" v-model="processOpen" width="1000px" @close="onClose">
       <el-row :gutter="10" class="mb8">
         <el-col :span="1.5">
           <el-button
@@ -30,25 +30,33 @@
         <el-table-column type="selection" width="55" align="center"/>
         <el-table-column label="工序号" align="center" prop="code"/>
         <el-table-column label="工序名称" align="center" prop="name"/>
-        <el-table-column label="说明" align="center" prop="desc"/>
-        <el-table-column label="查看引导图" align="center">
+        <el-table-column label="算法" align="center">
           <template #default="scope">
-            <el-button link type="primary" @click="showStep(scope.row)">查看引导图</el-button>
+            <el-tag type="danger" v-if="scope.row.algorithmId == null">未绑定</el-tag>
+            <el-tag v-else type="success">
+              {{ algList.find(item => item.id === scope.row.algorithmId).name + ' -- ' + algList.find(item => item.id === scope.row.algorithmId).version}}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="详细" align="center" prop="">
           <template #default="scope">
-            <el-button link type="primary" @click="showStep(scope.row)">查看工步</el-button>
+            <el-button link icon="view" type="primary" @click="showStep(scope.row)">查看工步</el-button>
           </template>
         </el-table-column>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="250px">
           <template #default="scope">
-            <el-button link type="primary" icon="Edit" @click="handleProcessUpdate(scope.row)" v-hasPermi="['process:process:edit']">
+            <el-button link type="primary" icon="link" @click="showBindAlg(scope.row)"
+                       v-hasPermi="['process:process:edit']">
+              绑定算法
+            </el-button>
+            <el-button link type="primary" icon="Edit" @click="handleProcessUpdate(scope.row)"
+                       v-hasPermi="['process:process:edit']">
               修改
             </el-button>
             <el-button link type="primary" icon="Delete" @click="handleProcessDelete(scope.row)"
                        v-hasPermi="['craft:craft:remove']">删除
             </el-button>
+<!--            <el-button link type="primary" icon="pointer" @click="handleProcessDelete(scope.row)">查看说明</el-button>-->
           </template>
         </el-table-column>
       </el-table>
@@ -62,7 +70,7 @@
       />
     </el-dialog>
 
-    <StepDialog v-model="stepOpen" :stepOpen="stepOpen" :processId="tempProcessId"></StepDialog>
+    <StepDialog v-model="stepOpen" :stepOpen="stepOpen" :processId="tempProcessId" :craftId="props.craftId"></StepDialog>
 
     <!-- 添加或修改工序信息对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
@@ -85,12 +93,31 @@
       </template>
     </el-dialog>
 
+    <el-dialog title="绑定算法" v-model="bindAlgShow" width="500px" append-to-body>
+      <el-select clearable v-model="selectedAlgId">
+        <el-option v-for="item in algList" :key="item.id" :label="item.name + ' —— Ver：' + item.version" :value="item.id">
+        </el-option>
+      </el-select>
+      <div style="margin-top: 20px; display: flex; justify-content: center">
+        <el-button type="primary" @click="handleBind">确 定</el-button>
+      </div>
+    </el-dialog>
+
   </div>
 </template>
 
 <script setup name="Process">
-import {addProcess, delProcess, getProcess, listProcess, updateProcess} from "@/api/craft/process.js";
+import {
+  addProcess,
+  bindProcessAlgorithm,
+  delProcess,
+  getProcess,
+  listProcess,
+  updateProcess
+} from "@/api/craft/process.js";
 import StepDialog from "@/views/craft/info_craft/StepDialog.vue";
+import {listAlgorithm} from "@/api/algorithm/algorithm.js";
+import {changeStatus} from "@/api/craft/craft.js";
 
 const {proxy} = getCurrentInstance()
 
@@ -104,8 +131,11 @@ const multiple = ref(true)
 const ids = ref([])
 const single = ref(true)
 const tempProcessId = ref(null)
+const bindAlgShow = ref(false)
+const selectedAlgId = ref(null)
 
 const data = reactive({
+  algList: [],
   stepOpen: false,
   processPageParms: {
     pageNum: 1,
@@ -113,7 +143,7 @@ const data = reactive({
     craftId: null
   },
   form: {},
-  rules:{
+  rules: {
     code: [
       {required: true, message: "编码不能为空", trigger: "blur"}
     ],
@@ -123,7 +153,7 @@ const data = reactive({
   }
 })
 
-const {stepOpen, processPageParms, form, rules} = toRefs(data)
+const {stepOpen, processPageParms, form, rules, algList} = toRefs(data)
 
 const props = defineProps({
   craftId: {
@@ -135,6 +165,8 @@ const props = defineProps({
     default: false
   }
 })
+
+const emit = defineEmits(['check-status'])
 
 /** 新增按钮操作 */
 function handleAdd() {
@@ -165,8 +197,9 @@ function reset() {
   proxy.resetForm("craftRef")
 }
 
-function onClose(){
-  processOpen.value = false
+function onClose() {
+  processList.value = []
+  emit('check-status')
 }
 
 function getProcessList() {
@@ -186,7 +219,7 @@ function handleSelectionChange(selection) {
   multiple.value = !selection.length
 }
 
-function handleProcessUpdate(row){
+function handleProcessUpdate(row) {
   reset()
   open.value = true
   const _id = row.id || ids.value
@@ -210,6 +243,7 @@ function submitForm() {
         form.value.craftId = props.craftId
         addProcess(form.value).then(response => {
           proxy.$modal.msgSuccess("新增成功")
+          changeStatus(props.craftId)
           open.value = false
           getProcessList()
         })
@@ -230,8 +264,33 @@ function handleProcessDelete(row) {
   })
 }
 
+function getAlgList() {
+  listAlgorithm().then(response => {
+    algList.value = response.rows
+  })
+}
+
+async function showBindAlg(row) {
+  bindAlgShow.value = true
+  selectedAlgId.value = null
+  tempProcessId.value = row.id
+}
+
+async function handleBind() {
+  if (selectedAlgId.value) {
+    await bindProcessAlgorithm(tempProcessId.value, selectedAlgId.value).then(response => {
+      proxy.$modal.msgSuccess("绑定成功")
+      bindAlgShow.value = false
+    })
+    await changeStatus(props.craftId)
+    getProcessList()
+  } else {
+    proxy.$modal.msgError("请选择要绑定的算法")
+  }
+}
+
 function showStep(row) {
-  stepOpen.value =  true
+  stepOpen.value = true
   tempProcessId.value = row.id
 }
 
@@ -242,8 +301,14 @@ function cancel() {
 
 watch(() => props.processOpen, (val) => {
   if (val) {
-    getProcessList()
+    proxy.$nextTick().then(() => {
+      getProcessList()
+    })
   }
+})
+
+onMounted(() => {
+  getAlgList()
 })
 
 </script>

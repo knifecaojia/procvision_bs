@@ -95,4 +95,10 @@ public class ProcessController extends BaseController
     {
         return toAjax(processService.deleteProcessByIds(ids));
     }
+
+    @GetMapping("/bindAlg/{id}/{algId}")
+    public AjaxResult bindAlg(@PathVariable Long id, @PathVariable Long algId) {
+        return toAjax(processService.bindAlg(id, algId));
+    }
+
 }

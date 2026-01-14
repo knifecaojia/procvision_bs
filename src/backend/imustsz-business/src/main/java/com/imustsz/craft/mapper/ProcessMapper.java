@@ -1,6 +1,7 @@
 package com.imustsz.craft.mapper;
 
 import com.imustsz.craft.domain.Process;
+import com.imustsz.craft.domain.dto.ProcessCodeAndNameVO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -63,7 +64,15 @@ public interface ProcessMapper
 
     Process selectProcessByCode(String processCode);
 
-    Long selectProcessIdByCodeAndCraftId(@Param("processCode") String processCode, @Param("craftId") Long craftId);
+    Process selectProcessIdByCodeAndCraftId(@Param("processCode") String processCode, @Param("craftId") Long craftId);
 
     Long[] getDelIdsByCraftId(Long craftId);
+
+    int bindAlg(@Param("id") Long id, @Param("algId") Long algId);
+
+    List<Process> selectProcessByCraftId(Long craftId);
+
+    List<ProcessCodeAndNameVO> getCodeAndNameByCraftCode(String code);
+
+    Process selectProcessByCodeAndNameAndCraftId(@Param("code") String code, @Param("name") String name, @Param("craftId") Long craftId);
 }

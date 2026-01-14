@@ -3,24 +3,25 @@ package com.imustsz.order.service.impl;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.imustsz.cilent.domain.dto.ProcessDTO;
 import com.imustsz.cilent.domain.dto.ResultDTO;
 import com.imustsz.cilent.domain.dto.WorkOrderProperties;
 import com.imustsz.cilent.domain.vo.StepVO;
 import com.imustsz.cilent.domain.vo.WorkOrderVO;
+import com.imustsz.common.utils.DateUtils;
 import com.imustsz.common.utils.bean.MinioUtils;
 import com.imustsz.craft.domain.BizStep;
+import com.imustsz.craft.domain.Craft;
 import com.imustsz.craft.domain.Process;
 import com.imustsz.craft.mapper.BizStepMapper;
 import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
-import com.imustsz.order.domain.json.DispatchTaskInfo;
-import com.imustsz.order.domain.json.ProcessTaskSync;
-import com.imustsz.order.domain.json.WorkOrder;
-import com.imustsz.order.domain.json.WorkOrderInfo;
+import com.imustsz.order.domain.json.*;
 import com.imustsz.process.domain.BizProcessRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -90,6 +91,13 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
     @Override
     public int insertBizWorkOrder(BizWorkOrder bizWorkOrder)
     {
+        Long l = craftMapper.selectCraftIdByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
+        if (l == null)
+            return -1;
+        Process process = processMapper.selectProcessByCodeAndNameAndCraftId(bizWorkOrder.getProcessCode(), bizWorkOrder.getProcessName(), l);
+        if (process == null)
+            return -2;
+
         return bizWorkOrderMapper.insertBizWorkOrder(bizWorkOrder);
     }
 
@@ -133,44 +141,83 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
      * 从MMO获取订单信息
      */
     @Override
-    public void importOrderFromMMo(ProcessTaskSync processTaskSync) {
-        for (WorkOrder workOrder : processTaskSync.getWorkOrderList()) {
-            WorkOrderInfo workOrderInfo = workOrder.getWorkOrderInfo();
-            DispatchTaskInfo dispatchTaskInfo = workOrder.getDispatchTaskInfo();
+    @Transactional
+    public int importOrderFromMMo(List<Task> taskSync) {
+        int flag = 0;
+        int i = 1;
+        Date date = new Date();
+        for (Task task : taskSync) {
+            StringBuilder sb = new StringBuilder();
 
             BizWorkOrder bizWorkOrder = new BizWorkOrder();
-            bizWorkOrder.setWorkOrderCode(workOrderInfo.getWorkOrderNo());
-            bizWorkOrder.setWorkOrderQuantity(Long.parseLong(workOrderInfo.getWorkOrderQuantity()));
-            bizWorkOrder.setCraftCode(workOrderInfo.getProcessNo());
-            bizWorkOrder.setCraftVersion(workOrderInfo.getProcessVersion());
+            if (i < 10)
+                bizWorkOrder.setWorkOrderCode(sb.append("10000").append(String.valueOf(date.getTime()).substring(String.valueOf(date.getTime()).length()-5)).append("-0").append(i++).toString());
+            else
+                bizWorkOrder.setWorkOrderCode(sb.append("10000").append(String.valueOf(date.getTime()).substring(String.valueOf(date.getTime()).length()-5)).append("-").append(i++).toString());
+            bizWorkOrder.setCraftCode(task.getCraft_no());
+            bizWorkOrder.setCraftVersion(task.getCraft_version());
             bizWorkOrder.setStatus(1);
 
-            bizWorkOrder.setDispatchQuantity(Long.parseLong(dispatchTaskInfo.getDispatchQuantity()));
-            bizWorkOrder.setProcessCode(dispatchTaskInfo.getOperationNo());
-            bizWorkOrder.setProcessName(dispatchTaskInfo.getOperationName());
+            bizWorkOrder.setProcessCode(task.getProceress_no());
+            bizWorkOrder.setProcessName(task.getProceress_name());
 
-            LocalDateTime localDateTime1 = LocalDateTime.parse(dispatchTaskInfo.getPlannedStartTime(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-            LocalDateTime localDateTime2 = LocalDateTime.parse(dispatchTaskInfo.getPlannedEndTime(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            LocalDateTime localDateTime1 = LocalDateTime.parse(task.getPlanned_start_time(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            LocalDateTime localDateTime2 = LocalDateTime.parse(task.getPlanned_end_time(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
             Date date1 = Date.from(localDateTime1.atZone(ZoneId.systemDefault()).toInstant());
             Date date2 = Date.from(localDateTime2.atZone(ZoneId.systemDefault()).toInstant());
             bizWorkOrder.setStartTime(date1);
             bizWorkOrder.setEndTime(date2);
 
-            bizWorkOrder.setWorkerCode(dispatchTaskInfo.getWorkerCode());
-            bizWorkOrder.setWorkerName(dispatchTaskInfo.getWorkerName());
-            bizWorkOrderMapper.insertBizWorkOrder(bizWorkOrder);
+            bizWorkOrder.setWorkerCode(task.getWorker_code());
+            bizWorkOrder.setWorkerName(task.getWorker_name());
+            bizWorkOrder.setProjectNo(task.getProject_no());
+            bizWorkOrder.setProdOrderNo(task.getProd_order_no());
+            bizWorkOrder.setProdBatchNo(task.getProd_batch_no());
+            bizWorkOrder.setMaterialNo(task.getMaterial_no());
+            bizWorkOrder.setMaterialName(task.getMaterial_name());
+
+            flag += bizWorkOrderMapper.insertBizWorkOrder(bizWorkOrder);
         }
+
+        return flag;
 
     }
 
     public List<WorkOrderVO> getWorkOrderVOList(WorkOrderProperties workOrderProperties) {
-        List<WorkOrderVO> workOrderVOList = bizWorkOrderMapper.getWorkOrderVOList(workOrderProperties.getStatus());
-        for (WorkOrderVO workOrderVO : workOrderVOList) {
-            Process process = processMapper.selectProcessByCode(workOrderVO.getProcess_code());
-            List<StepVO> bizSteps = bizStepMapper.selectStepByProcessId(process.getId());
-            workOrderVO.setStep_infos(bizSteps);
-        }
-        return workOrderVOList;
+        List<BizWorkOrder> bizWorkOrders = bizWorkOrderMapper.selectBizWorkOrderList(new BizWorkOrder());
+
+        return bizWorkOrders.stream().map(workOrder -> {
+            WorkOrderVO workOrderVO = new WorkOrderVO();
+
+            workOrderVO.setTask_no(workOrder.getWorkOrderCode());
+            workOrderVO.setCraft_no(workOrder.getCraftCode());
+            workOrderVO.setCraft_version(workOrder.getCraftVersion());
+            Craft craft = craftMapper.selectCraftByCode(workOrder.getCraftCode());
+            workOrderVO.setCraft_name(craft.getName());
+            workOrderVO.setProcess_code(workOrder.getProcessCode());
+            workOrderVO.setProcess_name(workOrder.getProcessName());
+            workOrderVO.setStart_time(workOrder.getStartTime());
+            workOrderVO.setEnd_time(workOrder.getEndTime());
+            workOrderVO.setWorker_code(workOrder.getWorkerCode());
+            workOrderVO.setWorker_name(workOrder.getWorkerName());
+            workOrderVO.setProd_order_no(workOrder.getProdOrderNo());
+            workOrderVO.setProd_batch_no(workOrder.getProdBatchNo());
+            workOrderVO.setProject_no(workOrder.getProjectNo());
+
+            Process process = processMapper.selectProcessIdByCodeAndCraftId(workOrder.getProcessCode(), craft.getId());
+            workOrderVO.setStep_infos(bizStepMapper.selectStepByProcessId(process.getId()));
+            workOrderVO.setAlgorithm_id(process.getAlgorithmId());
+
+            if (craft.getStatus() == 2){
+                workOrderVO.setStatus(-2);
+            }else if (craft.getStatus() == 3)
+                workOrderVO.setStatus(-1);
+            else
+                workOrderVO.setStatus(workOrder.getStatus());
+
+            return workOrderVO;
+
+        }).collect(Collectors.toList());
     }
 
     @Override
@@ -185,7 +232,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
         BizWorkOrder bizWorkOrder = new BizWorkOrder();
         bizWorkOrder.setStatus(resultDTO.getResult_status());
         bizWorkOrder.setGuideMapUrl(resultDTO.getObject_name());
-        bizWorkOrder.setWorkOrderCode(resultDTO.getWork_order_code());
+        bizWorkOrder.setWorkOrderCode(resultDTO.getTask_no());
         return bizWorkOrderMapper.updateBizWorkOrderByCode(bizWorkOrder);
     }
 
@@ -193,8 +240,8 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
     public StepVO getStepByWorkOrderCode(String workOrderCode, String stepCode) {
         BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCode(workOrderCode);
         Long craftId = craftMapper.selectCraftIdByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
-        Long processId = processMapper.selectProcessIdByCodeAndCraftId(bizWorkOrder.getProcessCode(), craftId);
-        BizStep bizStep = bizStepMapper.selectBizStepByStepCodeAndProcessId(stepCode, processId);
+        Process process = processMapper.selectProcessIdByCodeAndCraftId(bizWorkOrder.getProcessCode(), craftId);
+        BizStep bizStep = bizStepMapper.selectBizStepByStepCodeAndProcessId(stepCode, process.getId());
 
         StepVO step = new StepVO();
         step.setStep_code(bizStep.getCode());

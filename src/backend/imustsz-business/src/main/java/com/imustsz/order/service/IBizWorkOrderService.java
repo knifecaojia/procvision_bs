@@ -10,6 +10,7 @@ import com.imustsz.cilent.domain.vo.WorkOrderVO;
 import com.imustsz.craft.domain.BizStep;
 import com.imustsz.order.domain.BizWorkOrder;
 import com.imustsz.order.domain.json.ProcessTaskSync;
+import com.imustsz.order.domain.json.Task;
 
 /**
  * 工单Service接口
@@ -67,7 +68,7 @@ public interface IBizWorkOrderService
      */
     public int deleteBizWorkOrderById(Long id);
 
-    void importOrderFromMMo(ProcessTaskSync processTaskSync);
+    int importOrderFromMMo(List<Task> processTaskSync);
 
     List<WorkOrderVO> getWorkOrderVOList(WorkOrderProperties workOrderProperties);
 

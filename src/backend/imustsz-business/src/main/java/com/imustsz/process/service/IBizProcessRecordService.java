@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.imustsz.cilent.domain.dto.ProcessDTO;
 import com.imustsz.process.domain.BizProcessRecord;
+import org.springframework.stereotype.Service;
 
 /**
  * 过程记录Service接口

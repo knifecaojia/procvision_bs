@@ -43,12 +43,6 @@ public class ClientController extends BaseController {
     private MinioUtils minioUtils;
 
     @GetMapping("/task/list")
-    private AjaxResult pendingList() {
-        List<PendingTaskVO> pendingTaskList = clientTaskService.getPendingTaskList();
-        return AjaxResult.success(pendingTaskList);
-    }
-
-    @GetMapping("/workorder/list")
     private TableDataInfo workOrderList(WorkOrderProperties workOrderProperties) {
         startPage();
         List<WorkOrderVO> workOrderVOList = bizWorkOrderService.getWorkOrderVOList(workOrderProperties);
@@ -62,9 +56,9 @@ public class ClientController extends BaseController {
         return getDataTable(algorithmVOList);
     }
 
-    @GetMapping("/workorder/status/{workOrderCode}/{statusCode}")
-    private AjaxResult changeWorkOrderStatus(@PathVariable String workOrderCode,@PathVariable String statusCode) {
-        return toAjax(bizWorkOrderService.changeWorkOrderStatusByCode(workOrderCode, statusCode));
+    @GetMapping("/task/status/{taskNo}/{statusCode}")
+    private AjaxResult changeWorkOrderStatus(@PathVariable String taskNo,@PathVariable String statusCode) {
+        return toAjax(bizWorkOrderService.changeWorkOrderStatusByCode(taskNo, statusCode));
     }
 
     @PostMapping("/process")

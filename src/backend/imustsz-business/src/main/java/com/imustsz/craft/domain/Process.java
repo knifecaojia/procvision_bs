@@ -28,7 +28,7 @@ public class Process extends BaseEntity
 
     /** 检测算法编码 */
     @Excel(name = "检测算法编码")
-    private String algorithmCode;
+    private Long algorithmId;
 
     /** 说明 */
     @Excel(name = "说明")
@@ -54,32 +54,40 @@ public class Process extends BaseEntity
     @Excel(name = "工序材料信息(JSON形式)")
     private String processMaterialInfo;
 
-    public void setId(Long id) 
+    public Long getAlgorithmId() {
+        return algorithmId;
+    }
+
+    public void setAlgorithmId(Long algorithmId) {
+        this.algorithmId = algorithmId;
+    }
+
+    public void setId(Long id)
     {
         this.id = id;
     }
 
-    public Long getId() 
+    public Long getId()
     {
         return id;
     }
 
-    public void setCode(String code) 
+    public void setCode(String code)
     {
         this.code = code;
     }
 
-    public String getCode() 
+    public String getCode()
     {
         return code;
     }
 
-    public void setName(String name) 
+    public void setName(String name)
     {
         this.name = name;
     }
 
-    public String getName() 
+    public String getName()
     {
         return name;
     }
@@ -94,62 +102,54 @@ public class Process extends BaseEntity
         return desc;
     }
 
-    public void setGuideGranularity(Long guideGranularity) 
+    public void setGuideGranularity(Long guideGranularity)
     {
         this.guideGranularity = guideGranularity;
     }
 
-    public Long getGuideGranularity() 
+    public Long getGuideGranularity()
     {
         return guideGranularity;
     }
 
-    public void setCraftId(Long craftId) 
+    public void setCraftId(Long craftId)
     {
         this.craftId = craftId;
     }
 
-    public Long getCraftId() 
+    public Long getCraftId()
     {
         return craftId;
     }
 
-    public void setCraftCode(String craftCode) 
+    public void setCraftCode(String craftCode)
     {
         this.craftCode = craftCode;
     }
 
-    public String getCraftCode() 
+    public String getCraftCode()
     {
         return craftCode;
     }
 
-    public void setGuideMapUrl(String guideMapUrl) 
+    public void setGuideMapUrl(String guideMapUrl)
     {
         this.guideMapUrl = guideMapUrl;
     }
 
-    public String getGuideMapUrl() 
+    public String getGuideMapUrl()
     {
         return guideMapUrl;
     }
 
-    public void setProcessMaterialInfo(String processMaterialInfo) 
+    public void setProcessMaterialInfo(String processMaterialInfo)
     {
         this.processMaterialInfo = processMaterialInfo;
     }
 
-    public String getProcessMaterialInfo() 
+    public String getProcessMaterialInfo()
     {
         return processMaterialInfo;
-    }
-
-    public String getAlgorithmCode() {
-        return algorithmCode;
-    }
-
-    public void setAlgorithmCode(String algorithmCode) {
-        this.algorithmCode = algorithmCode;
     }
 
     @Override
@@ -159,7 +159,7 @@ public class Process extends BaseEntity
             .append("code", getCode())
             .append("name", getName())
             .append("desc", getDesc())
-            .append("algorithmCode", getAlgorithmCode())
+            .append("algorithmId", getAlgorithmId())
             .append("guideGranularity", getGuideGranularity())
             .append("craftId", getCraftId())
             .append("craftCode", getCraftCode())
