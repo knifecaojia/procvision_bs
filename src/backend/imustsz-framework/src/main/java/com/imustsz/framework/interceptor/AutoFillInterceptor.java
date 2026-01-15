@@ -8,56 +8,63 @@ import org.apache.ibatis.plugin.*;
 import org.springframework.stereotype.Component;
 import com.imustsz.common.core.domain.BaseEntity;
 import java.util.Date;
+import java.util.Map;
 import java.util.Properties;
 
-/**
- * MyBatis 自动填充创建/修改时间拦截器
- */
-@Component // 交给Spring容器管理
+@Component
 @Intercepts({
-        // 拦截Executor的update方法（包含insert/update）
         @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class})
 })
 public class AutoFillInterceptor implements Interceptor {
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
-        // 1. 获取拦截的参数
-        MappedStatement mappedStatement = (MappedStatement) invocation.getArgs()[0];
-        Object parameter = invocation.getArgs()[1];
+        Object[] args = invocation.getArgs();
+        MappedStatement mappedStatement = (MappedStatement) args[0];
+        Object parameter = args[1];
 
-        // 2. 仅处理继承自BaseEntity的实体类
+        // 1. 尝试获取实体对象
+        BaseEntity entity = null;
         if (parameter instanceof BaseEntity) {
-            BaseEntity entity = (BaseEntity) parameter;
-            Date now = new Date();
-
-            // 3. 根据SQL类型填充时间
-            SqlCommandType sqlCommandType = mappedStatement.getSqlCommandType();
-            if (SqlCommandType.INSERT.equals(sqlCommandType)) {
-                // 新增：填充创建时间+修改时间
-                entity.setCreateTime(now);
-                entity.setCreateBy(SecurityUtils.getUsername());
-                entity.setUpdateTime(now);
-                entity.setUpdateBy(SecurityUtils.getUsername());
-            } else if (SqlCommandType.UPDATE.equals(sqlCommandType)) {
-                // 修改：仅填充修改时间
-                entity.setUpdateTime(now);
-                entity.setUpdateBy(SecurityUtils.getUsername());
+            entity = (BaseEntity) parameter;
+        } else if (parameter instanceof Map) {
+            // 处理参数被封装成 Map 的情况 (例如使用了 @Param)
+            Map<?, ?> map = (Map<?, ?>) parameter;
+            for (Object arg : map.values()) {
+                if (arg instanceof BaseEntity) {
+                    entity = (BaseEntity) arg;
+                    break;
+                }
             }
         }
 
-        // 4. 执行原方法
+        // 2. 如果找到了 BaseEntity，执行填充
+        if (entity != null) {
+            Date now = new Date();
+            String username = SecurityUtils.getUsername(); // 注意：如果在非Web环境(如定时任务)调用，这里可能报错或返回null
+
+            SqlCommandType sqlCommandType = mappedStatement.getSqlCommandType();
+
+            if (SqlCommandType.INSERT.equals(sqlCommandType)) {
+                entity.setCreateTime(now);
+                entity.setCreateBy(username);
+                entity.setUpdateTime(now);
+                entity.setUpdateBy(username);
+
+            } else if (SqlCommandType.UPDATE.equals(sqlCommandType)) {
+                entity.setUpdateTime(now);
+                entity.setUpdateBy(username);
+            }
+        }
+
         return invocation.proceed();
     }
 
     @Override
     public Object plugin(Object target) {
-        // 生成代理对象
         return Plugin.wrap(target, this);
     }
 
     @Override
-    public void setProperties(Properties properties) {
-        // 可配置拦截器参数（无需则空实现）
-    }
+    public void setProperties(Properties properties) {}
 }

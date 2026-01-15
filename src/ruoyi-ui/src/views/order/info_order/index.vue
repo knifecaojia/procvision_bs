@@ -31,43 +31,11 @@
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
-        <el-col :span="1.5" >
-          <el-button
-              type="primary"
-              plain
-              icon="Plus"
-              @click="handleAdd"
-              v-hasPermi="['wo:workOrder:add']"
-          >新增</el-button>
-        </el-col>
-        <el-col :span="1.5">
-          <el-button
-              type="success"
-              plain
-              icon="Edit"
-              :disabled="single"
-              @click="handleUpdate"
-              v-hasPermi="['wo:workOrder:edit']"
-          >修改</el-button>
-        </el-col>
-        <el-col :span="1.5">
-          <el-button
-              type="danger"
-              plain
-              icon="Delete"
-              :disabled="multiple"
-              @click="handleDelete"
-              v-hasPermi="['wo:workOrder:remove']"
-          >删除</el-button>
-        </el-col>
-    </el-row>
-
     <el-table v-loading="loading" :data="workOrderList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="装配任务编码" align="center" prop="workOrderCode" />
       <el-table-column label="项目号" align="center" prop="projectNo" />
-      <el-table-column label="状态" align="center" prop="status" >
+      <el-table-column label="资源状态" align="center" prop="status" />
+      <el-table-column label="工作状态" align="center" prop="status" >
         <template #default="scope">
           <el-tag v-if="scope.row.status === 1" size="small" type="info">待派单</el-tag>
           <el-tag v-else-if="scope.row.status === 2" size="small" type="primary">进行中</el-tag>
@@ -95,8 +63,6 @@
           <el-config-provider :message="config">
             <el-button link type="primary" icon="View" @click="handleResultShow(scope.row)">结果查看</el-button>
           </el-config-provider>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wo:workOrder:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wo:workOrder:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -116,11 +82,6 @@
           <el-col :span="12">
             <el-form-item label="工单编码" prop="workOrderCode">
               <el-input v-model="form.workOrderCode" placeholder="请输入工单编码" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="工单数量" prop="workOrderQuantity">
-              <el-input v-model="form.workOrderQuantity" placeholder="请输入工单数量" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -310,6 +271,8 @@ const config = reactive({
 
 const { queryParams, form, rules, workOrderInfo} = toRefs(data)
 
+// TODO 装配任务不能增删改
+
 /** 查询工单列表 */
 function getList() {
   loading.value = true
@@ -319,20 +282,6 @@ function getList() {
     loading.value = false
   })
 }
-
-// async function getCraftList() {
-//   craftList.value = []
-//   await getCraftSelector().then(response => {
-//     if (response.code === 200) {
-//       response.data.forEach((item, idx) => {
-//         craftList.value.push({
-//           id: idx,
-//           craftCode: item
-//         })
-//       })
-//     }
-//   })
-// }
 
 // 取消按钮
 function cancel() {
@@ -394,7 +343,6 @@ function handleAdd() {
   reset()
   open.value = true
   title.value = "添加工单"
-  getCraftList()
 }
 
 /** 修改按钮操作 */

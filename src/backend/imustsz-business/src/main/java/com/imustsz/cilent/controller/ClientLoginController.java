@@ -5,6 +5,8 @@ import com.imustsz.common.core.domain.AjaxResult;
 import com.imustsz.common.core.domain.model.LoginBody;
 import com.imustsz.common.utils.DateUtils;
 import com.imustsz.framework.web.service.SysLoginService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +19,7 @@ import java.util.Map;
  * 登录验证
  *
  */
+@Api("登录验证")
 @RestController
 @RequestMapping("/client/auth")
 public class ClientLoginController {
@@ -28,6 +31,7 @@ public class ClientLoginController {
     private Long expireTime;
 
     @PostMapping("/login")
+    @ApiOperation("登录")
     public AjaxResult login(@RequestBody LoginBody loginBody) {
         // 生成令牌
         String token = loginService.login(loginBody.getUsername(), loginBody.getPassword(), loginBody.getCode());
@@ -40,6 +44,7 @@ public class ClientLoginController {
     }
 
     @GetMapping("/health")
+    @ApiOperation("保活接口")
     public AjaxResult health() {
         return AjaxResult.success("ok");
     }

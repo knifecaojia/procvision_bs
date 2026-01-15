@@ -179,6 +179,8 @@ const data = reactive({
 
 const {processOpen, queryParams, form, rules} = toRefs(data)
 
+// TODO 美化界面，已就绪的工艺展示缩略图，部署
+
 /** 查询工艺信息列表 */
 function getList() {
   loading.value = true
