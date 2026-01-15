@@ -1,6 +1,17 @@
 FROM maven:3.8.5-openjdk-11 as module-install
 WORKDIR /app
 # 复制pom.xml和依赖（缓存依赖）
+
+COPY ./imustsz-business/lib/MvCameraControlWrapper.jar ./lib/
+
+RUN mvn install:install-file \
+    -Dfile=./lib/MvCameraControlWrapper.jar \
+    -DgroupId=com.hikvision \
+    -DartifactId=MvCameraControlWrapper \
+    -Dversion=1.0.0 \
+    -Dpackaging=jar \
+    -DgeneratePom=true
+
 COPY pom.xml ./
 RUN mkdir -p imustsz-admin && \
     mkdir -p imustsz-framework && \
