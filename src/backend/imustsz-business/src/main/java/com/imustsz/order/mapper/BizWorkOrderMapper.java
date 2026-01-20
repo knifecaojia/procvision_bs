@@ -69,4 +69,6 @@ public interface BizWorkOrderMapper
     BizWorkOrder selectBizWorkOrderByCode(@Param("workOrderCode") String workOrderCode);
 
     int updateBizWorkOrderByCode(BizWorkOrder bizWorkOrder);
+
+    List<BizWorkOrder> selectWorkOrderByCraft(@Param("craftCode") String craftCode, @Param("craftVersion") String craftVersion);
 }

@@ -30,6 +30,7 @@ server:
       max: 800
       # Tomcat启动初始化的线程数，默认值10
       min-spare: 100
+  forward-headers-strategy: framework  # 信任 X-Forwarded-* 头
 
 # 日志配置
 logging:
@@ -96,6 +97,7 @@ swagger:
   enabled: true
   # 请求前缀
   pathMapping: /
+  host: ${SWAGGER_HOST:}
 
 # 防盗链配置
 referer:
@@ -112,5 +114,4 @@ xss:
   excludes: /system/notice, /client/*
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*
-
 

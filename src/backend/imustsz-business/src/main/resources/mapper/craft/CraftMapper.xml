@@ -94,8 +94,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach>
     </delete>
 
-    <select id="selectCraftIdByCodeAndVersion" resultType="java.lang.Long">
-        select id from biz_craft where code = #{code} and version = #{version}
+    <select id="selectCraftByCodeAndVersion" resultMap="CraftResult">
+        <include refid="selectCraftVo"/>
+        where code = #{code} and version = #{version}
     </select>
 
     <update id="changeCraftStatus">

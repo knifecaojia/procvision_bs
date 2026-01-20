@@ -9,7 +9,7 @@ import com.imustsz.common.core.page.TableDataInfo;
 import com.imustsz.common.enums.BusinessType;
 import com.imustsz.common.utils.poi.ExcelUtil;
 import com.imustsz.craft.domain.Craft;
-import com.imustsz.craft.domain.json.ProductProcess;
+import com.imustsz.craft.domain.json.CrackProcess;
 import com.imustsz.craft.service.ICraftService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -109,12 +109,12 @@ public class CraftController extends BaseController
      * 从MMO获取工艺信息
      */
     @GetMapping("/getCraftFromMMO")
-    public AjaxResult getCraftFromMMO() throws IOException {
-        File file = new File("MOM/产品工艺.json");
+    public AjaxResult getCraftFromMMO(String fileName) throws IOException {
+        File file = new File("MOM/" + fileName);
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-        ProductProcess productProcess =objectMapper.readValue(file, ProductProcess.class);
-        craftService.importCraftFromMMo(productProcess);
-        return success(productProcess);
+        CrackProcess CrackProcess =objectMapper.readValue(file, CrackProcess.class);
+        craftService.importCraftFromMMo(CrackProcess);
+        return success(CrackProcess);
     }
 
     @GetMapping("/checkStatus/{id}")

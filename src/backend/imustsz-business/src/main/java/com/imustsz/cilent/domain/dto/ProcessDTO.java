@@ -8,5 +8,5 @@ public class ProcessDTO {
     private String step_code;
     private Integer step_status;
     private String object_name;
-    private String data;
+    private String algo_result;
 }

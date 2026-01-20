@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
 
-import java.util.List;
-
+/**
+ * 工艺信息
+ */
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class Operation {
-    private OperationInfo operationInfo;
-    private List<Step> stepList;
-    private List<MaterialInfo> operationMaterialInfo;
+public class CrackInfo {
+    private String crackNo;
+    private String crackVersion;
+    private String crackName;
+    private String crackDesc;
 }

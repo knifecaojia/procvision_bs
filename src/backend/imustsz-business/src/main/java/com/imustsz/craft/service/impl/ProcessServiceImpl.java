@@ -99,6 +99,8 @@ public class ProcessServiceImpl implements IProcessService
     @Override
     public int deleteProcessByCraftId(Long id) {
         Long[] ids = processMapper.getDelIdsByCraftId(id);
+        if (ids.length == 0)
+            return 0;
         for (Long id1 : ids){
             bizStepMapper.deleteBizStepByProcessId(id1);
         }

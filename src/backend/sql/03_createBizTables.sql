@@ -106,3 +106,10 @@ create table biz_process_record(
     updated_by varchar(50) comment '更新人',
     remarks varchar(255) comment '备注'
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci comment '过程记录表';
+
+# 数据采集表
+create table biz_data_collection(
+    id int primary key auto_increment comment '主键',
+    image_path varchar(255) comment 'Minio Key',
+    data text comment '数据'
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci comment '数据采集表';

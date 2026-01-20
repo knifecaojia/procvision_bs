@@ -1,29 +1,13 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="工单编码" prop="workOrderCode">
+      <el-form-item label="任务编码" prop="workOrderCode">
         <el-input
-          v-model="queryParams.workOrderCode"
-          placeholder="请输入工单编码"
-          clearable
-          @keyup.enter="handleQuery"
+            v-model="queryParams.workOrderCode"
+            placeholder="请输入任务编码"
+            clearable
+            @keyup.enter="handleQuery"
         />
-      </el-form-item>
-      <el-form-item label="工步名称" prop="stepName">
-        <el-input
-          v-model="queryParams.stepId"
-          placeholder="请输入工步名称"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="提交时间" prop="submitTime">
-        <el-date-picker clearable
-          v-model="queryParams.submitTime"
-          type="date"
-          value-format="YYYY-MM-DD"
-          placeholder="请选择提交时间">
-        </el-date-picker>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -31,80 +15,59 @@
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="Edit"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['process:record:edit']"
-        >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="Delete"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['process:record:remove']"
-        >删除</el-button>
-      </el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    <!--    <el-row style="margin-bottom: 10px;">-->
+    <!--      <el-col :span="1.5">-->
+    <!--        <el-button-->
+    <!--            type="danger"-->
+    <!--            plain-->
+    <!--            icon="Delete"-->
+    <!--            :disabled="multiple"-->
+    <!--            @click="handleDelete"-->
+    <!--        >删除-->
+    <!--        </el-button>-->
+    <!--      </el-col>-->
+    <!--    </el-row>-->
+
     <el-table v-loading="loading" :data="recordList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="装配任务编码" align="center" prop="workOrderCode" />
-      <el-table-column label="工步名称" align="center" prop="stepName" />
-      <el-table-column label="工步状态" align="center">
+      <el-table-column type="selection" width="55" align="center"/>
+      <el-table-column label="装配任务编码" align="center" prop="taskNo"/>
+      <el-table-column label="工序编号" align="center" prop="processNo"/>
+      <el-table-column label="工序名称" align="center" prop="processName"/>
+      <el-table-column label="工步详情" align="center">
         <template #default="scope">
-          <el-tag v-if="scope.row.stepStatus === 1" size="small" type="info">未完成</el-tag>
-          <el-tag v-if="scope.row.stepStatus === 2" size="small" type="success">已完成</el-tag>
+          <el-button link type="primary" icon="view" plain @click="handlePreview(scope.row)">查看</el-button>
         </template>
       </el-table-column>
-      <el-table-column label="引导图片" align="center">
-        <template #default="scope">
-          <el-button link type="primary" icon="view" plain @click="handleImagePreview(scope.row.imagePath)">查看</el-button>
-        </template>
-      </el-table-column>
-      <el-table-column label="提交时间" align="center" prop="submitTime" width="180">
-        <template #default="scope">
-          <span>{{ parseTime(scope.row.submitTime, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['process:record:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['process:record:remove']">删除</el-button>
-        </template>
-      </el-table-column>
+      <!--      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">-->
+      <!--        <template #default="scope">-->
+      <!--          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['process:record:remove']">删除</el-button>-->
+      <!--        </template>-->
+      <!--      </el-table-column>-->
     </el-table>
-    
+
     <pagination
-      v-show="total>0"
-      :total="total"
-      v-model:page="queryParams.pageNum"
-      v-model:limit="queryParams.pageSize"
-      @pagination="getList"
+        v-show="total>0"
+        :total="total"
+        v-model:page="queryParams.pageNum"
+        v-model:limit="queryParams.pageSize"
+        @pagination="getList"
     />
 
     <!-- 添加或修改过程记录对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
       <el-form ref="recordRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="工单编码" prop="workOrderCode">
-          <el-input v-model="form.workOrderCode" placeholder="请输入工单编码" />
+          <el-input v-model="form.workOrderCode" placeholder="请输入工单编码"/>
         </el-form-item>
         <el-form-item label="工步名称" prop="stepName">
-          <el-input v-model="form.stepId" placeholder="请输入工步名称" />
+          <el-input v-model="form.stepId" placeholder="请输入工步名称"/>
         </el-form-item>
         <el-form-item label="提交时间" prop="submitTime">
           <el-date-picker clearable
-            v-model="form.submitTime"
-            type="date"
-            value-format="YYYY-MM-DD"
-            placeholder="请选择提交时间">
+                          v-model="form.submitTime"
+                          type="date"
+                          value-format="YYYY-MM-DD"
+                          placeholder="请选择提交时间">
           </el-date-picker>
         </el-form-item>
       </el-form>
@@ -117,19 +80,38 @@
     </el-dialog>
 
     <el-dialog title="引导图查看" v-model="imageVisible" width="800px" append-to-body>
-      <el-image :src="imageUrl" style="width: 100%; height: 100%">
-        <template #placeholder>
-          <div class="image-slot">Loading<span class="dot">...</span></div>
-        </template>
-      </el-image>
+      <el-scrollbar max-height="600px">
+        <el-table :data="stepInfoList">
+          <el-table-column label="工步序号" align="center" prop="stepNo"/>
+          <el-table-column label="工步名称" align="center" prop="stepName"/>
+          <el-table-column label="工步状态" align="center" prop="stepStatus">
+            <template #default="scope">
+              <el-tag v-if="scope.row.stepStatus === 2" size="small" type="success">已完成</el-tag>
+              <el-tag v-else size="small">未完成</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="引导图" align="center">
+            <template #default="scope">
+              <el-image :src="scope.row.imgUrl" :previewSrcList="[scope.row.imgUrl]"
+                        style="width: 100px; height: 100px">
+                <template #placeholder>
+                  <div class="image-slot">Loading<span class="dot">...</span></div>
+                </template>
+              </el-image>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-scrollbar>
     </el-dialog>
+
+
   </div>
 </template>
 
 <script setup name="Record">
-import { listRecord, getRecord, delRecord, addRecord, updateRecord } from "@/api/process/record"
+import {listRecord, getRecord, delRecord, addRecord, updateRecord, delRecordByTaskNo} from "@/api/process/record"
 
-const { proxy } = getCurrentInstance()
+const {proxy} = getCurrentInstance()
 
 const recordList = ref([])
 const open = ref(false)
@@ -142,6 +124,7 @@ const total = ref(0)
 const title = ref("")
 const imageVisible = ref(false)
 const imageUrl = ref("")
+const stepInfoList = ref([])
 
 const data = reactive({
   form: {},
@@ -155,11 +138,10 @@ const data = reactive({
     data: null,
     submitTime: null
   },
-  rules: {
-  }
+  rules: {}
 })
 
-const { queryParams, form, rules } = toRefs(data)
+const {queryParams, form, rules} = toRefs(data)
 
 /** 查询过程记录列表 */
 function getList() {
@@ -205,7 +187,7 @@ function resetQuery() {
 
 // 多选框选中数据
 function handleSelectionChange(selection) {
-  ids.value = selection.map(item => item.id)
+  ids.value = selection.map(item => item.taskNo)
   single.value = selection.length != 1
   multiple.value = !selection.length
 }
@@ -251,18 +233,21 @@ function submitForm() {
 
 /** 删除按钮操作 */
 function handleDelete(row) {
-  const _ids = row.id || ids.value
-  proxy.$modal.confirm('是否确认删除过程记录编号为"' + _ids + '"的数据项？').then(function() {
-    return delRecord(_ids)
+  const _ids = row.taskNo || ids.value
+  proxy.$modal.confirm('该操作会删除该任务下所有的检测记录，是否删除？').then(function () {
+    return delRecordByTaskNo(_ids)
   }).then(() => {
     getList()
     proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => {})
+  }).catch(() => {
+  })
 }
 
-function handleImagePreview(imagePath){
+function handlePreview(row) {
   imageVisible.value = true
-  imageUrl.value = imagePath
+  stepInfoList.value = []
+  stepInfoList.value = row.stepInfo
+  console.log(stepInfoList.value[0].imgUrl)
 }
 
 getList()
@@ -272,6 +257,7 @@ getList()
   animation: dot 2s infinite steps(3, start);
   overflow: hidden;
 }
+
 .image-slot {
   display: flex;
   justify-content: center;

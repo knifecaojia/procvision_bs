@@ -11,6 +11,7 @@ import com.imustsz.craft.domain.BizStep;
 import com.imustsz.order.domain.BizWorkOrder;
 import com.imustsz.order.domain.json.ProcessTaskSync;
 import com.imustsz.order.domain.json.Task;
+import com.imustsz.order.domain.vo.PageVO;
 
 /**
  * 工单Service接口
@@ -70,8 +71,6 @@ public interface IBizWorkOrderService
 
     int importOrderFromMMo(List<Task> processTaskSync);
 
-    List<WorkOrderVO> getWorkOrderVOList(WorkOrderProperties workOrderProperties);
-
     int changeWorkOrderStatusByCode(String workOrderCode, String statusCode);
 
     int updateBizWorkOrderResultByUpload(ResultDTO resultDTO);
@@ -79,4 +78,6 @@ public interface IBizWorkOrderService
     StepVO getStepByWorkOrderCode(String workOrderCode, String stepCode);
 
     BizWorkOrder selectBizWorkOrderByCode(String workOrderCode);
+
+    PageVO workOrderVOList(WorkOrderProperties workOrderProperties);
 }

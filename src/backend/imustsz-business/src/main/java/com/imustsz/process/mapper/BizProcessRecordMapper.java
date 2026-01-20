@@ -2,6 +2,7 @@ package com.imustsz.process.mapper;
 
 import java.util.List;
 import com.imustsz.process.domain.BizProcessRecord;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 过程记录Mapper接口
@@ -58,4 +59,8 @@ public interface BizProcessRecordMapper
      * @return 结果
      */
     public int deleteBizProcessRecordByIds(Long[] ids);
+
+    List<BizProcessRecord> selectRecordByTaskNo(String taskNo);
+
+    BizProcessRecord selectRecordByTaskNoAndStepCode(@Param("taskNo") String taskNo, @Param("stepCode") String stepCode);
 }

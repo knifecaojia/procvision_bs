@@ -103,4 +103,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </delete>
+
+    <select id="selectRecordByTaskNo" resultMap="BizProcessRecordResult">
+        <include refid="selectBizProcessRecordVo"/>
+        where work_order_code = ${taskNo}
+    </select>
+
+    <select id="selectRecordByTaskNoAndStepCode" resultType="com.imustsz.process.domain.BizProcessRecord">
+        <include refid="selectBizProcessRecordVo"/>
+        where work_order_code = #{taskNo} and step_code = #{stepCode}
+    </select>
 </mapper>

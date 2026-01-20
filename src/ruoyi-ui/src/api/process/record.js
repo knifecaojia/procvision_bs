@@ -42,3 +42,17 @@ export function delRecord(id) {
     method: 'delete'
   })
 }
+
+export function delRecordByTaskNo(taskNo) {
+    return request({
+        url: '/process/record/' + taskNo,
+        method: 'delete'
+    })
+}
+
+export function getRecordByTaskNo(taskNo){
+    return request({
+        url: '/process/record/task/' + taskNo,
+        method: 'get'
+    })
+}

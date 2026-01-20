@@ -1,7 +1,10 @@
 package com.imustsz.process.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
+
+import com.imustsz.cilent.domain.vo.ProcessRecordVO;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,23 +42,29 @@ public class BizProcessRecordController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('process:record:list')")
     @GetMapping("/list")
-    public TableDataInfo list(BizProcessRecord bizProcessRecord) throws Exception {
-        startPage();
-        List<BizProcessRecord> list = bizProcessRecordService.selectBizProcessRecordList(bizProcessRecord);
-        return getDataTable(list);
+    public TableDataInfo list(BizProcessRecord bizProcessRecord, Integer pageNum1, Integer pageSize1) throws Exception {
+        int pageNum = pageNum1 == null ? 1 : pageNum1;
+        int pageSize = pageSize1 == null ? 10 : pageSize1;
+        List<ProcessRecordVO> list = bizProcessRecordService.selectBizProcessRecordList(bizProcessRecord);
+        int i1 = pageNum*pageSize < list.size() ? (pageNum-1)*pageSize+pageSize : list.size();
+        List<ProcessRecordVO> list1 = new ArrayList<>();
+        for (int i = (pageNum-1)*pageSize; i < i1; i++){
+            list1.add(list.get(i));
+        }
+        return getDataTable(list1, list.size());
     }
 
     /**
      * 导出过程记录列表
      */
-    @PreAuthorize("@ss.hasPermi('process:record:export')")
-    @Log(title = "过程记录", businessType = BusinessType.EXPORT)
-    @PostMapping("/export")
-    public void export(HttpServletResponse response, BizProcessRecord bizProcessRecord) throws Exception {
-        List<BizProcessRecord> list = bizProcessRecordService.selectBizProcessRecordList(bizProcessRecord);
-        ExcelUtil<BizProcessRecord> util = new ExcelUtil<BizProcessRecord>(BizProcessRecord.class);
-        util.exportExcel(response, list, "过程记录数据");
-    }
+//    @PreAuthorize("@ss.hasPermi('process:record:export')")
+//    @Log(title = "过程记录", businessType = BusinessType.EXPORT)
+//    @PostMapping("/export")
+//    public void export(HttpServletResponse response, BizProcessRecord bizProcessRecord) throws Exception {
+//        List<ProcessRecordVO> list = bizProcessRecordService.selectBizProcessRecordList(bizProcessRecord);
+//        ExcelUtil<BizProcessRecord> util = new ExcelUtil<BizProcessRecord>(BizProcessRecord.class);
+//        util.exportExcel(response, list, "过程记录数据");
+//    }
 
     /**
      * 获取过程记录详细信息
@@ -98,5 +107,10 @@ public class BizProcessRecordController extends BaseController
     public AjaxResult remove(@PathVariable Long[] ids)
     {
         return toAjax(bizProcessRecordService.deleteBizProcessRecordByIds(ids));
+    }
+
+    @GetMapping("task/{taskNo}")
+    public AjaxResult getRecordByTaskNo(@PathVariable String taskNo) {
+    	return success(bizProcessRecordService.getRecordByTaskNo(taskNo));
     }
 }

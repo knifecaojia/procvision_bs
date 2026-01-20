@@ -220,7 +220,7 @@
               <template #item="{ element, index }">
                 <div :key="index" class="select-item">
                   <div class="select-line-icon option-drag">
-                    <i class="el-icon-s-operation" />
+                    <i class="el-icon-s-processMMO" />
                   </div>
                   <el-input v-model="element.label" placeholder="选项名" size="small" />
                   <el-input placeholder="选项值" size="small" :value="element.value"
@@ -632,7 +632,7 @@ function renderContent(h, { node, data, store }) {
   }, [
     h('span', node.label),
     h('span', {
-      class: "node-operation"
+      class: "node-processMMO"
     }, [
       h(resolveComponent('el-link'), {
         type: "primary",

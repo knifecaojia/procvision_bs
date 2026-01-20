@@ -212,4 +212,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </trim>
         where work_order_code = #{workOrderCode}
     </update>
+
+    <select id="selectWorkOrderByCraft" resultMap="BizWorkOrderResult">
+        <include refid="selectBizWorkOrderVo"/>
+        where craft_code = #{craftCode} and craft_version = #{craftVersion}
+    </select>
 </mapper>

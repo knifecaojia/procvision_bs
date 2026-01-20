@@ -121,8 +121,8 @@ public class BizWorkOrderController extends BaseController
      * 从MMO获取订单信息
      */
     @GetMapping("/getOrderFromMMO")
-    public AjaxResult getOrderFromMMO() throws IOException {
-        File file = new File("MOM/装配任务同步.json");
+    public AjaxResult getOrderFromMMO(String fileName) throws IOException {
+        File file = new File("MOM/" + fileName);
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         List<Task> taskSync = objectMapper.readValue(file, new TypeReference<List<Task>>() {});
         return toAjax(bizWorkOrderService.importOrderFromMMo(taskSync));

@@ -66,6 +66,9 @@ public class SysMenuServiceImpl implements ISysMenuService
     public List<SysMenu> selectMenuList(SysMenu menu, Long userId)
     {
         List<SysMenu> menuList = null;
+        //返回所有没被隐藏的菜单
+        menu.setVisible("0");
+        menu.setStatus("0");
         // 管理员显示所有菜单信息
         if (SysUser.isAdmin(userId))
         {
@@ -228,7 +231,7 @@ public class SysMenuServiceImpl implements ISysMenuService
         {
             SysMenu menu = (SysMenu) iterator.next();
             // 如果是顶级节点, 遍历该父节点的所有子节点
-            if (!tempList.contains(menu.getParentId()))
+            if (!tempList.contains(menu.getParentId()) && menu.getParentId() == 0)
             {
                 recursionFn(menus, menu);
                 returnList.add(menu);

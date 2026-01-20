@@ -9,7 +9,6 @@
               plain
               icon="Plus"
               @click="handleAdd"
-              v-hasPermi="['process:process:add']"
           >新增
           </el-button>
         </el-col>
@@ -21,7 +20,6 @@
               icon="Delete"
               :disabled="multiple"
               @click="handleDelete"
-              v-hasPermi="['process:process:remove']"
           >删除
           </el-button>
         </el-col>
@@ -46,15 +44,15 @@
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="250px">
           <template #default="scope">
             <el-button link type="primary" icon="link" @click="showBindAlg(scope.row)"
-                       v-hasPermi="['process:process:edit']">
+                       >
               绑定算法
             </el-button>
             <el-button link type="primary" icon="Edit" @click="handleProcessUpdate(scope.row)"
-                       v-hasPermi="['process:process:edit']">
+                       >
               修改
             </el-button>
             <el-button link type="primary" icon="Delete" @click="handleProcessDelete(scope.row)"
-                       v-hasPermi="['craft:craft:remove']">删除
+                       >删除
             </el-button>
 <!--            <el-button link type="primary" icon="pointer" @click="handleProcessDelete(scope.row)">查看说明</el-button>-->
           </template>
@@ -181,7 +179,7 @@ function handleDelete(row) {
   proxy.$modal.confirm('是否确认删除工序信息？').then(function () {
     return delProcess(_ids)
   }).then(() => {
-    getList()
+    getProcessList()
     proxy.$modal.msgSuccess("删除成功")
   }).catch(() => {
   })
@@ -255,10 +253,10 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleProcessDelete(row) {
   const _ids = row.id || ids.value
-  proxy.$modal.confirm('是否确认删除工艺信息？').then(function () {
+  proxy.$modal.confirm('是否确认删除工序信息？').then(function () {
     return delProcess(_ids)
   }).then(() => {
-    getList()
+    getProcessList()
     proxy.$modal.msgSuccess("删除成功")
   }).catch(() => {
   })

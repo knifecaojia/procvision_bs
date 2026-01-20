@@ -31,6 +31,7 @@
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
+
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
@@ -38,7 +39,6 @@
             plain
             icon="Plus"
             @click="handleAdd"
-            v-hasPermi="['craft:craft:add']"
         >新增
         </el-button>
       </el-col>
@@ -49,7 +49,6 @@
             icon="Edit"
             :disabled="single"
             @click="handleUpdate"
-            v-hasPermi="['craft:craft:edit']"
         >修改
         </el-button>
       </el-col>
@@ -60,7 +59,6 @@
             icon="Delete"
             :disabled="multiple"
             @click="handleDelete"
-            v-hasPermi="['craft:craft:remove']"
         >删除
         </el-button>
       </el-col>
@@ -88,11 +86,10 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['craft:craft:edit']">
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)">
             修改
           </el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
-                     v-hasPermi="['craft:craft:remove']">删除
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)">删除
           </el-button>
         </template>
       </el-table-column>

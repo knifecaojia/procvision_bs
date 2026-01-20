@@ -3,6 +3,7 @@ package com.imustsz.process.service;
 import java.util.List;
 
 import com.imustsz.cilent.domain.dto.ProcessDTO;
+import com.imustsz.cilent.domain.vo.ProcessRecordVO;
 import com.imustsz.process.domain.BizProcessRecord;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +29,7 @@ public interface IBizProcessRecordService
      * @param bizProcessRecord 过程记录
      * @return 过程记录集合
      */
-    public List<BizProcessRecord> selectBizProcessRecordList(BizProcessRecord bizProcessRecord) throws Exception;
+    public List<ProcessRecordVO> selectBizProcessRecordList(BizProcessRecord bizProcessRecord) throws Exception;
 
     /**
      * 新增过程记录
@@ -63,4 +64,8 @@ public interface IBizProcessRecordService
     public int deleteBizProcessRecordById(Long id);
 
     int insertBizProcessRecordByUpload(ProcessDTO processDTO);
+
+    List<ProcessRecordVO> getProcessRecordList(Integer status);
+
+    ProcessRecordVO getRecordByTaskNo(String taskNo);
 }

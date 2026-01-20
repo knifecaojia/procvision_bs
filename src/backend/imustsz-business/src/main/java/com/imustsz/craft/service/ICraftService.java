@@ -2,7 +2,7 @@ package com.imustsz.craft.service;
 
 import com.imustsz.craft.domain.Craft;
 import com.imustsz.craft.domain.dto.SelectorInfoVO;
-import com.imustsz.craft.domain.json.ProductProcess;
+import com.imustsz.craft.domain.json.CrackProcess;
 
 import java.util.List;
 
@@ -62,7 +62,7 @@ public interface ICraftService
      */
     public int deleteCraftById(Long id);
 
-    void importCraftFromMMo(ProductProcess productProcess);
+    void importCraftFromMMo(CrackProcess CrackProcess);
 
     void checkStatus(Long id);
 

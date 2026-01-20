@@ -9,7 +9,6 @@
             icon="Plus"
             size="small"
             @click="handleAdd"
-            v-hasPermi="['craft:step:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -20,7 +19,6 @@
             size="small"
             :disabled="multiple"
             @click="handleDelete"
-            v-hasPermi="['craft:step:remove']"
         >删除</el-button>
       </el-col>
     </el-row>
@@ -45,8 +43,8 @@
       <el-table-column label="操作" align="center" width="300px" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="pointer" @click="handleBind(scope.row)">绑定引导图</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['craft:step:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['craft:step:remove']">删除</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)">修改</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>

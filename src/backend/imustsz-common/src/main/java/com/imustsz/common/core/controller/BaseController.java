@@ -90,6 +90,16 @@ public class BaseController
         return rspData;
     }
 
+    protected TableDataInfo getDataTable(List<?> list, int total)
+    {
+        TableDataInfo rspData = new TableDataInfo();
+        rspData.setCode(HttpStatus.SUCCESS);
+        rspData.setMsg("查询成功");
+        rspData.setRows(list);
+        rspData.setTotal(total);
+        return rspData;
+    }
+
     /**
      * 返回成功
      */

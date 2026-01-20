@@ -49,7 +49,14 @@
       >
         <el-input
             v-model="labelText"
-            placeholder="请输入标签内容"
+            placeholder="请输入标签"
+            @keyup.enter="confirmLabel"
+            ref="inputRef"
+        />
+        <el-input
+            style="margin-top: 20px;"
+            v-model="remark"
+            placeholder="请输入备注"
             @keyup.enter="confirmLabel"
             ref="inputRef"
         />
@@ -117,6 +124,7 @@ const labelText = ref('');
 const inputRef = ref(null);
 const stepCount = ref(0);
 const uploadFile = ref(null)
+const remark = ref('')
 
 // --- 相机相关状态 ---
 const cameraVisible = ref(false);
@@ -232,7 +240,6 @@ const initZoom = () => {
   });
 };
 
-// --- 核心修改：统一的图片加载逻辑 ---
 /**
  * 将 File 对象加载到 Canvas 背景
  * @param {File} file 图片文件对象
@@ -422,8 +429,8 @@ const onMouseUp = () => {
 };
 
 const confirmLabel = () => {
-  if (!labelText.value) {
-    proxy.$modal.msgWarning('请输入标注文字');
+  if (!labelText.value || !remark.value) {
+    proxy.$modal.msgWarning('请输入标签和数量');
     return;
   }
   const text = new fabric.Text(labelText.value, {
@@ -443,7 +450,8 @@ const confirmLabel = () => {
   // 保存坐标信息
   group.set({
     customData: {
-      label: labelText.value
+      label: labelText.value,
+      remark: remark.value,
     }
   });
 
@@ -456,6 +464,7 @@ const confirmLabel = () => {
 
   dialogVisible.value = false;
   labelText.value = ''
+  remark.value = '';
   activeRect = null;
 };
 
@@ -466,6 +475,7 @@ const cancelAnnotation = () => {
   }
   dialogVisible.value = false;
   labelText.value = '';
+  remark.value = '';
   activeRect = null;
 };
 
@@ -561,7 +571,8 @@ const getDataEasy = () => {
         x: Math.round((rectCanvasLeft - bgRect.left) / scale),
         y: Math.round((rectCanvasTop - bgRect.top) / scale),
         width: Math.round(rectCanvasWidth / scale),
-        height: Math.round(rectCanvasHeight / scale)
+        height: Math.round(rectCanvasHeight / scale),
+        remark: group.customData.remark,
       }
     };
   });

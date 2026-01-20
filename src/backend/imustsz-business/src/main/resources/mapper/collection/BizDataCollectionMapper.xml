@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.imustsz.collect.mapper.BizDataCollectionMapper">
+    
+    <resultMap type="BizDataCollection" id="BizDataCollectionResult">
+        <result property="id"    column="id"    />
+        <result property="imagePath"    column="image_path"    />
+        <result property="data"    column="data"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectBizDataCollectionVo">
+        select id, image_path, data from biz_data_collection
+    </sql>
+
+    <select id="selectBizDataCollectionList" parameterType="BizDataCollection" resultMap="BizDataCollectionResult">
+        <include refid="selectBizDataCollectionVo"/>
+        <where>  
+            <if test="imagePath != null  and imagePath != ''"> and image_path = #{imagePath}</if>
+            <if test="data != null  and data != ''"> and data = #{data}</if>
+            <if test="createTime != null"> and create_time = #{createTime}</if>
+            <if test="updateTime != null">and update_time = #{updateTime}</if>
+            <if test="createBy != null and createBy != ''">and create_by = #{createBy}</if>
+            <if test="updateBy != null and updateBy != ''">and update_by = #{updateBy}</if>
+            <if test="remark != null and remark != ''">and remark = #{remark}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizDataCollectionById" parameterType="Long" resultMap="BizDataCollectionResult">
+        <include refid="selectBizDataCollectionVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertBizDataCollection" parameterType="BizDataCollection" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_data_collection
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="imagePath != null">image_path,</if>
+            <if test="data != null">data,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="updateBy != null and updateBy != ''">update_by,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="imagePath != null">#{imagePath},</if>
+            <if test="data != null">#{data},</if>
+            <if test="createTime != null">#{create_time},</if>
+            <if test="updateTime != null">#{update_time},</if>
+            <if test="createBy != null and createBy != ''">#{create_by},</if>
+            <if test="updateBy != null and updateBy != ''">#{update_by},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizDataCollection" parameterType="BizDataCollection">
+        update biz_data_collection
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="imagePath != null">image_path = #{imagePath},</if>
+            <if test="data != null">data = #{data},</if>
+            <if test="createTime != null">create_time = #{create_time},</if>
+            <if test="updateTime != null">update_time = #{update_time},</if>
+            <if test="createBy != null and createBy != ''">create_by = #{create_by},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{update_by},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBizDataCollectionById" parameterType="Long">
+        delete from biz_data_collection where id = #{id}
+    </delete>
+
+    <delete id="deleteBizDataCollectionByIds" parameterType="String">
+        delete from biz_data_collection where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

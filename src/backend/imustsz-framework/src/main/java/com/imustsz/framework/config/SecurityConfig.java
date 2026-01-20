@@ -26,7 +26,7 @@ import com.imustsz.framework.security.handle.LogoutSuccessHandlerImpl;
  * 
  * @author ruoyi
  */
-@EnableMethodSecurity(prePostEnabled = true, securedEnabled = true)
+//@EnableMethodSecurity(prePostEnabled = true, securedEnabled = true)
 @Configuration
 public class SecurityConfig
 {

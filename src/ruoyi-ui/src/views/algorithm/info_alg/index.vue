@@ -38,7 +38,6 @@
             plain
             icon="Plus"
             @click="handleAdd"
-            v-hasPermi="['algorithm:algorithm:add']"
         >新增
         </el-button>
       </el-col>
@@ -49,7 +48,6 @@
             icon="Edit"
             :disabled="single"
             @click="handleUpdate"
-            v-hasPermi="['algorithm:algorithm:edit']"
         >修改
         </el-button>
       </el-col>
@@ -60,7 +58,6 @@
             icon="Delete"
             :disabled="multiple"
             @click="handleDelete"
-            v-hasPermi="['algorithm:algorithm:remove']"
         >删除
         </el-button>
       </el-col>
@@ -80,10 +77,10 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
-                     v-hasPermi="['algorithm:algorithm:edit']">修改
+                     >修改
           </el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
-                     v-hasPermi="['algorithm:algorithm:remove']">删除
+                     >删除
           </el-button>
           <el-button link type="primary" icon="Download" @click="handleDownload(scope.row)">下载
           </el-button>

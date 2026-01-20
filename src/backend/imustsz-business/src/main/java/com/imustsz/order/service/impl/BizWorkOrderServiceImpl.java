@@ -6,8 +6,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.imustsz.cilent.domain.dto.ProcessDTO;
 import com.imustsz.cilent.domain.dto.ResultDTO;
 import com.imustsz.cilent.domain.dto.WorkOrderProperties;
@@ -22,6 +25,7 @@ import com.imustsz.craft.mapper.BizStepMapper;
 import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
 import com.imustsz.order.domain.json.*;
+import com.imustsz.order.domain.vo.PageVO;
 import com.imustsz.process.domain.BizProcessRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -91,12 +95,18 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
     @Override
     public int insertBizWorkOrder(BizWorkOrder bizWorkOrder)
     {
-        Long l = craftMapper.selectCraftIdByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
-        if (l == null)
+        Craft craft = craftMapper.selectCraftByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
+        if (craft == null)
             return -1;
-        Process process = processMapper.selectProcessByCodeAndNameAndCraftId(bizWorkOrder.getProcessCode(), bizWorkOrder.getProcessName(), l);
+        Process process = processMapper.selectProcessByCodeAndNameAndCraftId(bizWorkOrder.getProcessCode(), bizWorkOrder.getProcessName(), craft.getId());
         if (process == null)
             return -2;
+        if(craft.getStatus() == 1 || craft.getStatus() == 2)
+            bizWorkOrder.setStatus(-2);
+        else if (craft.getStatus() == 3)
+            bizWorkOrder.setStatus(-1);
+        else
+            bizWorkOrder.setStatus(1);
 
         return bizWorkOrderMapper.insertBizWorkOrder(bizWorkOrder);
     }
@@ -156,7 +166,17 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
                 bizWorkOrder.setWorkOrderCode(sb.append("10000").append(String.valueOf(date.getTime()).substring(String.valueOf(date.getTime()).length()-5)).append("-").append(i++).toString());
             bizWorkOrder.setCraftCode(task.getCraft_no());
             bizWorkOrder.setCraftVersion(task.getCraft_version());
-            bizWorkOrder.setStatus(1);
+
+            Craft craft = craftMapper.selectCraftByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
+            if (craft == null)
+                throw new RuntimeException("工艺不存在，请核对工艺");
+
+            if(craft.getStatus() == 1 || craft.getStatus() == 2)
+                bizWorkOrder.setStatus(-2);
+            else if (craft.getStatus() == 3)
+                bizWorkOrder.setStatus(-1);
+            else
+                bizWorkOrder.setStatus(1);
 
             bizWorkOrder.setProcessCode(task.getProceress_no());
             bizWorkOrder.setProcessName(task.getProceress_name());
@@ -182,11 +202,14 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
         return flag;
 
     }
+    public PageVO workOrderVOList(WorkOrderProperties workOrderProperties) {
+        BizWorkOrder bizWorkOrder = new BizWorkOrder();
+        bizWorkOrder.setStatus(workOrderProperties.getStatus());
+        PageHelper.startPage(workOrderProperties.getPageNum(), workOrderProperties.getPageSize());
+        List<BizWorkOrder> bizWorkOrders = bizWorkOrderMapper.selectBizWorkOrderList(bizWorkOrder);
+        PageInfo<BizWorkOrder> pageInfo = new PageInfo<>(bizWorkOrders);
 
-    public List<WorkOrderVO> getWorkOrderVOList(WorkOrderProperties workOrderProperties) {
-        List<BizWorkOrder> bizWorkOrders = bizWorkOrderMapper.selectBizWorkOrderList(new BizWorkOrder());
-
-        return bizWorkOrders.stream().map(workOrder -> {
+        List<WorkOrderVO> collect = pageInfo.getList().stream().map(workOrder -> {
             WorkOrderVO workOrderVO = new WorkOrderVO();
 
             workOrderVO.setTask_no(workOrder.getWorkOrderCode());
@@ -205,19 +228,27 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
             workOrderVO.setProject_no(workOrder.getProjectNo());
 
             Process process = processMapper.selectProcessIdByCodeAndCraftId(workOrder.getProcessCode(), craft.getId());
-            workOrderVO.setStep_infos(bizStepMapper.selectStepByProcessId(process.getId()));
+            List<StepVO> stepVOS = bizStepMapper.selectStepByProcessId(process.getId());
+            stepVOS.forEach(stepVO -> {
+                try {
+                    if (stepVO.getGuide_url() != null)
+                        stepVO.setGuide_url(minioUtils.getPresignedUrl(stepVO.getGuide_url()));
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            workOrderVO.setStep_infos(stepVOS);
             workOrderVO.setAlgorithm_id(process.getAlgorithmId());
 
-            if (craft.getStatus() == 2){
-                workOrderVO.setStatus(-2);
-            }else if (craft.getStatus() == 3)
-                workOrderVO.setStatus(-1);
-            else
-                workOrderVO.setStatus(workOrder.getStatus());
+            workOrderVO.setStatus(workOrder.getStatus());
 
             return workOrderVO;
 
         }).collect(Collectors.toList());
+        PageVO pageVO = new PageVO();
+        pageVO.setList(collect);
+        pageVO.setTotal((int) pageInfo.getTotal());
+        return pageVO;
     }
 
     @Override
@@ -239,8 +270,8 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
     @Override
     public StepVO getStepByWorkOrderCode(String workOrderCode, String stepCode) {
         BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCode(workOrderCode);
-        Long craftId = craftMapper.selectCraftIdByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
-        Process process = processMapper.selectProcessIdByCodeAndCraftId(bizWorkOrder.getProcessCode(), craftId);
+        Craft craft = craftMapper.selectCraftByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
+        Process process = processMapper.selectProcessIdByCodeAndCraftId(bizWorkOrder.getProcessCode(), craft.getId());
         BizStep bizStep = bizStepMapper.selectBizStepByStepCodeAndProcessId(stepCode, process.getId());
 
         StepVO step = new StepVO();

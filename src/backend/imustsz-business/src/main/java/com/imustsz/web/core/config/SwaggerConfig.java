@@ -3,6 +3,7 @@ package com.imustsz.web.core.config;
 import com.imustsz.common.config.ImustSzConfig;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.models.auth.In;
+import io.swagger.v3.oas.models.OpenAPI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -38,13 +39,16 @@ public class SwaggerConfig
     @Value("${swagger.pathMapping}")
     private String pathMapping;
 
+    @Value("${swagger.host:}")
+    private String host;
+
     /**
      * 创建API
      */
     @Bean
     public Docket createRestApi()
     {
-        return new Docket(DocumentationType.OAS_30)
+        Docket docket =  new Docket(host == null ? DocumentationType.OAS_30 :DocumentationType.SWAGGER_2)
                 // 是否启用Swagger
                 .enable(enabled)
                 // 用来创建该API的基本信息，展示在文档的页面中（自定义展示的信息）
@@ -62,6 +66,11 @@ public class SwaggerConfig
                 .securitySchemes(securitySchemes())
                 .securityContexts(securityContexts())
                 .pathMapping(pathMapping);
+
+                if (host != null && !host.isEmpty()){
+                    docket.host(host);
+                }
+                return docket;
     }
 
     /**
@@ -109,9 +118,8 @@ public class SwaggerConfig
         // 用ApiInfoBuilder进行定制
         return new ApiInfoBuilder()
                 // 设置标题
-                .title("标题：若依管理系统_接口文档")
+                .title("标题：接口文档")
                 // 描述
-                .description("描述：用于管理集团旗下公司的人员信息,具体包括XXX,XXX模块...")
                 // 作者信息
                 .contact(new Contact(ruoyiConfig.getName(), null, null))
                 // 版本
