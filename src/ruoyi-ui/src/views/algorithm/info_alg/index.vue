@@ -70,17 +70,17 @@
       <el-table-column label="算法版本" align="center" prop="version"/>
       <el-table-column label="算法大小" align="center" prop="size">
         <template #default="scope">
-          {{ scope.row.size}} MB
+          {{ scope.row.size }} MB
         </template>
       </el-table-column>
       <el-table-column label="算法描述" align="center" prop="desc"/>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
-                     >修改
+          >修改
           </el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
-                     >删除
+          >删除
           </el-button>
           <el-button link type="primary" icon="Download" @click="handleDownload(scope.row)">下载
           </el-button>
@@ -112,28 +112,62 @@
         <el-form-item label="上传算法">
           <el-upload
               ref="uploadRef"
-              auto-upload
+              drag
+              action=""
               :http-request="customUpload"
               :on-change="handleFileChange"
               :file-list="fileList"
               :show-file-list="false"
               accept=".pdf,.doc,.docx,.jpg,.png,.zip,.rar"
+              :disabled="isUploading"
           >
-            <el-button type="primary">
-              <el-icon class="el-icon--upload">
-                <upload-filled/>
-              </el-icon>
-              点击上传
-            </el-button>
+            <el-icon class="el-icon--upload">
+              <upload-filled/>
+            </el-icon>
+            <div class="el-upload__text">
+              将文件拖到此处，或 <em>点击上传</em>
+            </div>
+            <div class="el-upload__tip" v-if="selectedFile">
+              已选择: {{ selectedFile.name }} ({{ formatSize(selectedFile.size) }})
+            </div>
           </el-upload>
-          <div v-if="uploadProgress > 0" style="margin-left: 10px; width: 200px">
-            <el-progress
-                style="width: 100%"
-                :percentage="uploadProgress"
-                :status="uploadProgress === 100 ? 'success' : ''"
-                show-text
-            />
-          </div>
+
+          <transition name="el-fade-in">
+            <div v-if="uploadProgress > 0 || isUploading" class="upload-status-panel">
+              <div class="progress-info">
+                <span>{{ uploadStatus.text }}</span>
+                <span>{{ uploadStatus.percentage }}%</span>
+              </div>
+
+              <el-progress
+                  :percentage="uploadStatus.percentage"
+                  :status="uploadStatus.percentage === 100 ? 'success' : ''"
+                  :stroke-width="18"
+                  text-inside
+                  striped
+                  striped-flow
+                  :duration="10"
+              />
+
+              <div class="upload-metrics" v-if="uploadStatus.percentage < 100">
+                <el-tag type="info" size="small" effect="plain">
+                  <el-icon>
+                    <Top/>
+                  </el-icon>
+                  {{ uploadStatus.speed }}
+                </el-tag>
+                <el-tag type="info" size="small" effect="plain">
+                  <el-icon>
+                    <Timer/>
+                  </el-icon>
+                  剩余 {{ uploadStatus.remainingTime }}
+                </el-tag>
+                <el-tag type="info" size="small" effect="plain">
+                  {{ uploadStatus.uploadedSize }} / {{ uploadStatus.totalSize }}
+                </el-tag>
+              </div>
+            </div>
+          </transition>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -152,12 +186,13 @@ import {
   delAlgorithm,
   getAlgorithm,
   getUploadUrl,
-  listAlgorithm, removeUploadFile,
+  listAlgorithm, removeUploadFile, safeDelCheck,
   updateAlgorithm
 } from "@/api/algorithm/algorithm"
 import axios from "axios";
 import {UploadFilled} from "@element-plus/icons-vue";
-import {ElMessage} from 'element-plus'
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {Top, Timer} from "@element-plus/icons-vue";
 
 const {proxy} = getCurrentInstance()
 
@@ -179,6 +214,18 @@ const selectedFile = ref(null)
 const uploadProgress = ref(0)
 const upLoadFlag = ref(false)
 const tempObj = ref(null)
+//下载状态
+const isUploading = ref(false)
+const uploadStatus = reactive({
+  percentage: 0,
+  speed: '0 KB/s',
+  remainingTime: '--',
+  uploadedSize: '0 MB',
+  totalSize: '0 MB',
+  text: '准备上传...'
+})
+// 用于控制中断请求
+const uploadController = ref(null)
 
 const data = reactive({
   form: {
@@ -213,6 +260,15 @@ const data = reactive({
 
 const {queryParams, form, rules} = toRefs(data)
 
+
+// 辅助函数：格式化文件大小
+const formatSize = (size) => {
+  if (size < 1024) return size + ' B'
+  if (size < 1024 * 1024) return (size / 1024).toFixed(2) + ' KB'
+  if (size < 1024 * 1024 * 1024) return (size / 1024 / 1024).toFixed(2) + ' MB'
+  return (size / 1024 / 1024 / 1024).toFixed(2) + ' GB'
+}
+
 /** 查询算法列表 */
 function getList() {
   loading.value = true
@@ -231,37 +287,130 @@ const handleFileChange = (file) => {
 }
 
 const customUpload = async () => {
-
-  let url = ''
-  await getUploadUrl().then(res => {
-    url = res.data.url
-    form.value.objectName = res.data.objectName
-    tempObj.value = res.data.objectName
-  })
-
-  if (!url) {
-    ElMessage.error('获取上传URL失败')
+  if (!selectedFile.value) {
+    proxy.$modal.warning('请先选择文件')
     return
   }
 
-  uploadProgress.value = 0
+  isUploading.value = true
+  uploadStatus.percentage = 0
+  uploadStatus.text = '正在请求上传链接...'
+
+  let url = ''
+  try {
+    const res = await getUploadUrl()
+    url = res.data.url
+    form.value.objectName = res.data.objectName
+    tempObj.value = res.data.objectName
+  } catch (e) {
+    isUploading.value = false
+    proxy.$modal.error('获取上传URL失败')
+    return
+  }
+
+  uploadStatus.text = '正在上传...'
+
+  // 记录开始时间和初始数据用于计算速度
+  let startTime = Date.now()
+  let lastLoaded = 0
+
+  // 每次上传前，先实例化一个新的控制器
+  uploadController.value = new AbortController()
 
   try {
     await axios.put(url, selectedFile.value, {
       headers: {
-        'Content-Type': selectedFile.value.type
+        'Content-Type': selectedFile.value.type || 'application/octet-stream'
       },
-      timeout: 60000,
+      timeout: 0,
+      signal: uploadController.value.signal,
       onUploadProgress: (progressEvent) => {
-        uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+        const currentTime = Date.now()
+        const timeDiff = (currentTime - startTime) / 1000 // 秒
+
+        // 计算百分比
+        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+        uploadStatus.percentage = percent
+
+        // 每 500ms 更新一次速度和剩余时间，避免界面闪烁
+        if (timeDiff >= 0.5) {
+          const loadedDiff = progressEvent.loaded - lastLoaded
+          const speed = loadedDiff / timeDiff // bytes per second
+
+          // 格式化速度
+          uploadStatus.speed = formatSize(speed) + '/s'
+
+          // 计算剩余时间
+          const remainingBytes = progressEvent.total - progressEvent.loaded
+          const remainingSeconds = speed > 0 ? remainingBytes / speed : 0
+
+          if (remainingSeconds > 60) {
+            uploadStatus.remainingTime = (remainingSeconds / 60).toFixed(0) + ' 分钟'
+          } else {
+            uploadStatus.remainingTime = remainingSeconds.toFixed(0) + ' 秒'
+          }
+
+          // 更新显示大小
+          uploadStatus.uploadedSize = formatSize(progressEvent.loaded)
+          uploadStatus.totalSize = formatSize(progressEvent.total)
+
+          // 重置计数器
+          startTime = currentTime
+          lastLoaded = progressEvent.loaded
+        }
       }
     })
-    uploadProgress.value = 100
+
+    uploadStatus.percentage = 100
+    uploadStatus.text = '上传完成'
     upLoadFlag.value = true
-    ElMessage.success('文件上传成功')
+    proxy.$modal.success('文件上传成功')
   } catch (error) {
-    ElMessage.error('文件上传失败：' + (error.message || '网络异常'))
-    throw error
+    if (axios.isCancel(error)) {
+      ElMessage.warning('操作已取消');
+      return; // 直接退出，不报错
+    }
+
+    const isNetworkError = error.code === 'ERR_NETWORK' || (!error.response && error.request);
+
+    if (isNetworkError) {
+      await ElMessageBox.alert(
+          '检测到网络连接中断，无法连接到文件存储服务器。请检查您的网络设置或联系管理员。',
+          '上传连接断开',
+          {
+            confirmButtonText: '知道了',
+            type: 'error',
+            draggable: true
+          }
+      )
+    }
+    // 3. 判断是否有服务端返回的错误 (例如 403 签名过期, 500 MinIO崩溃)
+    else if (error.response) {
+      const status = error.response.status;
+      let msg = `上传失败 (错误码: ${status})`;
+
+      if (status === 403) {
+        msg = '上传链接已过期或权限不足，请重试';
+      } else if (status === 500 || status === 502) {
+        msg = '文件存储服务暂时不可用';
+      } else if (status === 413) {
+        msg = '文件体积过大，服务器拒绝接收';
+      }
+
+      proxy.$modal.error(msg);
+    }
+    // 4. 其他未知错误
+    else {
+      proxy.$modal.error('发生未知错误: ' + (error.message || '请重试'));
+    }
+
+    // 5. 错误发生后的状态清理 (非常重要，否则界面会卡在进度条上)
+    uploadProgress.value = 0;
+    uploadStatus.text = '上传失败';
+    uploadStatus.percentage = 0;
+  } finally {
+    uploadController.value = null // 重置
+    isUploading.value = false
   }
 }
 
@@ -271,11 +420,18 @@ function cancel() {
   reset()
 }
 
-function onClose(){
-  if (upLoadFlag.value) {
-    console.log(tempObj.value)
+function onClose() {
+  // 1. 如果正在上传中，强制中断网络请求
+  if (uploadController.value) {
+    uploadController.value.abort() // 这句代码会直接掐断 axios 连接
+    uploadController.value = null
+  }
+
+  // 2. 如果已经上传完成（upLoadFlag为true），但用户没点"确定"保存，则删除远程文件
+  if (upLoadFlag.value && tempObj.value) {
     removeUploadFile(tempObj.value)
   }
+  // 重置状态
   upLoadFlag.value = false
   tempObj.value = null
 }
@@ -348,14 +504,14 @@ function submitForm() {
           getList()
         })
       } else {
-        if(selectedFile.value != null) {
+        if (selectedFile.value != null) {
           addAlgorithm(form.value).then(async response => {
             proxy.$modal.msgSuccess("新增成功")
             upLoadFlag.value = false
             open.value = false
             getList()
           })
-        }else{
+        } else {
           proxy.$modal.msgError("请上传算法")
         }
       }
@@ -364,15 +520,19 @@ function submitForm() {
 }
 
 /** 删除按钮操作 */
-function handleDelete(row) {
+async function handleDelete(row) {
   const _ids = row.id || ids.value
-  proxy.$modal.confirm('是否确认删除算法编号为"' + _ids + '"的数据项？').then(function () {
-    return delAlgorithm(_ids)
-  }).then(() => {
-    getList()
-    proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => {
-  })
+  try {
+    await safeDelCheck(_ids)
+    proxy.$modal.confirm('是否确认删除该数据项？').then(function () {
+      return delAlgorithm(_ids)
+    }).then(() => {
+      getList()
+      proxy.$modal.msgSuccess("删除成功")
+    }).catch(() => {
+    })
+  } catch (e) {
+  }
 }
 
 function handleDownload(row) {
@@ -387,3 +547,28 @@ function handleDownload(row) {
 
 getList()
 </script>
+
+<style scoped>
+.upload-status-panel {
+  margin-top: 15px;
+  padding: 15px;
+  background-color: #f5f7fa;
+  border-radius: 6px;
+  border: 1px dashed #dcdfe6;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.upload-metrics {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+}
+</style>

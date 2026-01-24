@@ -109,6 +109,14 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
      */
     @Override
     public int insertBizProcessRecord(BizProcessRecord bizProcessRecord) {
+        BizProcessRecord record = bizProcessRecordMapper.selectBizProcessRecordByTaskNoAndStepCode(bizProcessRecord.getWorkOrderCode(), bizProcessRecord.getStepCode());
+        if (record != null) {
+            record.setData(bizProcessRecord.getData());
+            record.setImagePath(bizProcessRecord.getImagePath());
+            record.setStepStatus(bizProcessRecord.getStepStatus());
+            record.setSubmitTime(DateUtils.getNowDate());
+            return bizProcessRecordMapper.updateBizProcessRecord(record);
+        }
         return bizProcessRecordMapper.insertBizProcessRecord(bizProcessRecord);
     }
 

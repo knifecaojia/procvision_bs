@@ -101,4 +101,12 @@ public class ProcessController extends BaseController
         return toAjax(processService.bindAlg(id, algId));
     }
 
+    @GetMapping("/check/{ids}")
+    public AjaxResult check(@PathVariable Long[] ids) {
+        if(processService.safeDelCheck(ids))
+            return error("该算法已绑定工序，请换绑后删除");
+        else
+            return success();
+    }
+
 }

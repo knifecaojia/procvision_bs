@@ -1,10 +1,18 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="98px">
-      <el-form-item label="装配任务编码" prop="workOrderCode">
+      <el-form-item label="项目号" prop="projectNo">
         <el-input
-            v-model="queryParams.workOrderCode"
-            placeholder="请输入任务编码"
+            v-model="queryParams.projectNo"
+            placeholder="请输入项目号"
+            clearable
+            @keyup.enter="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="订单编码" prop="prodOrderNo">
+        <el-input
+            v-model="queryParams.prodOrderNo"
+            placeholder="请输入订单编码"
             clearable
             @keyup.enter="handleQuery"
         />
@@ -17,21 +25,13 @@
             @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="装配工人姓名" prop="workerName" style="margin-right: 10px; vertical-align: bottom">
-        <el-input
-            v-model="queryParams.workerName"
-            placeholder="请输入装配工人姓名"
-            clearable
-            @keyup.enter="handleQuery"
-        />
-      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
-<!--    <el-row :gutter="10" class="mb8">-->
+    <el-row :gutter="10" class="mb8">
 <!--      <el-col :span="1.5">-->
 <!--        <el-button-->
 <!--            type="primary"-->
@@ -51,20 +51,21 @@
 <!--        >修改-->
 <!--        </el-button>-->
 <!--      </el-col>-->
-<!--      <el-col :span="1.5">-->
-<!--        <el-button-->
-<!--            type="danger"-->
-<!--            plain-->
-<!--            icon="Delete"-->
-<!--            :disabled="multiple"-->
-<!--            @click="handleDelete"-->
-<!--        >删除-->
-<!--        </el-button>-->
-<!--      </el-col>-->
-<!--      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>-->
-<!--    </el-row>-->
+      <el-col :span="1.5">
+        <el-button
+            type="danger"
+            plain
+            icon="Delete"
+            :disabled="multiple"
+            @click="handleDelete"
+        >删除
+        </el-button>
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
 
     <el-table v-loading="loading" :data="workOrderList" @selection-change="handleSelectionChange">
+      <el-table-column type="selection" width="55" align="center"/>
       <el-table-column label="装配任务编码" align="center" prop="workOrderCode"/>
       <el-table-column label="项目号" align="center" prop="projectNo"/>
       <el-table-column label="资源状态" align="center" prop="status">
@@ -102,6 +103,7 @@
         <template #default="scope">
           <el-config-provider :message="config">
             <el-button link type="primary" icon="View" @click="handleResultShow(scope.row)">结果查看</el-button>
+            <el-button link type="primary" icon="View" @click="handleDelete(scope.row)">删除</el-button>
           </el-config-provider>
         </template>
       </el-table-column>
@@ -300,20 +302,8 @@ const total = ref(0)
 const title = ref("")
 const isWorkOrderInfoOpen = ref(false)
 const isWorkOrderResult = ref(false)
-const imageUrl = ref("http://39.104.202.123:9001/api/v1/download-shared-object/aHR0cDovLzEyNy4wLjAuMTo5MDAwL2Rldi8yMDI2LTAxLTE3MDdiOWEyNDMtNTdhYy00MGY1LTlhZTItYzlkNTQyMGQ2NGI4P1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9WkNXMVVNVkFWOENJTjRGMVBDQ0MlMkYyMDI2MDExNyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNjAxMTdUMDU0MzU4WiZYLUFtei1FeHBpcmVzPTQzMjAwJlgtQW16LVNlY3VyaXR5LVRva2VuPWV5SmhiR2NpT2lKSVV6VXhNaUlzSW5SNWNDSTZJa3BYVkNKOS5leUpoWTJObGMzTkxaWGtpT2lKYVExY3hWVTFXUVZZNFEwbE9ORVl4VUVORFF5SXNJbVY0Y0NJNk1UYzJPRFkzTVRBeE5pd2ljR0Z5Wlc1MElqb2lZV1J0YVc0aWZRLm9KMDVQeWtJNmEyOUp4SG9sMDZnalhJb0pqNlM5QUE1eUhZZk0xSjVxRVJWX2R6ck5mZnV0MGhuQ3hpNkVLYkJ1WFhDRlZybUlPdEtWX2N5NW9FamxBJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCZ2ZXJzaW9uSWQ9bnVsbCZYLUFtei1TaWduYXR1cmU9NDhhZmQyNDk0OWJhZDQ5NGY1ZWE0OGExZTU4OGYzNTQ3ODA2NmE0NDc2Mjc2YTJmOTQ1Y2IzMjdiOTZkMmI4Mg")
 
 const stepRecordList = ref([])
-
-const activities = [
-  {
-    content: '工步1',
-    status: 2
-  },
-  {
-    content: '工步2',
-    status: 1
-  },
-]
 
 
 const data = reactive({
@@ -334,6 +324,10 @@ const data = reactive({
     guideMapUrl: null,
     workerCode: null,
     workerName: null,
+    prodOrderNo: null,
+    projectNo: null,
+    materialNo: null,
+    materialName: null
   },
   rules: {},
   workOrderInfo: {}
@@ -391,6 +385,10 @@ function reset() {
     guideMapUrl: null,
     workerCode: null,
     workerName: null,
+    prodOrderNo: null,
+    projectNo: null,
+    materialNo: null,
+    materialName: null
   }
   proxy.resetForm("workOrderRef")
 }
@@ -456,7 +454,7 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const _ids = row.id || ids.value
-  proxy.$modal.confirm('是否确认删除工单编号为"' + _ids + '"的数据项？').then(function () {
+  proxy.$modal.confirm('是否确认删除工单？').then(function () {
     return delWorkOrder(_ids)
   }).then(() => {
     getList()

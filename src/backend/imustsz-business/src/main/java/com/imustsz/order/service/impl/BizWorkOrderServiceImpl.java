@@ -27,6 +27,7 @@ import com.imustsz.craft.mapper.ProcessMapper;
 import com.imustsz.order.domain.json.*;
 import com.imustsz.order.domain.vo.PageVO;
 import com.imustsz.process.domain.BizProcessRecord;
+import com.imustsz.process.mapper.BizProcessRecordMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.imustsz.order.mapper.BizWorkOrderMapper;
@@ -57,6 +58,9 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
 
     @Autowired
     private MinioUtils minioUtils;
+
+    @Autowired
+    private BizProcessRecordMapper bizProcessRecordMapper;
 
     /**
      * 查询工单
@@ -132,6 +136,10 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
     @Override
     public int deleteBizWorkOrderByIds(Long[] ids)
     {
+        for (Long id : ids){
+            BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderById(id);
+            bizProcessRecordMapper.deleteBizProcessRecordByTaskNo(bizWorkOrder.getWorkOrderCode());
+        }
         return bizWorkOrderMapper.deleteBizWorkOrderByIds(ids);
     }
 
@@ -215,7 +223,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
             workOrderVO.setTask_no(workOrder.getWorkOrderCode());
             workOrderVO.setCraft_no(workOrder.getCraftCode());
             workOrderVO.setCraft_version(workOrder.getCraftVersion());
-            Craft craft = craftMapper.selectCraftByCode(workOrder.getCraftCode());
+            Craft craft = craftMapper.selectCraftByCodeAndVersion(workOrder.getCraftCode(), workOrder.getCraftVersion());
             workOrderVO.setCraft_name(craft.getName());
             workOrderVO.setProcess_code(workOrder.getProcessCode());
             workOrderVO.setProcess_name(workOrder.getProcessName());

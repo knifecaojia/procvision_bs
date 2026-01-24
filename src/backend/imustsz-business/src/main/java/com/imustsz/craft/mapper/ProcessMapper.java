@@ -75,4 +75,6 @@ public interface ProcessMapper
     List<ProcessCodeAndNameVO> getCodeAndNameByCraftCode(String code);
 
     Process selectProcessByCodeAndNameAndCraftId(@Param("code") String code, @Param("name") String name, @Param("craftId") Long craftId);
+
+    int selectProcessByAlgId(Long[] ids);
 }

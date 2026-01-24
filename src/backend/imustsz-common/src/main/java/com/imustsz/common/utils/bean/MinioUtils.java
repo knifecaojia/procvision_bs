@@ -38,28 +38,6 @@ public class MinioUtils {
         this.minioClient = minioClient;
     }
 
-//    public String uploadFile(String originalFilename, String dir) throws IOException, NoSuchAlgorithmException, ServerException, InvalidKeyException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
-//
-//        boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
-//        if (!found) {
-//            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
-//        }
-//
-//        String suffix = originalFilename.substring(originalFilename.lastIndexOf("."));
-//
-//        String objectName = LocalDate.now().toString().replace("-", "") + UUID.randomUUID().toString().replace("-", "") + suffix;
-//
-//        minioClient.uploadObject(
-//                UploadObjectArgs.builder()
-//                        .bucket(bucketName)
-//                        .object(dir + "/" + objectName)
-//                        .filename(originalFilename)
-//                        .build());
-//
-//        log.info("文件：{} 成功上传至bucket：{}", objectName, bucketName);
-//
-//        return objectName;
-//    }
 
     /**
      * 项目启动时，自动创建默认桶（如果不存在）

@@ -63,4 +63,6 @@ public interface IProcessService
     int deleteProcessByCraftId(Long id);
 
     int bindAlg(Long id, Long algId);
+
+    boolean safeDelCheck(Long[] ids);
 }

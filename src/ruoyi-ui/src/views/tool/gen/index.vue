@@ -297,7 +297,7 @@ function handleEditTable(row) {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const tableIds = row.tableId || ids.value
-  proxy.$modal.confirm('是否确认删除表编号为"' + tableIds + '"的数据项？').then(function () {
+  proxy.$modal.confirm('是否确认删除该数据项？').then(function () {
     return delTable(tableIds)
   }).then(() => {
     getList()

@@ -111,4 +111,9 @@ public class ProcessServiceImpl implements IProcessService
     public int bindAlg(Long id, Long algId) {
         return processMapper.bindAlg(id, algId);
     }
+
+    @Override
+    public boolean safeDelCheck(Long[] ids) {
+        return processMapper.selectProcessByAlgId(ids) > 0;
+    }
 }

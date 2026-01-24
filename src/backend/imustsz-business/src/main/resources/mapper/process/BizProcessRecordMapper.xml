@@ -22,7 +22,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectBizProcessRecordList" parameterType="BizProcessRecord" resultMap="BizProcessRecordResult">
         <include refid="selectBizProcessRecordVo"/>
         <where>  
-            <if test="workOrderCode != null  and workOrderCode != ''"> and work_order_code = #{workOrderCode}</if>
+            <if test="workOrderCode != null  and workOrderCode != ''"> and work_order_code like concat('%',#{workOrderCode},'%')</if>
             <if test="stepCode != null "> and step_code = #{stepCode}</if>
             <if test="stepName != null "> and step_name = #{stepName}</if>
             <if test="stepStatus != null  and stepStatus != ''"> and step_status = #{stepStatus}</if>
@@ -106,11 +106,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectRecordByTaskNo" resultMap="BizProcessRecordResult">
         <include refid="selectBizProcessRecordVo"/>
-        where work_order_code = ${taskNo}
+        where work_order_code = #{taskNo}
     </select>
 
     <select id="selectRecordByTaskNoAndStepCode" resultType="com.imustsz.process.domain.BizProcessRecord">
         <include refid="selectBizProcessRecordVo"/>
         where work_order_code = #{taskNo} and step_code = #{stepCode}
     </select>
+
+    <select id="selectBizProcessRecordByTaskNoAndStepCode" resultMap="BizProcessRecordResult">
+        <include refid="selectBizProcessRecordVo" />
+        where work_order_code = #{taskNo} and  step_code = #{stepCode}
+    </select>
+
+    <delete id="deleteBizProcessRecordByTaskNo">
+        delete from biz_process_record where work_order_code = #{workOrderCode}
+    </delete>
 </mapper>

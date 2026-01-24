@@ -14,7 +14,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-@Service
+//@Service
 public class CameraService implements ICameraService {
 
     private Handle hCamera = null;

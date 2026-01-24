@@ -11,11 +11,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController
-@RequestMapping("/camera")
+//@RestController
+//@RequestMapping("/camera")
 public class CameraController extends BaseController {
 
-    @Autowired
+//    @Autowired
     private ICameraService cameraService;
 
     // 1. 实时预览接口 (前端使用 <img src="/api/camera/preview" /> 并设置定时刷新)

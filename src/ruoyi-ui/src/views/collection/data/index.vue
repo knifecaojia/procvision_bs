@@ -4,100 +4,134 @@
       <template #header>
         <div class="card-header">
           <span>
-            <el-icon><CameraFilled /></el-icon> 产品图像快速采集
+            <el-icon><Monitor /></el-icon> 图像采集
           </span>
-          <el-tag type="warning" effect="dark">扫码 -> 拍照 -> 自动归档</el-tag>
         </div>
       </template>
 
-      <el-row :gutter="20">
-        <el-col :span="8">
-          <div class="step-block" :class="{ 'active-step': !currentBarcode }">
-            <div class="step-title">Step 1: 扫描条码</div>
+      <el-row :gutter="40">
+        <el-col :span="9">
+          <div class="step-container">
+            <h3 class="step-header">Step 1: 扫码</h3>
+            <div class="step-content">
+              <el-input
+                  v-model="barcodeInput"
+                  ref="barcodeInputRef"
+                  placeholder="鼠标此处后进行扫码"
+                  prefix-icon="Scissor"
+                  clearable
+                  size="large"
+                  :disabled="!!currentBarcode"
+                  @keyup.enter="handleScan"
+              >
+                <template #append>
+                  <el-button @click="handleScan" :icon="currentBarcode ? 'Select' : 'ArrowRight'">
+                    {{ currentBarcode ? '已锁定' : '确认' }}
+                  </el-button>
+                </template>
+              </el-input>
+              <div class="tip-text" v-if="!currentBarcode">请先扫描码以激活采集功能</div>
+            </div>
 
-            <el-input
-                v-model="barcodeInput"
-                ref="barcodeInputRef"
-                placeholder="请扫描或输入条码"
-                prefix-icon="Scissor"
-                clearable
-                :disabled="!!currentBarcode"
-                @keyup.enter="handleScan"
+            <transition name="el-zoom-in-top">
+              <div class="current-task" v-if="currentBarcode">
+                <div class="task-header">
+                  <span class="task-label">产品信息</span>
+                </div>
+
+                <el-scrollbar max-height="120px" class="task-content-scroll">
+                  <div class="task-value">{{ currentBarcode }}</div>
+                </el-scrollbar>
+
+                <div class="task-actions">
+                  <el-button type="danger" link size="small" icon="RefreshLeft" @click="resetFlow(false)">
+                    重新开始
+                  </el-button>
+                </div>
+              </div>
+            </transition>
+          </div>
+
+          <div class="action-area" v-if="resultFile">
+            <el-divider>Step 3: 归档</el-divider>
+            <div class="file-info">
+              <el-tag type="info" size="small">待上传: {{ resultFile.name }}</el-tag>
+              <span class="file-size">{{ (resultFile.size / 1024).toFixed(1) }} KB</span>
+            </div>
+            <el-button
+                type="primary"
+                size="large"
+                class="submit-btn"
+                @click="submitData"
+                :loading="submitting"
+                icon="UploadFilled"
             >
-              <template #append>
-                <el-button @click="handleScan" icon="Check" :disabled="!!currentBarcode">确定</el-button>
-              </template>
-            </el-input>
-
-            <div class="scan-tip">光标聚焦后，扫码枪会自动触发</div>
-          </div>
-
-          <div class="step-block" v-if="currentBarcode" style="border-color: #67C23A; background: #f0f9eb;">
-            <div class="step-title" style="color: #67C23A; border-color: #67C23A;">
-              扫描结果
-            </div>
-            <div class="current-task-info">
-              <span class="label">产品信息：</span>
-              <span class="value">{{ currentBarcode }}</span>
-              <el-button type="danger" link icon="Close" @click="resetFlow(false)" size="small">取消/重扫</el-button>
-            </div>
-          </div>
-
-          <div class="action-area" v-if="capturedImageFile">
-            <el-divider>Step 3: 保存</el-divider>
-            <el-button type="primary" size="large" style="width: 100%" @click="submitData" :loading="submitting">
               保存并上传
             </el-button>
-            <div style="text-align: center; margin-top: 10px; color: #909399; font-size: 12px;">
-              完成保存后将自动重置，可直接扫下一个
-            </div>
           </div>
         </el-col>
 
-        <el-col :span="16">
-          <div class="camera-wrapper">
-            <div class="preview-box">
-              <div class="box-label">
-                <el-icon><VideoCamera /></el-icon> 实时监控
+        <el-col :span="15">
+          <div class="step-container media-container">
+            <div class="media-header">
+              <h3 class="step-header" style="margin:0; border:none">Step 2: 图像采集</h3>
+              <el-radio-group v-model="mode" size="small" @change="handleModeChange" :disabled="!currentBarcode">
+                <el-radio-button label="camera">摄像头拍照</el-radio-button>
+                <el-radio-button label="upload">本地上传</el-radio-button>
+              </el-radio-group>
+            </div>
+
+            <div v-show="mode === 'camera'" class="camera-wrapper">
+              <div class="video-box" v-show="!previewImage">
+                <video ref="videoRef" autoplay playsinline muted class="video-stream"></video>
+                <div class="camera-mask" v-if="!isCameraOpen">
+                  <el-button type="primary" icon="VideoCamera" @click="startCamera" :disabled="!currentBarcode">
+                    打开摄像头
+                  </el-button>
+                  <p class="mask-tip" v-if="!currentBarcode">请先锁定条码</p>
+                </div>
               </div>
-              <img
-                  v-if="cameraConnected"
-                  :src="previewUrl"
-                  class="live-stream"
-                  alt="实时监控"
-              />
-              <div v-else class="camera-placeholder">
-                <el-icon class="is-loading" :size="30"><Loading /></el-icon>
-                <p>正在连接相机...</p>
+
+              <div class="preview-box" v-if="previewImage">
+                <img :src="previewImage" class="captured-img" />
+                <div class="re-capture-overlay">
+                  <el-button type="warning" icon="Refresh" round @click="clearCapture">重拍</el-button>
+                </div>
+              </div>
+
+              <div class="camera-controls" v-if="isCameraOpen && !previewImage">
+                <el-button type="danger" circle size="large" class="shutter-btn" @click="takePhoto" icon="Camera"></el-button>
+                <div class="control-tip">点击拍照</div>
               </div>
             </div>
 
-            <div class="capture-box">
-              <div class="box-label">
-                <el-icon><Picture /></el-icon> 采集预览
+            <div v-show="mode === 'upload'" class="upload-wrapper">
+              <el-upload
+                  drag
+                  action="#"
+                  :auto-upload="false"
+                  :show-file-list="false"
+                  :on-change="handleFileChange"
+                  accept="image/*"
+                  :disabled="!currentBarcode"
+              >
+                <img v-if="previewImage" :src="previewImage" class="upload-preview" />
+                <div v-else>
+                  <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+                  <div class="el-upload__text">拖拽图片或 <em>点击上传</em></div>
+                </div>
+              </el-upload>
+              <div v-if="previewImage" style="text-align: center; margin-top: 10px;">
+                <el-button type="text" icon="Delete" @click="clearCapture">清除重选</el-button>
               </div>
-              <img v-if="capturedImageUrl" :src="capturedImageUrl" class="capture-img" />
-              <div v-else class="empty-capture">暂无抓拍</div>
             </div>
-          </div>
 
-          <div class="camera-control-bar">
-            <el-button
-                type="danger"
-                icon="Camera"
-                circle
-                style="width: 60px; height: 60px; font-size: 24px;"
-                :disabled="!currentBarcode"
-                :loading="isCapturing"
-                @click="handleCapture"
-            ></el-button>
-            <div class="control-tip">
-              {{ !currentBarcode ? '请先扫描条码' : '点击按钮拍照 (Step 2)' }}
-            </div>
           </div>
         </el-col>
       </el-row>
     </el-card>
+
+    <canvas ref="canvasRef" style="display: none;"></canvas>
   </div>
 </template>
 
@@ -106,47 +140,34 @@ import { ref, onMounted, onBeforeUnmount, nextTick, getCurrentInstance } from 'v
 import axios from "axios";
 import { getUploadUrl } from "@/api/algorithm/algorithm.js";
 import {addData} from "@/api/collection/data.js";
-// 引入您的业务保存接口，例如 saveProductImage(data)
-// import { saveProductImage } from "@/api/production/index.js";
 
 const { proxy } = getCurrentInstance();
-const BASE_API = import.meta.env.VITE_APP_BASE_API;
 
-// --- 基础数据 ---
+// --- 状态管理 ---
 const barcodeInput = ref('');
-const currentBarcode = ref(''); // 锁定后的条码，用于提交
+const currentBarcode = ref('');
 const barcodeInputRef = ref(null);
 const submitting = ref(false);
 
-// --- 相机相关 ---
-const previewUrl = ref('');
-const cameraConnected = ref(true); // 默认设为true，开始轮询
-const isCapturing = ref(false);
-const capturedImageFile = ref(null);
-const capturedImageUrl = ref('');
-let previewTimer = null;
+const mode = ref('camera'); // 'camera' | 'upload'
+const resultFile = ref(null); // 最终要上传的文件对象 (Blob/File)
+const previewImage = ref(''); // 最终图片的预览 URL
+
+// 相机相关 Ref
+const videoRef = ref(null);
+const canvasRef = ref(null);
+const isCameraOpen = ref(false);
+let mediaStream = null;
 
 // --- 生命周期 ---
 onMounted(() => {
-  startPreview();
   focusInput();
-  // 全局回车监听：如果在保存阶段，按回车直接提交
-  // window.addEventListener('keydown', handleGlobalEnter);
 });
 
 onBeforeUnmount(() => {
-  stopPreview();
-  // window.removeEventListener('keydown', handleGlobalEnter);
+  stopCamera();
 });
 
-// const handleGlobalEnter = (e) => {
-//   if (e.key === 'Enter') {
-//     // 如果已经抓拍了图片，且不在输入框内，则触发保存
-//     if (capturedImageFile.value && document.activeElement !== barcodeInputRef.value?.$el.querySelector('input')) {
-//       submitData();
-//     }
-//   }
-// };
 
 const focusInput = () => {
   nextTick(() => {
@@ -154,79 +175,134 @@ const focusInput = () => {
   });
 };
 
-// --- 1. 扫码逻辑 (简化版) ---
+// --- Step 1: 扫码 ---
 const handleScan = () => {
-  const code = barcodeInput.value.trim();
-  if (!code) {
-    proxy.$modal.msgWarning('条码不能为空');
+  if (!barcodeInput.value) return proxy.$modal.msgWarning('请输入条码');
+  currentBarcode.value = barcodeInput.value;
+  proxy.$modal.msgSuccess('条码锁定，请采集图像');
+
+  // 如果是相机模式，自动开启摄像头
+  if (mode.value === 'camera') {
+    startCamera();
+  }
+};
+
+// --- Step 2: 相机控制逻辑 (核心) ---
+
+// 打开摄像头
+const startCamera = async () => {
+  if (!currentBarcode.value) return;
+
+  // 浏览器兼容性检查
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    proxy.$modal.msgError('当前浏览器不支持访问摄像头，请使用 Chrome/Edge');
     return;
   }
 
-  // 直接锁定条码，不需要查询后端详情
-  currentBarcode.value = code;
-
-  // 提示用户下一步
-  proxy.$modal.msgSuccess(`条码已录入: ${code}，请拍照`);
-
-  // 可选：如果需要在扫码瞬间通知后端记录日志，可在此处调用 API
-  // await logScanAction(code);
-};
-
-// --- 2. 相机逻辑 (保持复用) ---
-const startPreview = () => {
-  stopPreview();
-  refreshPreview();
-  previewTimer = setInterval(refreshPreview, 100);
-};
-
-const refreshPreview = () => {
-  // 添加时间戳防止缓存
-  previewUrl.value = `${BASE_API}/camera/preview?t=${Date.now()}`;
-};
-
-const stopPreview = () => {
-  if (previewTimer) clearInterval(previewTimer);
-};
-
-const handleCapture = async () => {
-  if (!currentBarcode.value) {
-    proxy.$modal.msgWarning('请先扫描条码！');
-    focusInput();
-    return;
-  }
-
-  isCapturing.value = true;
   try {
-    const res = await axios({
-      method: 'get',
-      url: `${BASE_API}/camera/capture`,
-      responseType: 'blob'
+    // 请求视频流 (ideal 参数可以设置分辨率)
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        facingMode: "environment" // 优先后置摄像头(移动端有效)
+      }
     });
 
-    if (res.data.type && res.data.type.includes('json')) {
-      proxy.$modal.msgError('拍照异常');
-      return;
+    mediaStream = stream;
+    if (videoRef.value) {
+      videoRef.value.srcObject = stream;
+      videoRef.value.play(); // 必须调用 play
     }
-
-    const blob = res.data;
-    const filename = `${currentBarcode.value}_${Date.now()}.jpg`;
-    capturedImageFile.value = new File([blob], filename, { type: 'image/jpeg' });
-    capturedImageUrl.value = URL.createObjectURL(blob);
-
-  } catch (error) {
-    proxy.$modal.msgError('拍照请求失败');
-  } finally {
-    isCapturing.value = false;
+    isCameraOpen.value = true;
+  } catch (err) {
+    console.error("摄像头启动失败:", err);
+    let msg = '无法启动摄像头';
+    if (err.name === 'NotAllowedError') msg = '请允许浏览器访问摄像头权限';
+    if (err.name === 'NotFoundError') msg = '未检测到摄像头设备';
+    proxy.$modal.msgError(msg);
   }
 };
 
-// --- 3. 提交保存 ---
+// 关闭摄像头
+const stopCamera = () => {
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
+    mediaStream = null;
+  }
+  isCameraOpen.value = false;
+};
+
+// 拍照 (Canvas 截图)
+const takePhoto = () => {
+  if (!videoRef.value || !canvasRef.value) return;
+
+  const video = videoRef.value;
+  const canvas = canvasRef.value;
+  const context = canvas.getContext('2d');
+
+  // 设置画布尺寸与视频实际尺寸一致
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  // 绘制当前帧
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  // 转换为 Blob (文件对象)
+  canvas.toBlob((blob) => {
+    const filename = `${currentBarcode.value}_${Date.now()}.jpg`;
+    // 将 Blob 封装为 File 对象
+    resultFile.value = new File([blob], filename, { type: 'image/jpeg' });
+
+    // 生成预览
+    previewImage.value = URL.createObjectURL(blob);
+
+    // 拍照后暂停视频流，节省资源（可选，这里选择不关流，只是遮挡）
+    stopCamera();
+  }, 'image/jpeg', 0.95); // 0.95 是图片质量
+};
+
+// 清除抓拍，重新拍照
+const clearCapture = () => {
+  resultFile.value = null;
+  previewImage.value = '';
+  // 如果是相机模式，确保相机是开着的
+  if (mode.value === 'camera' && !isCameraOpen.value) {
+    startCamera();
+  }
+};
+
+// --- 文件上传模式逻辑 ---
+const handleFileChange = (file) => {
+  const rawFile = file.raw;
+  if (!['image/jpeg', 'image/png'].includes(rawFile.type)) {
+    proxy.$modal.msgError('仅支持 JPG/PNG 图片');
+    return;
+  }
+  resultFile.value = rawFile;
+  previewImage.value = URL.createObjectURL(rawFile);
+};
+
+const handleModeChange = (val) => {
+  if (val === 'upload') {
+    stopCamera();
+    clearCapture();
+  } else {
+    // 切换回相机
+    clearCapture();
+    if (currentBarcode.value) {
+      startCamera();
+    }
+  }
+};
+
+// --- Step 3: 上传归档 (通用) ---
 const submitData = async () => {
-  if (!capturedImageFile.value || submitting.value) return;
+  if (!resultFile.value || !currentBarcode.value) return;
 
   submitting.value = true;
   try {
-    // 1. 获取 MinIO 上传地址
+    // 1. 获取MinIO上传地址
     let uploadUrl = '';
     let objectName = '';
     await getUploadUrl().then(res => {
@@ -234,40 +310,39 @@ const submitData = async () => {
       objectName = res.data.objectName;
     });
 
-    // 2. 上传图片
-    await axios.put(uploadUrl, capturedImageFile.value, {
-      headers: { 'Content-Type': 'image/jpeg' }
+    // 2. 上传文件 (无论是拍照的Blob还是本地File，处理方式一样)
+    await axios.put(uploadUrl, resultFile.value, {
+      headers: { 'Content-Type': resultFile.value.type }
     });
 
-    // 3. 提交业务数据 (条码 + 图片路径)
-    // 这里根据您后端的实际接口修改
+    // 3. 提交业务数据
     const postData = {
-      data: currentBarcode.value,  // 直接传条码字符串
-      imagePath: objectName,          // 图片在MinIO的路径
+      data: currentBarcode.value,
+      imagePath: objectName,
     };
 
     await addData(postData);
-    // console.log('发送给后端的数据:', postData);
 
-    proxy.$modal.msgSuccess('保存成功！');
-    resetFlow(true); // 成功后重置
+    proxy.$modal.msgSuccess('归档成功！');
 
-  } catch (error) {
-    console.error(error);
-    proxy.$modal.msgError('上传保存失败');
+    resetFlow(true);
+
+  } catch (e) {
+    console.error(e);
+    proxy.$modal.msgError('上传失败');
   } finally {
     submitting.value = false;
   }
 };
 
-// --- 重置流程 ---
-const resetFlow = (isSuccess) => {
+const resetFlow = () => {
   barcodeInput.value = '';
   currentBarcode.value = '';
-  capturedImageFile.value = null;
-  capturedImageUrl.value = '';
-
-  // 重新聚焦输入框，方便连续作业
+  resultFile.value = null;
+  previewImage.value = '';
+  if (mode.value === 'upload') {
+    // clear logic
+  }
   focusInput();
 };
 </script>
@@ -279,106 +354,201 @@ const resetFlow = (isSuccess) => {
   min-height: calc(100vh - 84px);
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: bold;
-}
-
-.step-block {
+.step-container {
   background: #fff;
-  padding: 20px;
   border-radius: 8px;
-  border: 1px solid #ebeef5;
+  padding: 15px;
   margin-bottom: 20px;
-  transition: all 0.3s;
+  border: 1px solid #ebeef5;
 }
 
-.active-step {
-  border-color: #409EFF;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-}
-
-.step-title {
-  font-size: 16px;
-  font-weight: bold;
+.step-header {
+  margin-top: 0;
   margin-bottom: 15px;
+  font-size: 16px;
   border-left: 4px solid #409EFF;
   padding-left: 10px;
   color: #303133;
 }
 
-.scan-tip {
-  font-size: 13px;
-  color: #909399;
-  margin-top: 8px;
+.media-container {
+  height: 500px; /* 固定高度 */
+  display: flex;
+  flex-direction: column;
 }
 
-.current-task-info {
+.media-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  font-size: 16px;
-}
-.current-task-info .label {
-  font-weight: bold;
-  color: #67C23A;
-}
-.current-task-info .value {
-  font-weight: bold;
-  font-size: 20px;
-  margin: 0 10px;
+  margin-bottom: 15px;
 }
 
-/* 相机区域样式 */
+/* 摄像头区域 */
 .camera-wrapper {
+  flex: 1;
+  position: relative;
+  background: #000;
+  border-radius: 4px;
+  overflow: hidden;
   display: flex;
-  gap: 15px;
-  height: 450px;
+  flex-direction: column;
 }
 
-.preview-box, .capture-box {
+.video-box, .preview-box {
   flex: 1;
-  background: #000;
-  border-radius: 6px;
-  position: relative;
-  overflow: hidden;
+  width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
 }
 
-.box-label {
+.video-stream, .captured-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* 保持比例 */
+}
+
+.camera-mask {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(0,0,0,0.6);
-  color: #fff;
-  padding: 4px 10px;
-  border-radius: 4px;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(30, 30, 30, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   z-index: 10;
 }
 
-.live-stream, .capture-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.camera-placeholder, .empty-capture {
+.mask-tip {
   color: #909399;
-  text-align: center;
+  margin-top: 10px;
+  font-size: 12px;
 }
 
-.camera-control-bar {
-  margin-top: 20px;
+.camera-controls {
+  height: 80px;
+  background: rgba(0,0,0,0.8);
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  z-index: 20;
+}
+
+.shutter-btn {
+  width: 50px;
+  height: 50px;
+  font-size: 20px;
+  border: 4px solid rgba(255,255,255,0.3);
 }
 
 .control-tip {
+  color: #fff;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+.re-capture-overlay {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+}
+
+/* 上传区域 */
+.upload-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border: 2px dashed #dcdfe6;
+  border-radius: 6px;
+  background: #f9fafc;
+}
+.upload-preview {
+  max-height: 300px;
+  max-width: 100%;
+}
+
+/* 状态和操作区 */
+/* 修改原有的 .current-task 样式 */
+.current-task {
+  background: #f0f9eb;
+  border: 1px solid #e1f3d8;
+  border-radius: 4px;
+  margin-top: 15px;
+  overflow: hidden; /* 防止溢出 */
+  display: flex;
+  flex-direction: column;
+}
+
+/* 新增：头部布局 */
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 15px 0 15px;
+}
+
+.task-label {
+  color: #67C23A;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* 关键修改：内容区域样式 */
+.task-content-scroll {
+  width: 100%;
+  margin: 5px 0;
+}
+
+.task-value {
+  padding: 0 15px;       /*以此保留左右边距*/
+  font-size: 16px;       /* 调小字体，原 24px 太大 */
+  line-height: 1.5;      /* 增加行高提升可读性 */
+  font-weight: bold;
+  color: #303133;
+
+  /* 核心代码：处理长文本 */
+  word-break: break-all; /* 强制英文/数字换行 */
+  white-space: pre-wrap; /* 保留原有换行符（如果有） */
+  text-align: left;      /* 长文本左对齐更易读 */
+  font-family: monospace;/* 等宽字体更适合看序列号 */
+}
+
+/* 底部按钮区 */
+.task-actions {
+  background-color: rgba(103, 194, 58, 0.1);
+  padding: 5px 0;
+  text-align: center;
+  border-top: 1px solid #e1f3d8;
+}
+.task-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: #303133;
+  margin: 5px 0;
+}
+.submit-btn {
+  width: 100%;
   margin-top: 10px;
+}
+.tip-text {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 5px;
+}
+.file-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 13px;
   color: #606266;
 }
 </style>

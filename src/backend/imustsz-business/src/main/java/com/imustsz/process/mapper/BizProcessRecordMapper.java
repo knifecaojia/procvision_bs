@@ -63,4 +63,8 @@ public interface BizProcessRecordMapper
     List<BizProcessRecord> selectRecordByTaskNo(String taskNo);
 
     BizProcessRecord selectRecordByTaskNoAndStepCode(@Param("taskNo") String taskNo, @Param("stepCode") String stepCode);
+
+    BizProcessRecord selectBizProcessRecordByTaskNoAndStepCode(@Param("taskNo") String taskNo, @Param("stepCode")String stepCode);
+
+    int deleteBizProcessRecordByTaskNo(String workOrderCode);
 }

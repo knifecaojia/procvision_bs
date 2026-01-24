@@ -145,4 +145,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectProcessVo" />
         where code = #{code} and name = #{name} and craft_id = #{craftId}
     </select>
+
+    <select id="selectProcessByAlgId" resultType="int">
+        select count(1) from biz_process where algorithm_id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
 </mapper>

@@ -32,18 +32,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectBizWorkOrderVo"/>
         <where>  
             <if test="workOrderCode != null  and workOrderCode != ''"> and work_order_code = #{workOrderCode}</if>
-            <if test="prodOrderNo != null "> and prod_order_no = #{prodOrderNo}</if>
-            <if test="prodBatchNo != null "> and prod_batch_no = #{prodBatchNo}</if>
+            <if test="prodOrderNo != null "> and prod_order_no like concat('%', #{prodOrderNo}, '%')</if>
+            <if test="prodBatchNo != null "> and prod_batch_no like concat('%', #{prodBatchNo}, '%')</if>
             <if test="craftCode != null  and craftCode != ''"> and craft_code = #{craftCode}</if>
             <if test="craftVersion != null  and craftVersion != ''"> and craft_version = #{craftVersion}</if>
             <if test="status != null "> and status = #{status}</if>
             <if test="processCode != null  and processCode != ''"> and process_code = #{processCode}</if>
             <if test="processName != null  and processName != ''"> and process_name like concat('%', #{processName}, '%')</if>
-            <if test="projectNo != null "> and project_no = #{projectNo}</if>
+            <if test="projectNo != null "> and project_no like concat('%', #{projectNo}, '%')</if>
             <if test="startTime != null "> and start_time = #{startTime}</if>
             <if test="endTime != null "> and end_time = #{endTime}</if>
             <if test="guideMapUrl != null  and guideMapUrl != ''"> and guide_map_url = #{guideMapUrl}</if>
-            <if test="workerCode != null  and workerCode != ''"> and worker_code = #{workerCode}</if>
+            <if test="workerCode != null  and workerCode != ''"> and worker_code like concat('%',#{workerCode}, '%')</if>
             <if test="workerName != null  and workerName != ''"> and worker_name like concat('%', #{workerName}, '%')</if>
             <if test="materialNo != null and materialNo != ''"> and material_no = #{materialNo}</if>
             <if test="materialName != null and materialName != ''"> and material_name = #{materialName}</if>

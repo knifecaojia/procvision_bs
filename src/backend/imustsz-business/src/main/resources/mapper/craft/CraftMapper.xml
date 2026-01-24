@@ -22,7 +22,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>  
             <if test="code != null  and code != ''"> and code like concat('%', #{code}, '%')</if>
             <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
-            <if test="version != null  and version != ''"> and version = #{version}</if>
+            <if test="version != null  and version != ''"> and version like concat('%', #{version}, '%') </if>
             <if test="status != null  and status != ''"> and status = #{status}</if>
             <if test="desc != null  and desc != ''"> and `desc` like concat('%', #{desc}, '%')</if>
             <if test="createTime != null "> and create_time = #{createTime}</if>

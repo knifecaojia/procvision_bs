@@ -122,6 +122,8 @@ public class BizWorkOrderController extends BaseController
      */
     @GetMapping("/getOrderFromMMO")
     public AjaxResult getOrderFromMMO(String fileName) throws IOException {
+        if(fileName == null)
+            return error("请选择文件");
         File file = new File("MOM/" + fileName);
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         List<Task> taskSync = objectMapper.readValue(file, new TypeReference<List<Task>>() {});

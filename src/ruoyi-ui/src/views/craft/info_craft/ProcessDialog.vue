@@ -28,7 +28,7 @@
         <el-table-column type="selection" width="55" align="center"/>
         <el-table-column label="工序号" align="center" prop="code"/>
         <el-table-column label="工序名称" align="center" prop="name"/>
-        <el-table-column label="算法" align="center">
+        <el-table-column label="算法" align="center" :show-overflow-tooltip="true">
           <template #default="scope">
             <el-tag type="danger" v-if="scope.row.algorithmId == null">未绑定</el-tag>
             <el-tag v-else type="success">

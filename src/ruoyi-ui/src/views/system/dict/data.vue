@@ -341,7 +341,7 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const dictCodes = row.dictCode || ids.value
-  proxy.$modal.confirm('是否确认删除字典编码为"' + dictCodes + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除该数据项？').then(function() {
     return delData(dictCodes)
   }).then(() => {
     getList()

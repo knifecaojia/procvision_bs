@@ -59,3 +59,10 @@ export function removeUploadFile(objectName){
         }
     })
 }
+
+export function safeDelCheck(ids){
+    return request({
+        url: '/craft/process/check/' + ids,
+        method: 'get'
+    })
+}

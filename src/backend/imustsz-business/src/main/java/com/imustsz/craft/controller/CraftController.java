@@ -110,11 +110,13 @@ public class CraftController extends BaseController
      */
     @GetMapping("/getCraftFromMMO")
     public AjaxResult getCraftFromMMO(String fileName) throws IOException {
+        if (fileName == null)
+            return error("请选择文件");
         File file = new File("MOM/" + fileName);
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         CrackProcess CrackProcess =objectMapper.readValue(file, CrackProcess.class);
         craftService.importCraftFromMMo(CrackProcess);
-        return success(CrackProcess);
+        return success();
     }
 
     @GetMapping("/checkStatus/{id}")

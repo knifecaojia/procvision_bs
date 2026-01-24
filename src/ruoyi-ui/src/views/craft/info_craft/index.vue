@@ -2,7 +2,7 @@
   <div class="app-container">
     <div v-if="isPageAlive">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="编码" prop="code">
+      <el-form-item label="工艺编码" prop="code">
         <el-input
             v-model="queryParams.code"
             placeholder="请输入编码"
@@ -10,7 +10,7 @@
             @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="名称" prop="code">
+      <el-form-item label="工艺名称" prop="name">
         <el-input
             v-model="queryParams.name"
             placeholder="请输入名称"
@@ -18,7 +18,7 @@
             @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="版本" prop="version">
+      <el-form-item label="工艺版本" prop="version">
         <el-input
             v-model="queryParams.version"
             placeholder="请输入版本"
@@ -133,7 +133,7 @@
 </template>
 
 <script setup name="Craft">
-import {listCraft, getCraft, delCraft, addCraft, updateCraft, changeStatus} from "@/api/craft/craft.js"
+import {listCraft, getCraft, delCraft, addCraft, updateCraft} from "@/api/craft/craft.js"
 import ProcessDialog from "@/views/craft/info_craft/ProcessDialog.vue";
 
 const {proxy} = getCurrentInstance()
@@ -176,7 +176,7 @@ const data = reactive({
 
 const {processOpen, queryParams, form, rules} = toRefs(data)
 
-// TODO 美化界面，已就绪的工艺展示缩略图，部署
+
 
 /** 查询工艺信息列表 */
 function getList() {
