@@ -2,6 +2,7 @@ package com.imustsz.process.mapper;
 
 import java.util.List;
 import com.imustsz.process.domain.BizProcessRecord;
+import com.imustsz.process.domain.UniqueRecordParams;
 import org.apache.ibatis.annotations.Param;
 
 /**
@@ -62,9 +63,13 @@ public interface BizProcessRecordMapper
 
     List<BizProcessRecord> selectRecordByTaskNo(String taskNo);
 
-    BizProcessRecord selectRecordByTaskNoAndStepCode(@Param("taskNo") String taskNo, @Param("stepCode") String stepCode);
+    BizProcessRecord selectRecordByTaskNoAndProcessCodeAndStepCode(@Param("taskNo") String taskNo,@Param("processCode")String processCode, @Param("stepCode") String stepCode);
 
     BizProcessRecord selectBizProcessRecordByTaskNoAndStepCode(@Param("taskNo") String taskNo, @Param("stepCode")String stepCode);
 
     int deleteBizProcessRecordByTaskNo(String workOrderCode);
+
+    List<UniqueRecordParams> selectBizProcessRecords(@Param("workOrderCode") String taskNo);
+
+    List<BizProcessRecord> selectBizProcessRecordByOrderAndProcessCode(@Param("workOrderCode") String workOrderCode, @Param("processCode") String processCode);
 }

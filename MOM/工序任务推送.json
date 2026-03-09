@@ -1,0 +1,55 @@
+{
+  "production_order_no": "100002345",
+  "work_order_list": [
+    {
+      "work_order_no": "100002345-01",
+      "dispatch_task_info": [
+        {
+          "operation_no": "10",
+          "operation_name": "准备",
+          "dispatch_quantity": 1,
+          "planned_start_time": "2025-12-09T08:30:00",
+          "planned_end_time": "2025-12-09T12:00:00",
+          "prod_group": "总装1班",
+          "worker_code": "07488",
+          "worker_name": "张三"
+        },
+        {
+          "operation_no": "20",
+          "operation_name": "装配",
+          "dispatch_quantity": 1,
+          "planned_start_time": "2025-12-09T08:30:00",
+          "planned_end_time": "2025-12-09T12:00:00",
+          "prod_group": "总装4班",
+          "worker_code": "07698",
+          "worker_name": "李四"
+        }
+      ]
+    },
+    {
+      "work_order_no": "100002345-02",
+      "dispatch_task_info": [
+        {
+          "operation_no": "10",
+          "operation_name": "准备",
+          "dispatch_quantity": 1,
+          "planned_start_time": "2025-12-09T08:30:00",
+          "planned_end_time": "2025-12-09T12:00:00",
+          "prod_group": "总装1班",
+          "worker_code": "07488",
+          "worker_name": "张三"
+        },
+        {
+          "operation_no": "20",
+          "operation_name": "装配",
+          "dispatch_quantity": 1,
+          "planned_start_time": "2025-12-09T08:30:00",
+          "planned_end_time": "2025-12-09T12:00:00",
+          "prod_group": "总装4班",
+          "worker_code": "07698",
+          "worker_name": "李四"
+        }
+      ]
+    }
+  ]
+}

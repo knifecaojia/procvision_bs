@@ -16,5 +16,7 @@ public enum LimitType
     /**
      * 根据请求者IP进行限流
      */
-    IP
+    IP,
+
+    USER
 }

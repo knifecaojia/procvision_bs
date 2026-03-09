@@ -7,6 +7,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="BizProcessRecord" id="BizProcessRecordResult">
         <result property="id"    column="id"    />
         <result property="workOrderCode"    column="work_order_code"    />
+        <result property="processCode"    column="process_code"    />
         <result property="stepCode"    column="step_code"    />
         <result property="stepName"    column="step_name"    />
         <result property="stepStatus"    column="step_status"    />
@@ -15,8 +16,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="submitTime"    column="submit_time"    />
     </resultMap>
 
+    <resultMap type="UniqueRecordParams" id="UniqueRecordParamsResult">
+        <result property="workOrderCode"    column="work_order_code"    />
+        <result property="processCode"    column="process_code"    />
+    </resultMap>
+
     <sql id="selectBizProcessRecordVo">
-        select id, work_order_code, step_code, step_name, step_status, image_path, data, submit_time from biz_process_record
+        select id, work_order_code, process_code, step_code, step_name, step_status, image_path, data, submit_time from biz_process_record
     </sql>
 
     <select id="selectBizProcessRecordList" parameterType="BizProcessRecord" resultMap="BizProcessRecordResult">
@@ -24,6 +30,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>  
             <if test="workOrderCode != null  and workOrderCode != ''"> and work_order_code like concat('%',#{workOrderCode},'%')</if>
             <if test="stepCode != null "> and step_code = #{stepCode}</if>
+            <if test="processCode != null "> and process_code = #{processCode}</if>
             <if test="stepName != null "> and step_name = #{stepName}</if>
             <if test="stepStatus != null  and stepStatus != ''"> and step_status = #{stepStatus}</if>
             <if test="imagePath != null  and imagePath != ''"> and image_path = #{imagePath}</if>
@@ -46,6 +53,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into biz_process_record
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="workOrderCode != null">work_order_code,</if>
+            <if test="processCode != null">process_code,</if>
             <if test="stepCode != null">step_code,</if>
             <if test="stepName != null">step_name,</if>
             <if test="stepStatus != null">step_status,</if>
@@ -60,6 +68,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="workOrderCode != null">#{workOrderCode},</if>
+            <if test="processCode != null">#{processCode},</if>
             <if test="stepCode != null">#{stepCode},</if>
             <if test="stepName != null">#{stepName},</if>
             <if test="stepStatus != null">#{stepStatus},</if>
@@ -78,6 +87,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update biz_process_record
         <trim prefix="SET" suffixOverrides=",">
             <if test="workOrderCode != null">work_order_code = #{workOrderCode},</if>
+            <if test="processCode != null">process_code = #{processCode},</if>
             <if test="stepCode != null">step_code = #{stepCode},</if>
             <if test="stepName != null">step_name = #{stepName},</if>
             <if test="stepStatus != null">step_status = #{stepStatus},</if>
@@ -109,9 +119,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where work_order_code = #{taskNo}
     </select>
 
-    <select id="selectRecordByTaskNoAndStepCode" resultType="com.imustsz.process.domain.BizProcessRecord">
+    <select id="selectRecordByTaskNoAndProcessCodeAndStepCode" resultType="com.imustsz.process.domain.BizProcessRecord">
         <include refid="selectBizProcessRecordVo"/>
-        where work_order_code = #{taskNo} and step_code = #{stepCode}
+        where work_order_code = #{taskNo} and process_code = #{processCode} and step_code = #{stepCode}
     </select>
 
     <select id="selectBizProcessRecordByTaskNoAndStepCode" resultMap="BizProcessRecordResult">
@@ -122,4 +132,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <delete id="deleteBizProcessRecordByTaskNo">
         delete from biz_process_record where work_order_code = #{workOrderCode}
     </delete>
+
+    <select id="selectBizProcessRecords" resultMap="UniqueRecordParamsResult">
+        select distinct work_order_code, process_code from biz_process_record
+        <where>
+            <if test="workOrderCode != null and workOrderCode != ''"> and work_order_code like concat('%',#{workOrderCode},'%')</if>
+        </where>
+    </select>
+
+    <select id="selectBizProcessRecordByOrderAndProcessCode" resultMap="BizProcessRecordResult">
+        <include refid="selectBizProcessRecordVo"/>
+        where work_order_code = #{workOrderCode} and process_code = #{processCode}
+    </select>
 </mapper>

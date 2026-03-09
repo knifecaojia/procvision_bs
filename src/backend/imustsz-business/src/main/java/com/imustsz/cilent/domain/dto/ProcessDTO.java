@@ -5,6 +5,7 @@ import lombok.Data;
 @Data
 public class ProcessDTO {
     private String task_no;
+    private String process_code;
     private String step_code;
     private Integer step_status;
     private String object_name;

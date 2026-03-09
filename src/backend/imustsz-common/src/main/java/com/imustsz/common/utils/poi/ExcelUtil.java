@@ -327,8 +327,9 @@ public class ExcelUtil<T>
         }
         catch (Exception e)
         {
-            log.error("导入Excel异常{}", e.getMessage());
-            throw new UtilException(e.getMessage());
+//            log.error("导入Excel异常{}", e.getMessage());
+            log.error("导入Excel异常", e);
+            throw new UtilException(e.getMessage(), e);
         }
         finally
         {

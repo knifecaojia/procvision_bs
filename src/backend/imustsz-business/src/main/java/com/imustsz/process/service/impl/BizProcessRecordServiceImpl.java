@@ -2,6 +2,7 @@ package com.imustsz.process.service.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.imustsz.cilent.domain.dto.ProcessDTO;
@@ -17,6 +18,7 @@ import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
 import com.imustsz.order.domain.BizWorkOrder;
 import com.imustsz.order.mapper.BizWorkOrderMapper;
+import com.imustsz.process.domain.UniqueRecordParams;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -69,35 +71,15 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
      * @return 过程记录
      */
     @Override
-    public List<ProcessRecordVO> selectBizProcessRecordList(BizProcessRecord record){
+    public List<BizProcessRecord> selectBizProcessRecordList(BizProcessRecord record){
         List<BizProcessRecord> bizProcessRecords = bizProcessRecordMapper.selectBizProcessRecordList(record);
-        List<String> taskNos = bizProcessRecords.stream().map(BizProcessRecord::getWorkOrderCode).distinct().collect(Collectors.toList());
 
-        return taskNos.stream().map(taskNo -> {
-            ProcessRecordVO processRecordVO = new ProcessRecordVO();
-            processRecordVO.setTaskNo(taskNo);
-            BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCode(taskNo);
-            processRecordVO.setTaskStatus(bizWorkOrder.getStatus());
-            processRecordVO.setProcessNo(bizWorkOrder.getProcessCode());
-            processRecordVO.setProcessName(bizWorkOrder.getProcessName());
-            List<StepRecordVO> stepRecordVOS = new ArrayList<>();
-            bizProcessRecords.forEach(bizProcessRecord -> {
-                if (bizProcessRecord.getWorkOrderCode().equals(taskNo)) {
-                    StepRecordVO stepRecordVO = new StepRecordVO();
-                    stepRecordVO.setStepNo(bizProcessRecord.getStepCode());
-                    stepRecordVO.setStepName(bizProcessRecord.getStepName());
-                    stepRecordVO.setStepStatus(bizProcessRecord.getStepStatus());
-                    stepRecordVO.setAlgResult(bizProcessRecord.getData());
-                    try {
-                        stepRecordVO.setImgUrl(minioUtils.getPresignedUrl(bizProcessRecord.getImagePath()));
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                    stepRecordVOS.add(stepRecordVO);
-                }
-            });
-            processRecordVO.setStepInfo(stepRecordVOS);
-            return processRecordVO;
+        return bizProcessRecords.stream().peek(processRecord -> {
+            try {
+                processRecord.setImagePath(minioUtils.getPresignedUrl(processRecord.getImagePath()));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }).collect(Collectors.toList());
     }
 
@@ -157,9 +139,9 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
     @Transactional
     public int insertBizProcessRecordByUpload(ProcessDTO processDTO) {
 
-        BizProcessRecord record = bizProcessRecordMapper.selectRecordByTaskNoAndStepCode(processDTO.getTask_no(), processDTO.getStep_code());
+        BizProcessRecord record = bizProcessRecordMapper.selectRecordByTaskNoAndProcessCodeAndStepCode(processDTO.getTask_no(), processDTO.getProcess_code(), processDTO.getStep_code());
 
-        BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCode((processDTO.getTask_no()));
+        BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCodeAndProcessCode(processDTO.getTask_no(), processDTO.getProcess_code());
 
         Craft craft = craftMapper.selectCraftByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
 
@@ -178,61 +160,54 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
     }
 
     @Override
-    public List<ProcessRecordVO> getProcessRecordList(Integer status) {
-        BizProcessRecord record = new BizProcessRecord();
+    public List<ProcessRecordVO> getProcessRecordList(Integer status, String taskNo) {
 
-        List<BizProcessRecord> bizProcessRecords = bizProcessRecordMapper.selectBizProcessRecordList(record);
+        List<UniqueRecordParams> paramList = bizProcessRecordMapper.selectBizProcessRecords(taskNo);
 
-        List<String> taskNos = bizProcessRecords.stream().map(BizProcessRecord::getWorkOrderCode).filter(workOrderCode -> {
-            BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCode(workOrderCode);
-            if (status == null)
-                return bizWorkOrder.getStatus() == 3 || bizWorkOrder.getStatus() == 2 || bizWorkOrder.getStatus() == 4;
-            else if (status == 3) {
-                return bizWorkOrder.getStatus() == 3;
-            } else if (status == 2)
-                return bizWorkOrder.getStatus() == 2;
-            else
-                throw new RuntimeException("status参数错误");
-        }).distinct().collect(Collectors.toList());
-
-        return taskNos.stream().map(taskNo -> {
+        return paramList.stream().map(param -> {
             ProcessRecordVO processRecordVO = new ProcessRecordVO();
-            processRecordVO.setTaskNo(taskNo);
-            BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCode(taskNo);
+            processRecordVO.setTaskNo(param.getWorkOrderCode());
+            processRecordVO.setProcessNo(param.getProcessCode());
+            BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCodeAndProcessCode(param.getWorkOrderCode(), param.getProcessCode());
             processRecordVO.setTaskStatus(bizWorkOrder.getStatus());
-            processRecordVO.setProcessNo(bizWorkOrder.getProcessCode());
+            List<BizProcessRecord> records = bizProcessRecordMapper.selectBizProcessRecordByOrderAndProcessCode(param.getWorkOrderCode(), param.getProcessCode());
             processRecordVO.setProcessName(bizWorkOrder.getProcessName());
-            List<StepRecordVO> stepRecordVOS = new ArrayList<>();
-            bizProcessRecords.forEach(bizProcessRecord -> {
-                if (bizProcessRecord.getWorkOrderCode().equals(taskNo)) {
-                    StepRecordVO stepRecordVO = new StepRecordVO();
-                    stepRecordVO.setStepNo(bizProcessRecord.getStepCode());
-                    stepRecordVO.setStepName(bizProcessRecord.getStepName());
-                    stepRecordVO.setStepStatus(bizProcessRecord.getStepStatus());
-                    stepRecordVO.setAlgResult(bizProcessRecord.getData());
-                    try {
-                        stepRecordVO.setImgUrl(minioUtils.getPresignedUrl(bizProcessRecord.getImagePath()));
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                    stepRecordVOS.add(stepRecordVO);
+            processRecordVO.setStepInfo(records.stream().map(record -> {
+                StepRecordVO stepRecordVO = new StepRecordVO();
+                stepRecordVO.setStepNo(record.getStepCode());
+                stepRecordVO.setStepName(record.getStepName());
+                stepRecordVO.setStepStatus(record.getStepStatus());
+                try {
+                    stepRecordVO.setImgUrl(minioUtils.getPresignedUrl(record.getImagePath()));
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
-            });
-            processRecordVO.setStepInfo(stepRecordVOS);
+                stepRecordVO.setAlgResult(record.getData());
+                return stepRecordVO;
+            }).collect(Collectors.toList()));
             return processRecordVO;
+        }).filter(processRecordVO -> {
+            if (status == null)
+                return processRecordVO.getTaskStatus() == 2 || processRecordVO.getTaskStatus() == 3;
+            else if (status == 1)
+                return processRecordVO.getTaskStatus() == 2;
+            else if (status == 2)
+                return processRecordVO.getTaskStatus() == 3;
+            else
+                throw new RuntimeException("参数错误");
         }).collect(Collectors.toList());
     }
 
     @Override
-    public ProcessRecordVO getRecordByTaskNo(String taskNo) {
+    public ProcessRecordVO getRecordByTaskNoAndProcessCode(String taskNo, String processCode) {
 
-        BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCode(taskNo);
+        BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCodeAndProcessCode(taskNo, processCode);
         ProcessRecordVO processRecordVO = new ProcessRecordVO();
         processRecordVO.setTaskNo(taskNo);
         processRecordVO.setTaskStatus(bizWorkOrder.getStatus());
         processRecordVO.setProcessNo(bizWorkOrder.getProcessCode());
         processRecordVO.setProcessName(bizWorkOrder.getProcessName());
-        List<BizProcessRecord> bizProcessRecords = bizProcessRecordMapper.selectRecordByTaskNo(taskNo);
+        List<BizProcessRecord> bizProcessRecords = bizProcessRecordMapper.selectBizProcessRecordByOrderAndProcessCode(taskNo, processCode);
         List<StepRecordVO> stepRecordVOS = new ArrayList<>();
         bizProcessRecords.forEach(bizProcessRecord -> {
             StepRecordVO stepRecordVO = new StepRecordVO();
@@ -256,6 +231,7 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
     private static BizProcessRecord getBizProcessRecord(ProcessDTO processDTO, BizStep bizStep) {
         BizProcessRecord bizProcessRecord = new BizProcessRecord();
         bizProcessRecord.setWorkOrderCode(processDTO.getTask_no());
+        bizProcessRecord.setProcessCode(processDTO.getProcess_code());
         bizProcessRecord.setStepName(bizStep.getName());
         bizProcessRecord.setStepCode(bizStep.getCode());
         bizProcessRecord.setStepStatus(processDTO.getStep_status());

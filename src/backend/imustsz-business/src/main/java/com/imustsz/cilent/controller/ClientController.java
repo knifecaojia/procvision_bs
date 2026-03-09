@@ -1,17 +1,18 @@
 package com.imustsz.cilent.controller;
 
 import com.imustsz.algorithm.service.IBizAlgorithmService;
-import com.imustsz.cilent.domain.dto.ProcessDTO;
-import com.imustsz.cilent.domain.dto.RecordPageDTO;
-import com.imustsz.cilent.domain.dto.ResultDTO;
-import com.imustsz.cilent.domain.dto.WorkOrderProperties;
+import com.imustsz.cilent.domain.dto.*;
 import com.imustsz.cilent.domain.vo.AlgorithmVO;
 import com.imustsz.cilent.domain.vo.ProcessRecordVO;
+import com.imustsz.cilent.domain.vo.TaskConditionVO;
 import com.imustsz.cilent.domain.vo.WorkOrderVO;
 import com.imustsz.cilent.service.IClientTaskService;
+import com.imustsz.common.annotation.RateLimiter;
+import com.imustsz.common.constant.HttpStatus;
 import com.imustsz.common.core.controller.BaseController;
 import com.imustsz.common.core.domain.AjaxResult;
 import com.imustsz.common.core.page.TableDataInfo;
+import com.imustsz.common.enums.LimitType;
 import com.imustsz.common.utils.DateUtils;
 import com.imustsz.common.utils.bean.MinioUtils;
 import com.imustsz.order.domain.vo.PageVO;
@@ -46,35 +47,61 @@ public class ClientController extends BaseController {
 
     @GetMapping("/task/list")
     @ApiOperation("获取装配任务列表")
-    private TableDataInfo workOrderList(WorkOrderProperties workOrderProperties) {
+    public TableDataInfo workOrderList(WorkOrderProperties workOrderProperties) {
         PageVO pageVO = bizWorkOrderService.workOrderVOList(workOrderProperties);
         return getDataTable(pageVO.getList(), pageVO.getTotal());
     }
 
+    @RateLimiter(time = 60, count = 30, limitType = LimitType.USER)
+    @PostMapping("/task/condition")
+    @ApiOperation("任务条件查询")
+    public TaskConditionVO taskConditionSelect(@RequestBody TaskSelectDTO taskSelectDTO) {
+        if (taskSelectDTO.getPagination() != null) {
+            taskSelectDTO.getPagination().setPage(taskSelectDTO.getPagination().getPage() == null ? 1 : taskSelectDTO.getPagination().getPage());
+            taskSelectDTO.getPagination().setPage_size(taskSelectDTO.getPagination().getPage_size() == null ? 20 : taskSelectDTO.getPagination().getPage_size());
+        }else{
+            taskSelectDTO.setPagination(new PaginationParams(1, 20));
+        }
+
+        if ((taskSelectDTO.getTask_no() != null && taskSelectDTO.getTask_no().length() < 4) || (taskSelectDTO.getProd_order_no() != null && taskSelectDTO.getProd_order_no().length() < 4))
+            throw new RuntimeException("查询编码过短，请至少输入4位");
+
+        if (taskSelectDTO.getTime_range() != null){
+            int parmsCheckFlag = DateUtils.differentDaysByMillisecond(DateUtils.parseDate(taskSelectDTO.getTime_range().getBegin()), DateUtils.parseDate(taskSelectDTO.getTime_range().getEnd()), false);
+            if (parmsCheckFlag < 0 || parmsCheckFlag > 90)
+                throw new RuntimeException("时间参数有误");
+        }
+
+        PageVO pageVO = bizWorkOrderService.selectByCondition(taskSelectDTO);
+
+        TaskConditionVO taskConditionVO = new TaskConditionVO();
+        taskConditionVO.setRows(pageVO.getList());
+        taskConditionVO.setTotal(pageVO.getTotal());
+        taskConditionVO.setCode(HttpStatus.SUCCESS);
+        taskConditionVO.setMsg("查询成功");
+        taskConditionVO.setPage(taskSelectDTO.getPagination().getPage());
+        taskConditionVO.setPage_size(taskSelectDTO.getPagination().getPage_size());
+        return taskConditionVO;
+    }
+
     @GetMapping("/algorithm/list")
     @ApiOperation("获取算法列表")
-    private AjaxResult algorithmList() throws Exception {
+    public AjaxResult algorithmList() throws Exception {
         List<AlgorithmVO> algorithmVOList = bizAlgorithmService.getAlgorithmVOList();
         return success(algorithmVOList);
     }
 
     @GetMapping("/task/status/{taskNo}/{statusCode}")
     @ApiOperation("修改任务状态")
-    private AjaxResult changeWorkOrderStatus(@PathVariable String taskNo,@PathVariable String statusCode) {
+    public AjaxResult changeWorkOrderStatus(@PathVariable String taskNo,@PathVariable String statusCode) {
         return toAjax(bizWorkOrderService.changeWorkOrderStatusByCode(taskNo, statusCode));
     }
 
     @PostMapping("/process")
     @ApiOperation("步骤上传")
-    private AjaxResult upLoadProcess(@RequestBody ProcessDTO processDTO) {
+    public AjaxResult upLoadProcess(@RequestBody ProcessDTO processDTO) {
         return toAjax(bizProcessRecordService.insertBizProcessRecordByUpload(processDTO));
     }
-
-//    @PostMapping("/result")
-//    @ApiOperation("结果上传")
-//    private AjaxResult upLoadResult(@RequestBody ResultDTO resultDTO) {
-//        return toAjax(bizWorkOrderService.updateBizWorkOrderResultByUpload(resultDTO));
-//    }
 
     @GetMapping("/getUrl")
     @ApiOperation("获取上传URL")
@@ -91,7 +118,7 @@ public class ClientController extends BaseController {
     public TableDataInfo getProcessList(RecordPageDTO recordPageDTO) {
         int pageNum = recordPageDTO.getPageNum() == null ? 1 : recordPageDTO.getPageNum();
         int pageSize = recordPageDTO.getPageSize() == null ? 10 : recordPageDTO.getPageSize();
-        List<ProcessRecordVO> processRecordVOList = bizProcessRecordService.getProcessRecordList(recordPageDTO.getStatus());
+        List<ProcessRecordVO> processRecordVOList = bizProcessRecordService.getProcessRecordList(recordPageDTO.getStatus(), null);
         int i1 = pageNum*pageSize < processRecordVOList.size() ? (pageNum-1)*pageSize+pageSize : processRecordVOList.size();
         List<ProcessRecordVO> list1 = new ArrayList<>();
         for (int i = (pageNum-1)*pageSize; i < i1; i++){

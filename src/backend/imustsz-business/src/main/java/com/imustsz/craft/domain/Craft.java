@@ -37,6 +37,17 @@ public class Craft extends BaseEntity
     @Excel(name = "状态")
     private Integer status;
 
+    @Excel(name = "订单编号")
+    private String productionOrderNo;
+
+    public String getProductionOrderNo() {
+        return productionOrderNo;
+    }
+
+    public void setProductionOrderNo(String productionOrderNo) {
+        this.productionOrderNo = productionOrderNo;
+    }
+
     public String getName() {
         return name;
     }

@@ -6,7 +6,9 @@ import lombok.Data;
 @Data
 public class OrderInfo {
     private String productionOrderNo;
-    private String productBatch;
-    private String materialNo;
+    private String processNo;
+    private String processVersion;
+    private String processName;
+    private String processDesc;
 }
 

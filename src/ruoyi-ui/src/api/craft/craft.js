@@ -63,3 +63,14 @@ export function checkCamera(){
         method: 'get',
     })
 }
+
+export function importFromMOM(formData){
+    return request({
+        url: '/craft/info/getCraftFromMMO',
+        method: 'post',
+        data: formData,
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    })
+}

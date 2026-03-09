@@ -2,15 +2,13 @@ package com.imustsz.order.service;
 
 import java.util.List;
 
-import com.imustsz.cilent.domain.dto.ProcessDTO;
 import com.imustsz.cilent.domain.dto.ResultDTO;
+import com.imustsz.cilent.domain.dto.TaskSelectDTO;
 import com.imustsz.cilent.domain.dto.WorkOrderProperties;
 import com.imustsz.cilent.domain.vo.StepVO;
-import com.imustsz.cilent.domain.vo.WorkOrderVO;
-import com.imustsz.craft.domain.BizStep;
 import com.imustsz.order.domain.BizWorkOrder;
-import com.imustsz.order.domain.json.ProcessTaskSync;
 import com.imustsz.order.domain.json.Task;
+import com.imustsz.order.domain.json.WorkOrderTaskData;
 import com.imustsz.order.domain.vo.PageVO;
 
 /**
@@ -69,7 +67,7 @@ public interface IBizWorkOrderService
      */
     public int deleteBizWorkOrderById(Long id);
 
-    int importOrderFromMMo(List<Task> processTaskSync);
+    int importOrderFromMMo(WorkOrderTaskData processTaskSync);
 
     int changeWorkOrderStatusByCode(String workOrderCode, String statusCode);
 
@@ -80,4 +78,6 @@ public interface IBizWorkOrderService
     BizWorkOrder selectBizWorkOrderByCode(String workOrderCode);
 
     PageVO workOrderVOList(WorkOrderProperties workOrderProperties);
+
+    PageVO selectByCondition(TaskSelectDTO taskSelectDTO);
 }

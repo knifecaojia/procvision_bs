@@ -74,7 +74,8 @@ public class BizStepServiceImpl implements IBizStepService
         BizStep step = selectBizStepById(bizStep.getId());
         if (step.getGuideMapUrl() != null && bizStep.getGuideMapUrl() != null){
             minioUtils.deleteFile(step.getGuideMapUrl());
-        }
+        }else if (step.getGuideMapUrl() != null && bizStep.getGuideMapUrl() == null)
+            bizStep.setGuideMapUrl(step.getGuideMapUrl());
         return bizStepMapper.updateBizStep(bizStep);
     }
 

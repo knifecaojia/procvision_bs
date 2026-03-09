@@ -23,7 +23,5 @@ public class WorkOrderVO {
     private Integer status;
     private Long algorithm_id;
     private String prod_order_no;
-    private String prod_batch_no;
-    private String project_no;
     private List<StepVO> step_infos;
 }

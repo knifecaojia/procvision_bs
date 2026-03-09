@@ -24,6 +24,10 @@ public class BizProcessRecord extends BaseEntity
     @Excel(name = "工单编码")
     private String workOrderCode;
 
+    /** 工步编码 */
+    @Excel(name = "工序编码")
+    private String processCode;
+
     /** 工步id */
     @Excel(name = "工步编码")
     private String stepCode;
@@ -48,6 +52,14 @@ public class BizProcessRecord extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "提交时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date submitTime;
+
+    public String getProcessCode() {
+        return processCode;
+    }
+
+    public void setProcessCode(String processCode) {
+        this.processCode = processCode;
+    }
 
     public String getStepName() {
         return stepName;

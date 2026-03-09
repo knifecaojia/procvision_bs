@@ -217,4 +217,47 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectBizWorkOrderVo"/>
         where craft_code = #{craftCode} and craft_version = #{craftVersion}
     </select>
+
+    <select id="selectWorkOrderByCraftAndProcess" resultType="com.imustsz.order.domain.BizWorkOrder">
+        <include refid="selectBizWorkOrderVo" />
+        where craft_code = #{craftCode} and craft_version = #{craftVersion} and process_code = #{processCode}
+    </select>
+
+    <select id="selectByCondition" parameterType="TaskSelectDTO" resultMap="BizWorkOrderResult">
+        <include refid="selectBizWorkOrderVo"/>
+        <where>
+            <if test="status != null">
+                status in
+                <foreach item="status" collection="status" open="(" separator="," close=")">
+                    #{status}
+                </foreach>
+            </if>
+            <if test="task_no != null and task_no != ''">
+                and work_order_code like concat('%', #{task_no}, '%')
+            </if>
+            <if test="prod_order_no != null and prod_order_no != ''">
+                and prod_order_no like concat('%', #{prod_order_no}, '%')
+            </if>
+            <if test="craft_no != null ">
+                and
+                <foreach item="craft_no" collection="craft_no" open="" separator="or" close="">
+                    craft_code like concat('%', #{craft_no}, '%')
+                </foreach>
+            </if>
+            <if test="process_name != null and process_name != ''">
+                and process_name like concat('%', #{process_name}, '%')
+            </if>
+            <if test="time_range != null and time_range.type == 'start' ">
+                and start_time between #{time_range.begin} and #{time_range.end}
+            </if>
+            <if test="time_range != null and time_range.type == 'end' ">
+                and end_time between #{time_range.begin} and #{time_range.end}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectBizWorkOrderByCodeAndProcessCode" resultMap="BizWorkOrderResult">
+        <include refid="selectBizWorkOrderVo" />
+        where work_order_code = #{workOrderCode} and process_code = #{processCode}
+    </select>
 </mapper>

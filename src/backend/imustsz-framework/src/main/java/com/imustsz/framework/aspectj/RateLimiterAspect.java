@@ -3,6 +3,9 @@ package com.imustsz.framework.aspectj;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
+
+import com.imustsz.common.utils.SecurityUtils;
+import com.imustsz.common.utils.ServletUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -79,6 +82,15 @@ public class RateLimiterAspect
         if (rateLimiter.limitType() == LimitType.IP)
         {
             stringBuffer.append(IpUtils.getIpAddr()).append("-");
+        }else if (rateLimiter.limitType() == LimitType.USER)
+        {
+            try {
+                Long userId = SecurityUtils.getUserId();
+                stringBuffer.append(userId).append("-");
+            } catch (Exception e) {
+                stringBuffer.append(IpUtils.getIpAddr(ServletUtils.getRequest())).append("-");
+            }
+
         }
         MethodSignature signature = (MethodSignature) point.getSignature();
         Method method = signature.getMethod();

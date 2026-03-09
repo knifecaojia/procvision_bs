@@ -1,0 +1,25 @@
+{
+  "batch_info": {
+    "work_order_no": "100002345-01",
+    "operation_no": "10",
+    "total_count": 2,
+    "upload_time": "2025-12-09T14:30:00",
+    "worker_name": "张三",
+    "worker_code": "0786",
+    "system_Id": "VGS"
+  },
+  "work_order_image_list": [
+    {
+      "image_no": "100002345-01_10_001",
+      "image_base64": "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYgICA8L3JkZjpEZXNjcmlwdGlvbj4KICAgPC9yZGY6UkRGPgo8L3g6eG1wbWV0YT4KGV7hZwAAIABJREFUeF7tnQdQlEQcx19V1dP3z...",
+      "image_format": "png",
+      "image_desc": "10工序核心组件安装示意图01"
+    },
+    {
+      "image_no": "100002345-01_10_002",
+      "image_base64": "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAA9uPgogICAgICA8L3JkZjpEZXNjcmlwdGlvbj4KICAgPC9yWV0YT4KGV7hZwAAIABJREFUeF7tnQdQlEQcx19V1dP3z...",
+      "image_format": "png",
+      "image_desc": "10工序核心组件安装示意图02"
+    }
+  ]
+}

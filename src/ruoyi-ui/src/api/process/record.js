@@ -50,9 +50,9 @@ export function delRecordByTaskNo(taskNo) {
     })
 }
 
-export function getRecordByTaskNo(taskNo){
+export function getRecordByTaskNo(taskNo, processCode){
     return request({
-        url: '/process/record/task/' + taskNo,
+        url: '/process/record/task/' + taskNo + '/' + processCode,
         method: 'get'
     })
 }

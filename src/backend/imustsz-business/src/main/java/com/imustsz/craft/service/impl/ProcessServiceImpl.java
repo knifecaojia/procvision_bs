@@ -1,9 +1,13 @@
 package com.imustsz.craft.service.impl;
 
+import com.imustsz.craft.domain.Craft;
 import com.imustsz.craft.domain.Process;
 import com.imustsz.craft.mapper.BizStepMapper;
+import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
 import com.imustsz.craft.service.IProcessService;
+import com.imustsz.order.domain.BizWorkOrder;
+import com.imustsz.order.mapper.BizWorkOrderMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +27,12 @@ public class ProcessServiceImpl implements IProcessService
 
     @Autowired
     private BizStepMapper bizStepMapper;
+
+    @Autowired
+    private BizWorkOrderMapper bizWorkOrderMapper;
+
+    @Autowired
+    private CraftMapper craftMapper;
 
     /**
      * 查询工序信息
@@ -81,6 +91,9 @@ public class ProcessServiceImpl implements IProcessService
     @Override
     public int deleteProcessByIds(Long[] ids)
     {
+        for (Long id : ids) {
+            checkProcess(id);
+        }
         return processMapper.deleteProcessByIds(ids);
     }
 
@@ -102,9 +115,18 @@ public class ProcessServiceImpl implements IProcessService
         if (ids.length == 0)
             return 0;
         for (Long id1 : ids){
-            bizStepMapper.deleteBizStepByProcessId(id1);
+            checkProcess(id1);
         }
         return processMapper.deleteProcessByIds(ids);
+    }
+
+    private void checkProcess(Long id1) {
+        Process process = processMapper.selectProcessById(id1);
+        Craft craft = craftMapper.selectCraftById(process.getCraftId());
+        BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectWorkOrderByCraftAndProcess(craft.getCode(), craft.getVersion(), process.getCode());
+        if (bizWorkOrder != null)
+            throw new RuntimeException("工序已关联任务，不能删除");
+        bizStepMapper.deleteBizStepByProcessId(id1);
     }
 
     @Override

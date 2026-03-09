@@ -2,6 +2,7 @@ package com.imustsz.order.mapper;
 
 import java.util.List;
 
+import com.imustsz.cilent.domain.dto.TaskSelectDTO;
 import com.imustsz.cilent.domain.vo.WorkOrderVO;
 import com.imustsz.order.domain.BizWorkOrder;
 import org.apache.ibatis.annotations.Param;
@@ -71,4 +72,10 @@ public interface BizWorkOrderMapper
     int updateBizWorkOrderByCode(BizWorkOrder bizWorkOrder);
 
     List<BizWorkOrder> selectWorkOrderByCraft(@Param("craftCode") String craftCode, @Param("craftVersion") String craftVersion);
+
+    BizWorkOrder selectWorkOrderByCraftAndProcess(@Param("craftCode") String craftCode, @Param("craftVersion") String craftVersion, @Param("processCode") String processCode);
+
+    List<BizWorkOrder> selectByCondition(TaskSelectDTO taskSelectDTO);
+
+    BizWorkOrder selectBizWorkOrderByCodeAndProcessCode(@Param("workOrderCode") String workOrderCode, @Param("processCode") String processCode);
 }

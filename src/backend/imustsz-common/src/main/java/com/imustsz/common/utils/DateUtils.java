@@ -149,6 +149,11 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils
         return Math.abs((int) ((date2.getTime() - date1.getTime()) / (1000 * 3600 * 24)));
     }
 
+    public static int differentDaysByMillisecond(Date date1, Date date2, boolean absFlag)
+    {
+        return (int) ((date2.getTime() - date1.getTime()) / (1000 * 3600 * 24));
+    }
+
     /**
      * 计算时间差
      *

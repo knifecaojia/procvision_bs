@@ -191,11 +191,15 @@ const handleScan = () => {
 
 // 打开摄像头
 const startCamera = async () => {
-  if (!currentBarcode.value) return;
-
-  // 浏览器兼容性检查
+  // 1. 先判断 API 是否存在
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    proxy.$modal.msgError('当前浏览器不支持访问摄像头，请使用 Chrome/Edge');
+    const isSecure = window.isSecureContext;
+    console.log(isSecure)
+    if (!isSecure) {
+      proxy.$modal.msgError('浏览器安全限制：不能使用摄像头');
+    } else {
+      proxy.$modal.msgError('当前浏览器不支持摄像头，请更换浏览器');
+    }
     return;
   }
 
@@ -216,7 +220,6 @@ const startCamera = async () => {
     }
     isCameraOpen.value = true;
   } catch (err) {
-    console.error("摄像头启动失败:", err);
     let msg = '无法启动摄像头';
     if (err.name === 'NotAllowedError') msg = '请允许浏览器访问摄像头权限';
     if (err.name === 'NotFoundError') msg = '未检测到摄像头设备';

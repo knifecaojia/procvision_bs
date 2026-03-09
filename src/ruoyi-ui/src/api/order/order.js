@@ -42,3 +42,14 @@ export function delOrder(id) {
     method: 'delete'
   })
 }
+
+export function importOrderFromMOM(formData){
+    return request({
+        url: '/workOrder/getOrderFromMMO',
+        method: 'post',
+        data: formData,
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    })
+}

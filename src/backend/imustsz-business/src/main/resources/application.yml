@@ -96,7 +96,7 @@ swagger:
   # 是否开启swagger
   enabled: true
   # 请求前缀
-  pathMapping: /
+  pathMapping: /prod-api
   host: ${SWAGGER_HOST:}
 
 # 防盗链配置

@@ -7,10 +7,7 @@ import com.imustsz.common.utils.SecurityUtils;
 import com.imustsz.craft.domain.BizStep;
 import com.imustsz.craft.domain.Craft;
 import com.imustsz.craft.domain.dto.SelectorInfoVO;
-import com.imustsz.craft.domain.json.ProcessMMO;
-import com.imustsz.craft.domain.json.ProcessInfo;
-import com.imustsz.craft.domain.json.CrackInfo;
-import com.imustsz.craft.domain.json.CrackProcess;
+import com.imustsz.craft.domain.json.*;
 import com.imustsz.craft.domain.Process;
 import com.imustsz.craft.mapper.BizStepMapper;
 import com.imustsz.craft.mapper.CraftMapper;
@@ -124,30 +121,37 @@ public class CraftServiceImpl implements ICraftService {
      */
     @Override
     @Transactional
-    public void importCraftFromMMo(CrackProcess CrackProcess) {
-        CrackInfo crackInfo = CrackProcess.getCrackInfo();
-        List<ProcessMMO> processMMOList = CrackProcess.getProcessList();
+    public void importCraftFromMMo(OrderProcessData CrackProcess) {
+        ProcessInfo crackInfo = CrackProcess.getProcessInfo();
+        List<Operation> operationList = CrackProcess.getOperationList();
+
+        Craft cf = craftMapper.selectCraftByCodeAndVersion(crackInfo.getProcessNo(), crackInfo.getProcessVersion());
+
+        if (cf != null)
+            throw new RuntimeException("该工艺已存在");
+
         //导入工艺基本信息
         Craft craft = new Craft();
-        craft.setCode(crackInfo.getCrackNo());
-        craft.setName(crackInfo.getCrackName());
-        craft.setVersion(crackInfo.getCrackVersion());
-        craft.setDesc(crackInfo.getCrackDesc());
+        craft.setProductionOrderNo(crackInfo.getProductionOrderNo());
+        craft.setCode(crackInfo.getProcessNo());
+        craft.setName(crackInfo.getProcessName());
+        craft.setVersion(crackInfo.getProcessVersion());
+        craft.setDesc(crackInfo.getProcessDesc());
         craft.setStatus(1);
         craft.setCreateTime(DateUtils.getNowDate());
         craft.setCreateBy(SecurityUtils.getUsername());
         craftMapper.insertCraft(craft);
 
         //导入工序信息
-        processMMOList.forEach(processMMO -> {
-            ProcessInfo processInfo = processMMO.getProcessInfo();
+        operationList.forEach(processMMO -> {
+            OperationInfo processInfo = processMMO.getOperationInfo();
             Process process = new Process();
-            process.setCode(processInfo.getProcessNo());
-            process.setName(processInfo.getProcessName());
+            process.setCode(processInfo.getOperationNo());
+            process.setName(processInfo.getOperationName());
             process.setCraftId(craft.getId());
             process.setCraftCode(craft.getCode());
-            process.setDesc(processInfo.getProcessDesc());
-            process.setProcessMaterialInfo(JSONObject.toJSONString(processMMO.getProcessMaterialInfo()));
+            process.setDesc(processInfo.getOperationDesc());
+            process.setProcessMaterialInfo(JSONObject.toJSONString(processMMO.getOperationMaterialInfo()));
             process.setCreateTime(DateUtils.getNowDate());
             process.setCreateBy(SecurityUtils.getUsername());
             processMapper.insertProcess(process);

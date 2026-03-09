@@ -29,7 +29,7 @@ public interface IBizProcessRecordService
      * @param bizProcessRecord 过程记录
      * @return 过程记录集合
      */
-    public List<ProcessRecordVO> selectBizProcessRecordList(BizProcessRecord bizProcessRecord) throws Exception;
+    public List<BizProcessRecord> selectBizProcessRecordList(BizProcessRecord bizProcessRecord) throws Exception;
 
     /**
      * 新增过程记录
@@ -65,7 +65,7 @@ public interface IBizProcessRecordService
 
     int insertBizProcessRecordByUpload(ProcessDTO processDTO);
 
-    List<ProcessRecordVO> getProcessRecordList(Integer status);
+    List<ProcessRecordVO> getProcessRecordList(Integer status, String taskNo);
 
-    ProcessRecordVO getRecordByTaskNo(String taskNo);
+    ProcessRecordVO getRecordByTaskNoAndProcessCode(String taskNo, String processCode);
 }

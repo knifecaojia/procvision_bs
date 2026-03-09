@@ -13,6 +13,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.imustsz.cilent.domain.dto.ProcessDTO;
 import com.imustsz.cilent.domain.dto.ResultDTO;
+import com.imustsz.cilent.domain.dto.TaskSelectDTO;
 import com.imustsz.cilent.domain.dto.WorkOrderProperties;
 import com.imustsz.cilent.domain.vo.StepVO;
 import com.imustsz.cilent.domain.vo.WorkOrderVO;
@@ -160,51 +161,49 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
      */
     @Override
     @Transactional
-    public int importOrderFromMMo(List<Task> taskSync) {
+    public int importOrderFromMMo(WorkOrderTaskData workOrderTaskData) {
         int flag = 0;
-        int i = 1;
-        Date date = new Date();
-        for (Task task : taskSync) {
-            StringBuilder sb = new StringBuilder();
-
-            BizWorkOrder bizWorkOrder = new BizWorkOrder();
-            if (i < 10)
-                bizWorkOrder.setWorkOrderCode(sb.append("10000").append(String.valueOf(date.getTime()).substring(String.valueOf(date.getTime()).length()-5)).append("-0").append(i++).toString());
-            else
-                bizWorkOrder.setWorkOrderCode(sb.append("10000").append(String.valueOf(date.getTime()).substring(String.valueOf(date.getTime()).length()-5)).append("-").append(i++).toString());
-            bizWorkOrder.setCraftCode(task.getCraft_no());
-            bizWorkOrder.setCraftVersion(task.getCraft_version());
-
-            Craft craft = craftMapper.selectCraftByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
+        String productionOrderNo = workOrderTaskData.getProductionOrderNo();
+        List<WorkOrder> taskSync = workOrderTaskData.getWorkOrderList();
+        for (WorkOrder order : taskSync) {
+            List<DispatchTask> dispatchTaskInfo = order.getDispatchTaskInfo();
+            Craft craft = craftMapper.selectCraftByProductionOrderNo(productionOrderNo);
             if (craft == null)
-                throw new RuntimeException("工艺不存在，请核对工艺");
+                throw new RuntimeException("工艺信息有误，请核对工艺信息");
 
-            if(craft.getStatus() == 1 || craft.getStatus() == 2)
-                bizWorkOrder.setStatus(-2);
-            else if (craft.getStatus() == 3)
-                bizWorkOrder.setStatus(-1);
-            else
-                bizWorkOrder.setStatus(1);
+            for (DispatchTask task : dispatchTaskInfo) {
 
-            bizWorkOrder.setProcessCode(task.getProceress_no());
-            bizWorkOrder.setProcessName(task.getProceress_name());
+                BizWorkOrder bizWorkOrder = new BizWorkOrder();
+                bizWorkOrder.setWorkOrderCode(order.getWorkOrderNo());
+                bizWorkOrder.setProdOrderNo(productionOrderNo);
+                bizWorkOrder.setCraftCode(craft.getCode());
+                bizWorkOrder.setCraftVersion(craft.getVersion());
 
-            LocalDateTime localDateTime1 = LocalDateTime.parse(task.getPlanned_start_time(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-            LocalDateTime localDateTime2 = LocalDateTime.parse(task.getPlanned_end_time(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-            Date date1 = Date.from(localDateTime1.atZone(ZoneId.systemDefault()).toInstant());
-            Date date2 = Date.from(localDateTime2.atZone(ZoneId.systemDefault()).toInstant());
-            bizWorkOrder.setStartTime(date1);
-            bizWorkOrder.setEndTime(date2);
+                if(craft.getStatus() == 1 || craft.getStatus() == 2)
+                    bizWorkOrder.setStatus(-2);
+                else if (craft.getStatus() == 3)
+                    bizWorkOrder.setStatus(-1);
+                else
+                    bizWorkOrder.setStatus(1);
 
-            bizWorkOrder.setWorkerCode(task.getWorker_code());
-            bizWorkOrder.setWorkerName(task.getWorker_name());
-            bizWorkOrder.setProjectNo(task.getProject_no());
-            bizWorkOrder.setProdOrderNo(task.getProd_order_no());
-            bizWorkOrder.setProdBatchNo(task.getProd_batch_no());
-            bizWorkOrder.setMaterialNo(task.getMaterial_no());
-            bizWorkOrder.setMaterialName(task.getMaterial_name());
+                Process process = processMapper.selectProcessByCodeAndNameAndCraftId(task.getOperationNo(), task.getOperationName(), craft.getId());
+                if (process == null)
+                    throw new RuntimeException("工序信息有误，请核对工序信息");
 
-            flag += bizWorkOrderMapper.insertBizWorkOrder(bizWorkOrder);
+                bizWorkOrder.setProcessCode(task.getOperationNo());
+                bizWorkOrder.setProcessName(task.getOperationName());
+
+                Date date1 = Date.from(task.getPlannedStartTime().atZone(ZoneId.systemDefault()).toInstant());
+                Date date2 = Date.from(task.getPlannedEndTime().atZone(ZoneId.systemDefault()).toInstant());
+                bizWorkOrder.setStartTime(date1);
+                bizWorkOrder.setEndTime(date2);
+
+                bizWorkOrder.setWorkerCode(task.getWorkerCode());
+                bizWorkOrder.setWorkerName(task.getWorkerName());
+
+                flag += bizWorkOrderMapper.insertBizWorkOrder(bizWorkOrder);
+            }
+
         }
 
         return flag;
@@ -232,10 +231,57 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
             workOrderVO.setWorker_code(workOrder.getWorkerCode());
             workOrderVO.setWorker_name(workOrder.getWorkerName());
             workOrderVO.setProd_order_no(workOrder.getProdOrderNo());
-            workOrderVO.setProd_batch_no(workOrder.getProdBatchNo());
-            workOrderVO.setProject_no(workOrder.getProjectNo());
 
             Process process = processMapper.selectProcessIdByCodeAndCraftId(workOrder.getProcessCode(), craft.getId());
+
+            List<StepVO> stepVOS = bizStepMapper.selectStepByProcessId(process.getId());
+            stepVOS.forEach(stepVO -> {
+                try {
+                    if (stepVO.getGuide_url() != null)
+                        stepVO.setGuide_url(minioUtils.getPresignedUrl(stepVO.getGuide_url()));
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            workOrderVO.setStep_infos(stepVOS);
+            workOrderVO.setAlgorithm_id(process.getAlgorithmId());
+
+            workOrderVO.setStatus(workOrder.getStatus());
+
+            return workOrderVO;
+
+        }).collect(Collectors.toList());
+        PageVO pageVO = new PageVO();
+        pageVO.setList(collect);
+        pageVO.setTotal((int) pageInfo.getTotal());
+        return pageVO;
+    }
+
+    @Override
+    public PageVO selectByCondition(TaskSelectDTO taskSelectDTO) {
+
+        PageHelper.startPage(taskSelectDTO.getPagination().getPage(), taskSelectDTO.getPagination().getPage_size());
+        List<BizWorkOrder> bizWorkOrders = bizWorkOrderMapper.selectByCondition(taskSelectDTO);
+        PageInfo<BizWorkOrder> pageInfo = new PageInfo<>(bizWorkOrders);
+
+        List<WorkOrderVO> collect = pageInfo.getList().stream().map(workOrder -> {
+            WorkOrderVO workOrderVO = new WorkOrderVO();
+
+            workOrderVO.setTask_no(workOrder.getWorkOrderCode());
+            workOrderVO.setCraft_no(workOrder.getCraftCode());
+            workOrderVO.setCraft_version(workOrder.getCraftVersion());
+            Craft craft = craftMapper.selectCraftByCodeAndVersion(workOrder.getCraftCode(), workOrder.getCraftVersion());
+            workOrderVO.setCraft_name(craft.getName());
+            workOrderVO.setProcess_code(workOrder.getProcessCode());
+            workOrderVO.setProcess_name(workOrder.getProcessName());
+            workOrderVO.setStart_time(workOrder.getStartTime());
+            workOrderVO.setEnd_time(workOrder.getEndTime());
+            workOrderVO.setWorker_code(workOrder.getWorkerCode());
+            workOrderVO.setWorker_name(workOrder.getWorkerName());
+            workOrderVO.setProd_order_no(workOrder.getProdOrderNo());
+
+            Process process = processMapper.selectProcessIdByCodeAndCraftId(workOrder.getProcessCode(), craft.getId());
+
             List<StepVO> stepVOS = bizStepMapper.selectStepByProcessId(process.getId());
             stepVOS.forEach(stepVO -> {
                 try {

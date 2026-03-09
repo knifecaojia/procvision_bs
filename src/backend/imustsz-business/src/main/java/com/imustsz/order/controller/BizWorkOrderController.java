@@ -1,27 +1,23 @@
 package com.imustsz.order.controller;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import java.time.ZoneId;
+import java.util.*;
 import javax.servlet.http.HttpServletResponse;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.imustsz.order.domain.json.ProcessTaskSync;
-import com.imustsz.order.domain.json.Task;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.imustsz.common.utils.StringUtils;
+import com.imustsz.order.domain.OrderImportTemplate;
+import com.imustsz.order.domain.json.DispatchTask;
+import com.imustsz.order.domain.json.WorkOrder;
+import com.imustsz.order.domain.json.WorkOrderTaskData;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import com.imustsz.common.annotation.Log;
 import com.imustsz.common.core.controller.BaseController;
 import com.imustsz.common.core.domain.AjaxResult;
@@ -30,6 +26,7 @@ import com.imustsz.order.domain.BizWorkOrder;
 import com.imustsz.order.service.IBizWorkOrderService;
 import com.imustsz.common.utils.poi.ExcelUtil;
 import com.imustsz.common.core.page.TableDataInfo;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 工单Controller
@@ -37,15 +34,13 @@ import com.imustsz.common.core.page.TableDataInfo;
  * @author imustsz
  * @date 2025-12-22
  */
+@Api(tags = "任务管理")
 @RestController
 @RequestMapping("/workOrder")
 public class BizWorkOrderController extends BaseController
 {
     @Autowired
     private IBizWorkOrderService bizWorkOrderService;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     /**
      * 查询工单列表
@@ -120,13 +115,84 @@ public class BizWorkOrderController extends BaseController
     /**
      * 从MMO获取订单信息
      */
-    @GetMapping("/getOrderFromMMO")
-    public AjaxResult getOrderFromMMO(String fileName) throws IOException {
-        if(fileName == null)
-            return error("请选择文件");
-        File file = new File("MOM/" + fileName);
+    @ApiOperation("从MMO获取任务信息")
+    @PostMapping("/getOrderFromMMO")
+    public AjaxResult getOrderFromMMO(@RequestParam("file") MultipartFile file) throws IOException {
+        if (file.isEmpty())
+            return error("文件为空");
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-        List<Task> taskSync = objectMapper.readValue(file, new TypeReference<List<Task>>() {});
+        WorkOrderTaskData taskSync = objectMapper.readValue(file.getInputStream(), WorkOrderTaskData.class);
         return toAjax(bizWorkOrderService.importOrderFromMMo(taskSync));
+    }
+
+    @PostMapping("/importTemplate")
+    public void importTemplate(HttpServletResponse response) {
+        ExcelUtil<OrderImportTemplate> util = new ExcelUtil<>(OrderImportTemplate.class);
+        util.importTemplateExcel(response, "任务数据导入模板");
+    }
+
+    @PostMapping("/importData")
+    public AjaxResult importData(MultipartFile file) throws Exception {
+        ExcelUtil<OrderImportTemplate> util = new ExcelUtil<>(OrderImportTemplate.class);
+        List<OrderImportTemplate> list = util.importExcel(file.getInputStream());
+
+        if (list == null || list.isEmpty()) {
+            throw new RuntimeException("导入的Excel数据为空");
+        }
+
+        WorkOrderTaskData workOrderTaskData = new WorkOrderTaskData();
+
+        OrderImportTemplate first = list.get(0);
+        if (StringUtils.isBlank(first.getProductionOrderNo()))
+            throw new RuntimeException("生产订单号不能为空");
+
+        workOrderTaskData.setProductionOrderNo(first.getProductionOrderNo());
+
+        Map<String, WorkOrder> workOrderMap = new HashMap<>();
+        Map<String, Map<String, DispatchTask>> dispatchTaskMap = new HashMap<>();
+
+        for (OrderImportTemplate template : list) {
+            String workOrderNo = template.getWorkOrderNo();
+            if (StringUtils.isBlank(workOrderNo))
+                throw new RuntimeException("工单号不能为空");
+
+            workOrderMap.computeIfAbsent(workOrderNo, k ->{
+                WorkOrder workOrder = new WorkOrder();
+                workOrder.setWorkOrderNo(workOrderNo);
+
+                dispatchTaskMap.put(workOrderNo, new LinkedHashMap<>());
+                return workOrder;
+            });
+
+            if (StringUtils.isNotBlank(template.getOperationNo())) {
+                dispatchTaskMap.get(workOrderNo).computeIfAbsent(template.getOperationNo(), k -> {
+                    DispatchTask dispatchTask = new DispatchTask();
+                    dispatchTask.setOperationNo(template.getOperationNo());
+                    dispatchTask.setOperationName(template.getOperationName());
+                    dispatchTask.setDispatchQuantity(template.getDispatchQuantity());
+                    dispatchTask.setPlannedStartTime(template.getPlannedStartTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+                    dispatchTask.setPlannedEndTime(template.getPlannedEndTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+                    dispatchTask.setProdGroup(template.getProdGroup());
+                    dispatchTask.setWorkerCode(template.getWorkerCode());
+                    dispatchTask.setWorkerName(template.getWorkerName());
+                    return dispatchTask;
+                });
+            }else
+                throw new RuntimeException("工序编号不能为空");
+
+            for (String orderNo : workOrderMap.keySet()){
+                WorkOrder wo = workOrderMap.get(orderNo);
+                wo.setDispatchTaskInfo(new ArrayList<>(dispatchTaskMap.get(orderNo).values()));
+            }
+
+        }
+
+        workOrderTaskData.setWorkOrderList(new ArrayList<>(workOrderMap.values()));
+
+        bizWorkOrderService.importOrderFromMMo(workOrderTaskData);
+
+        return success(workOrderTaskData);
     }
 }

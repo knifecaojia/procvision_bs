@@ -70,4 +70,6 @@ public interface CraftMapper
     List<String> getCodeList();
 
     List<String> getVersionByCode(String code);
+
+    Craft selectCraftByProductionOrderNo(String productionOrderNo);
 }
