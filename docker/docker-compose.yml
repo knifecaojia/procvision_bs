@@ -16,7 +16,7 @@ services:
     environment:
       - SPRING_DATASOURCE_HOST=mysql
       - SPRING_REDIS_HOST=redis
-      - MINIO_HOST=192.168.1.128
+      - MINIO_HOST=192.168.80.132
       - MINIO_PORT=9000
       - LD_LIBRARY_PATH=/usr/HikLib:$LD_LIBRARY_PATH
     restart: unless-stopped
@@ -90,10 +90,10 @@ services:
     networks:
       - procvision
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 3
 
   # 5. 网关 (Nginx)
   front:
@@ -107,5 +107,22 @@ services:
       - ./nginx/logs:/var/log/nginx
     depends_on:
       - server
+    networks:
+      - procvision
+
+  # 6. MOM服务 (MOM)
+  webservice:
+    build: ../MOM/demo
+    container_name: procvision-webservice
+    ports:
+      - "8083:8080"
+    restart: unless-stopped
+    depends_on:
+      - server
+    environment:
+      SERVER_PORT: 8083
+      SERVER_IP: server
+      TARGET_SERVER_CRAFT: http://localhost:8080/craft/info/getCraftFromMMO
+      TARGET_SERVER_ORDER: http://localhost:8080/workOrder/getOrderFromMMO
     networks:
       - procvision

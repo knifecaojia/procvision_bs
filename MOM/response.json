@@ -1,0 +1,21 @@
+{
+  "code": 0,
+  "message": "success",
+  "total": 1,
+  "page": 1,
+  "page_size": 20,
+  "data": [
+    {
+      "task_no": "1000078963-01",
+      "craft_no": "JZ4.932.09296060GY-TX01",
+      "process_name": "连接器安装",
+      "start_time": "2025-12-09 08:00:00",
+      "end_time": "2025-12-09 11:30:00",
+      "prod_order_no": "100002345",
+      "prod_batch_no": "100002345-01",
+      "guide_url": "http://39.104.202.123:9000/dev/picture.png?X-Amz-Algorithm=AWS4-HMAC-SHA256...",
+      "guide_info": "[{\"label\":\"1\",\"posList\":[{\"x\":104,\"y\":278,\"width\":331,\"height\":227,\"remark\":1}]}]",
+      "status": 2
+    }
+  ]
+}

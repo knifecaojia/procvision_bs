@@ -1,0 +1,21 @@
+{
+  "status": [
+    1,
+    2
+  ],
+  "task_no": "100007",
+  "prod_order_no": "2345",
+  "craft_no": [
+    "JZ4.932.09296060GY-TX01"
+  ],
+  "process_name": "连接器",
+  "time_range": {
+    "type": "start",
+    "begin": "2025-12-09 08:00:00",
+    "end": "2025-12-09 18:00:00"
+  },
+  "pagination": {
+    "page": 1,
+    "page_size": 20
+  }
+}

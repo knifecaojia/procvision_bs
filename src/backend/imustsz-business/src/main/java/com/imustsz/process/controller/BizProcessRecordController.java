@@ -55,18 +55,6 @@ public class BizProcessRecordController extends BaseController
     }
 
     /**
-     * 导出过程记录列表
-     */
-//    @PreAuthorize("@ss.hasPermi('process:record:export')")
-//    @Log(title = "过程记录", businessType = BusinessType.EXPORT)
-//    @PostMapping("/export")
-//    public void export(HttpServletResponse response, BizProcessRecord bizProcessRecord) throws Exception {
-//        List<ProcessRecordVO> list = bizProcessRecordService.selectBizProcessRecordList(bizProcessRecord);
-//        ExcelUtil<BizProcessRecord> util = new ExcelUtil<BizProcessRecord>(BizProcessRecord.class);
-//        util.exportExcel(response, list, "过程记录数据");
-//    }
-
-    /**
      * 获取过程记录详细信息
      */
     @PreAuthorize("@ss.hasPermi('process:record:query')")

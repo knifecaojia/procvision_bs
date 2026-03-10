@@ -1,35 +1,40 @@
 package com.imustsz.order.service.impl;
 
-import java.time.LocalDateTime;
+import java.io.InputStream;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.http.HttpRequest;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import com.imustsz.cilent.domain.dto.ProcessDTO;
 import com.imustsz.cilent.domain.dto.ResultDTO;
 import com.imustsz.cilent.domain.dto.TaskSelectDTO;
 import com.imustsz.cilent.domain.dto.WorkOrderProperties;
 import com.imustsz.cilent.domain.vo.StepVO;
 import com.imustsz.cilent.domain.vo.WorkOrderVO;
-import com.imustsz.common.utils.DateUtils;
 import com.imustsz.common.utils.bean.MinioUtils;
+import com.imustsz.common.utils.sign.Base64;
 import com.imustsz.craft.domain.BizStep;
 import com.imustsz.craft.domain.Craft;
 import com.imustsz.craft.domain.Process;
 import com.imustsz.craft.mapper.BizStepMapper;
 import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
+import com.imustsz.order.domain.dto.FinishedOrderDTO;
 import com.imustsz.order.domain.json.*;
 import com.imustsz.order.domain.vo.PageVO;
 import com.imustsz.process.domain.BizProcessRecord;
 import com.imustsz.process.mapper.BizProcessRecordMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.imustsz.order.mapper.BizWorkOrderMapper;
 import com.imustsz.order.domain.BizWorkOrder;
@@ -62,6 +67,14 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
 
     @Autowired
     private BizProcessRecordMapper bizProcessRecordMapper;
+
+    @Value("${minio.bucketName}")
+    private String bucketName;
+
+    @Value("${webservice.url}")
+    private String webserviceUrl;
+
+    private final Logger log =  LoggerFactory.getLogger(BizWorkOrderServiceImpl.class.getName());
 
     /**
      * 查询工单
@@ -303,6 +316,97 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
         pageVO.setList(collect);
         pageVO.setTotal((int) pageInfo.getTotal());
         return pageVO;
+    }
+
+    // TODO 照片回传
+    @Override
+    public int uploadToMMO(FinishedOrderDTO finishedOrderDTO) {
+        BizWorkOrder workOrder = bizWorkOrderMapper.selectBizWorkOrderByCodeAndProcessCode(finishedOrderDTO.getWorkOrderCode(), finishedOrderDTO.getProcessCode());
+        BizProcessRecord record = bizProcessRecordMapper.selectBizProcessRecordByOrderAndProcessCodeAndStepNo(workOrder.getWorkOrderCode(), workOrder.getProcessCode(), finishedOrderDTO.getStepNo());
+
+        //构建内层JSON
+        JSONObject innerJson = new JSONObject();
+
+        JSONObject batchInfo = new JSONObject();
+        batchInfo.put("work_order_no", finishedOrderDTO.getWorkOrderCode());
+        batchInfo.put("operation_no", finishedOrderDTO.getProcessCode());
+        batchInfo.put("total_count", 1);
+        batchInfo.put("upload_time", DateUtil.now().replace(" ", "T"));
+        batchInfo.put("worker_name", workOrder.getWorkerName());
+        batchInfo.put("worker_code", workOrder.getWorkerCode());
+        batchInfo.put("system_Id", "VGS");
+
+        innerJson.put("batch_info", batchInfo);
+
+        JSONArray imageList = new JSONArray();
+        for (int i = 0; i < 1; i++) {
+            String base64Image = "";
+
+            try (InputStream stream = minioUtils.getFileInputStream(bucketName, record.getImagePath())){
+                base64Image = Base64.encode(IoUtil.readBytes(stream));
+            } catch (Exception e) {
+                log.error("从 MinIO 读取图片失败", e);
+                throw new RuntimeException(e);
+            }
+
+            String fileName = finishedOrderDTO.getWorkOrderCode() + "_" + finishedOrderDTO.getProcessCode() + "_" + finishedOrderDTO.getStepNo() + String.format("%03d", i+1) + ".png";
+
+            JSONObject imageObj = new JSONObject();
+
+            imageObj.put("image_no", fileName);
+            imageObj.put("image_base64", base64Image);
+            imageObj.put("image_format", "png");
+            imageObj.put("image_desc", "工序:" + finishedOrderDTO.getProcessCode() + "-" + finishedOrderDTO.getProcessName() + "步骤:" + finishedOrderDTO.getStepNo() + "-" + finishedOrderDTO.getStepName());
+
+            imageList.add(imageObj);
+        }
+        innerJson.put("work_order_image_list", imageList);
+
+        String innerJsonString = innerJson.toJSONString();
+
+        // 构建外层 JSON 并塞入内层 JSON 字符串
+        JSONObject rootJson = new JSONObject();
+        rootJson.put("oriSysName", "视觉引导系统");
+        rootJson.put("oriSysNum", "VGS");
+        rootJson.put("uniqueFlag", "1000001");
+        rootJson.put("timestamp", String.valueOf(System.currentTimeMillis()));
+
+        JSONArray outerFileDataArray = new JSONArray();
+        JSONObject outerFileDataObj = new JSONObject();
+        outerFileDataObj.put("fileName", "records.json");
+        outerFileDataObj.put("fileData", innerJsonString);
+
+        outerFileDataArray.add(outerFileDataObj);
+        rootJson.put("fileData", outerFileDataArray);
+
+        String finalJsonString = rootJson.toJSONString();
+        log.info("构建完成的外层 JSON: {}", finalJsonString);
+
+        //构建 SOAP XML 并发送
+        String soapXml = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:web=\"http://webservice.example.com/\">\n" +
+                "   <soapenv:Header/>\n" +
+                "   <soapenv:Body>\n" +
+                "      <web:yourMethodName>\n" +
+                "         <data><![CDATA[" + finalJsonString + "]]></data>\n" +
+                "      </web:yourMethodName>\n" +
+                "   </soapenv:Body>\n" +
+                "</soapenv:Envelope>";
+
+        try {
+            String resultXml = HttpRequest.post(webserviceUrl)
+                    .header("Content-Type", "text/xml;charset=UTF-8")
+                    .body(soapXml)
+                    .timeout(60000) // 多张图片 Base64 会很大，超时时间放宽到 60 秒
+                    .execute()
+                    .body();
+
+            log.info("WebService 响应结果: {}", resultXml);
+
+        } catch (Exception e) {
+            log.error("发送 WebService 请求失败", e);
+        }
+
+        return 1;
     }
 
     @Override

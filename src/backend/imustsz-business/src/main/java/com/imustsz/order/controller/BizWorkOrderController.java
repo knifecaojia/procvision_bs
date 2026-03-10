@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.imustsz.common.utils.StringUtils;
 import com.imustsz.order.domain.OrderImportTemplate;
+import com.imustsz.order.domain.dto.FinishedOrderDTO;
 import com.imustsz.order.domain.json.DispatchTask;
 import com.imustsz.order.domain.json.WorkOrder;
 import com.imustsz.order.domain.json.WorkOrderTaskData;
@@ -125,6 +126,7 @@ public class BizWorkOrderController extends BaseController
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         WorkOrderTaskData taskSync = objectMapper.readValue(file.getInputStream(), WorkOrderTaskData.class);
         return toAjax(bizWorkOrderService.importOrderFromMMo(taskSync));
+//        return success(taskSync);
     }
 
     @PostMapping("/importTemplate")
@@ -194,5 +196,10 @@ public class BizWorkOrderController extends BaseController
         bizWorkOrderService.importOrderFromMMo(workOrderTaskData);
 
         return success(workOrderTaskData);
+    }
+
+    @PostMapping("/uploadToMMO")
+    public AjaxResult getOrderByCode(@RequestBody FinishedOrderDTO finishedOrderDTO) throws Exception {
+        return toAjax(bizWorkOrderService.uploadToMMO(finishedOrderDTO));
     }
 }

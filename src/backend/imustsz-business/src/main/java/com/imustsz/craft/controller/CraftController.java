@@ -129,7 +129,7 @@ public class CraftController extends BaseController
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         OrderProcessData CrackProcess =objectMapper.readValue(file.getInputStream(), OrderProcessData.class);
         craftService.importCraftFromMMo(CrackProcess);
-        return success(CrackProcess);
+        return success();
     }
 
     @GetMapping("/checkStatus/{id}")

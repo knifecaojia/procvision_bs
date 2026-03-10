@@ -1,49 +1,83 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
-PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.imustsz.process.mapper.BizProcessRecordMapper">
-    
     <resultMap type="BizProcessRecord" id="BizProcessRecordResult">
-        <result property="id"    column="id"    />
-        <result property="workOrderCode"    column="work_order_code"    />
-        <result property="processCode"    column="process_code"    />
-        <result property="stepCode"    column="step_code"    />
-        <result property="stepName"    column="step_name"    />
-        <result property="stepStatus"    column="step_status"    />
-        <result property="imagePath"    column="image_path"    />
-        <result property="data"    column="data"    />
-        <result property="submitTime"    column="submit_time"    />
+        <result property="id" column="id"/>
+        <result property="workOrderCode" column="work_order_code"/>
+        <result property="processCode" column="process_code"/>
+        <result property="stepCode" column="step_code"/>
+        <result property="stepName" column="step_name"/>
+        <result property="stepStatus" column="step_status"/>
+        <result property="imagePath" column="image_path"/>
+        <result property="data" column="data"/>
+        <result property="submitTime" column="submit_time"/>
     </resultMap>
 
     <resultMap type="UniqueRecordParams" id="UniqueRecordParamsResult">
-        <result property="workOrderCode"    column="work_order_code"    />
-        <result property="processCode"    column="process_code"    />
+        <result property="workOrderCode" column="work_order_code"/>
+        <result property="processCode" column="process_code"/>
     </resultMap>
 
     <sql id="selectBizProcessRecordVo">
-        select id, work_order_code, process_code, step_code, step_name, step_status, image_path, data, submit_time from biz_process_record
+        select id,
+               work_order_code,
+               process_code,
+               step_code,
+               step_name,
+               step_status,
+               image_path,
+               data,
+               submit_time
+        from biz_process_record
     </sql>
 
     <select id="selectBizProcessRecordList" parameterType="BizProcessRecord" resultMap="BizProcessRecordResult">
         <include refid="selectBizProcessRecordVo"/>
-        <where>  
-            <if test="workOrderCode != null  and workOrderCode != ''"> and work_order_code like concat('%',#{workOrderCode},'%')</if>
-            <if test="stepCode != null "> and step_code = #{stepCode}</if>
-            <if test="processCode != null "> and process_code = #{processCode}</if>
-            <if test="stepName != null "> and step_name = #{stepName}</if>
-            <if test="stepStatus != null  and stepStatus != ''"> and step_status = #{stepStatus}</if>
-            <if test="imagePath != null  and imagePath != ''"> and image_path = #{imagePath}</if>
-            <if test="data != null  and data != ''"> and data = #{data}</if>
-            <if test="submitTime != null "> and submit_time = #{submitTime}</if>
-            <if test="createTime != null"> and create_time = #{createTime}</if>
-            <if test="updateTime != null"> and update_time = #{updateTime}</if>
-            <if test="createBy != null and createBy != ''"> and create_by = #{createBy}</if>
-            <if test="updateBy != null and updateBy != ''"> and update_by = #{updateBy}</if>
-            <if test="remark != null and remark != ''"> and remark = #{remark}</if>
+        <where>
+            <if test="workOrderCode != null  and workOrderCode != ''">
+                and work_order_code like concat('%',#{workOrderCode},'%')
+            </if>
+            <if test="stepCode != null ">
+                and step_code = #{stepCode}
+            </if>
+            <if test="processCode != null ">
+                and process_code = #{processCode}
+            </if>
+            <if test="stepName != null ">
+                and step_name = #{stepName}
+            </if>
+            <if test="stepStatus != null  and stepStatus != ''">
+                and step_status = #{stepStatus}
+            </if>
+            <if test="imagePath != null  and imagePath != ''">
+                and image_path = #{imagePath}
+            </if>
+            <if test="data != null  and data != ''">
+                and data = #{data}
+            </if>
+            <if test="submitTime != null ">
+                and submit_time = #{submitTime}
+            </if>
+            <if test="createTime != null">
+                and create_time = #{createTime}
+            </if>
+            <if test="updateTime != null">
+                and update_time = #{updateTime}
+            </if>
+            <if test="createBy != null and createBy != ''">
+                and create_by = #{createBy}
+            </if>
+            <if test="updateBy != null and updateBy != ''">
+                and update_by = #{updateBy}
+            </if>
+            <if test="remark != null and remark != ''">
+                and remark = #{remark}
+            </if>
         </where>
     </select>
-    
+
     <select id="selectBizProcessRecordById" parameterType="Long" resultMap="BizProcessRecordResult">
         <include refid="selectBizProcessRecordVo"/>
         where id = #{id}
@@ -52,63 +86,143 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <insert id="insertBizProcessRecord" parameterType="BizProcessRecord" useGeneratedKeys="true" keyProperty="id">
         insert into biz_process_record
         <trim prefix="(" suffix=")" suffixOverrides=",">
-            <if test="workOrderCode != null">work_order_code,</if>
-            <if test="processCode != null">process_code,</if>
-            <if test="stepCode != null">step_code,</if>
-            <if test="stepName != null">step_name,</if>
-            <if test="stepStatus != null">step_status,</if>
-            <if test="imagePath != null">image_path,</if>
-            <if test="data != null">data,</if>
-            <if test="submitTime != null">submit_time,</if>
-            <if test="createTime != null">create_time,</if>
-            <if test="updateTime != null">update_time,</if>
-            <if test="createBy != null">create_by,</if>
-            <if test="updateBy != null">update_by,</if>
-            <if test="remark != null">remark,</if>
-         </trim>
+            <if test="workOrderCode != null">
+                work_order_code,
+            </if>
+            <if test="processCode != null">
+                process_code,
+            </if>
+            <if test="stepCode != null">
+                step_code,
+            </if>
+            <if test="stepName != null">
+                step_name,
+            </if>
+            <if test="stepStatus != null">
+                step_status,
+            </if>
+            <if test="imagePath != null">
+                image_path,
+            </if>
+            <if test="data != null">
+                data,
+            </if>
+            <if test="submitTime != null">
+                submit_time,
+            </if>
+            <if test="createTime != null">
+                create_time,
+            </if>
+            <if test="updateTime != null">
+                update_time,
+            </if>
+            <if test="createBy != null">
+                create_by,
+            </if>
+            <if test="updateBy != null">
+                update_by,
+            </if>
+            <if test="remark != null">
+                remark,
+            </if>
+        </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
-            <if test="workOrderCode != null">#{workOrderCode},</if>
-            <if test="processCode != null">#{processCode},</if>
-            <if test="stepCode != null">#{stepCode},</if>
-            <if test="stepName != null">#{stepName},</if>
-            <if test="stepStatus != null">#{stepStatus},</if>
-            <if test="imagePath != null">#{imagePath},</if>
-            <if test="data != null">#{data},</if>
-            <if test="submitTime != null">#{submitTime},</if>
-            <if test="createTime != null">#{createTime},</if>
-            <if test="updateTime != null">#{updateTime},</if>
-            <if test="createBy != null">#{createBy},</if>
-            <if test="updateBy != null">#{updateBy},</if>
-            <if test="remark != null">#{remark},</if>
-         </trim>
+            <if test="workOrderCode != null">
+                #{workOrderCode},
+            </if>
+            <if test="processCode != null">
+                #{processCode},
+            </if>
+            <if test="stepCode != null">
+                #{stepCode},
+            </if>
+            <if test="stepName != null">
+                #{stepName},
+            </if>
+            <if test="stepStatus != null">
+                #{stepStatus},
+            </if>
+            <if test="imagePath != null">
+                #{imagePath},
+            </if>
+            <if test="data != null">
+                #{data},
+            </if>
+            <if test="submitTime != null">
+                #{submitTime},
+            </if>
+            <if test="createTime != null">
+                #{createTime},
+            </if>
+            <if test="updateTime != null">
+                #{updateTime},
+            </if>
+            <if test="createBy != null">
+                #{createBy},
+            </if>
+            <if test="updateBy != null">
+                #{updateBy},
+            </if>
+            <if test="remark != null">
+                #{remark},
+            </if>
+        </trim>
     </insert>
 
     <update id="updateBizProcessRecord" parameterType="BizProcessRecord">
         update biz_process_record
         <trim prefix="SET" suffixOverrides=",">
-            <if test="workOrderCode != null">work_order_code = #{workOrderCode},</if>
-            <if test="processCode != null">process_code = #{processCode},</if>
-            <if test="stepCode != null">step_code = #{stepCode},</if>
-            <if test="stepName != null">step_name = #{stepName},</if>
-            <if test="stepStatus != null">step_status = #{stepStatus},</if>
-            <if test="imagePath != null">image_path = #{imagePath},</if>
-            <if test="data != null">data = #{data},</if>
-            <if test="submitTime != null">submit_time = #{submitTime},</if>
-            <if test="createTime != null">create_time = #{createTime},</if>
-            <if test="updateTime != null">update_time = #{updateTime},</if>
-            <if test="createBy != null">create_by = #{createBy},</if>
-            <if test="updateBy != null">update_by = #{updateBy},</if>
-            <if test="remark != null">remark = #{remark},</if>
+            <if test="workOrderCode != null">
+                work_order_code = #{workOrderCode},
+            </if>
+            <if test="processCode != null">
+                process_code = #{processCode},
+            </if>
+            <if test="stepCode != null">
+                step_code = #{stepCode},
+            </if>
+            <if test="stepName != null">
+                step_name = #{stepName},
+            </if>
+            <if test="stepStatus != null">
+                step_status = #{stepStatus},
+            </if>
+            <if test="imagePath != null">
+                image_path = #{imagePath},
+            </if>
+            <if test="data != null">
+                data = #{data},
+            </if>
+            <if test="submitTime != null">
+                submit_time = #{submitTime},
+            </if>
+            <if test="createTime != null">
+                create_time = #{createTime},
+            </if>
+            <if test="updateTime != null">
+                update_time = #{updateTime},
+            </if>
+            <if test="createBy != null">
+                create_by = #{createBy},
+            </if>
+            <if test="updateBy != null">
+                update_by = #{updateBy},
+            </if>
+            <if test="remark != null">
+                remark = #{remark},
+            </if>
         </trim>
         where id = #{id}
     </update>
 
     <delete id="deleteBizProcessRecordById" parameterType="Long">
-        delete from biz_process_record where id = #{id}
+        delete
+        from biz_process_record
+        where id = #{id}
     </delete>
 
     <delete id="deleteBizProcessRecordByIds" parameterType="String">
-        delete from biz_process_record where id in 
+        delete from biz_process_record where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -125,23 +239,32 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectBizProcessRecordByTaskNoAndStepCode" resultMap="BizProcessRecordResult">
-        <include refid="selectBizProcessRecordVo" />
-        where work_order_code = #{taskNo} and  step_code = #{stepCode}
+        <include refid="selectBizProcessRecordVo"/>
+        where work_order_code = #{taskNo} and step_code = #{stepCode}
     </select>
 
     <delete id="deleteBizProcessRecordByTaskNo">
-        delete from biz_process_record where work_order_code = #{workOrderCode}
+        delete
+        from biz_process_record
+        where work_order_code = #{workOrderCode}
     </delete>
 
     <select id="selectBizProcessRecords" resultMap="UniqueRecordParamsResult">
         select distinct work_order_code, process_code from biz_process_record
         <where>
-            <if test="workOrderCode != null and workOrderCode != ''"> and work_order_code like concat('%',#{workOrderCode},'%')</if>
+            <if test="workOrderCode != null and workOrderCode != ''">
+                and work_order_code like concat('%',#{workOrderCode},'%')
+            </if>
         </where>
     </select>
 
     <select id="selectBizProcessRecordByOrderAndProcessCode" resultMap="BizProcessRecordResult">
         <include refid="selectBizProcessRecordVo"/>
         where work_order_code = #{workOrderCode} and process_code = #{processCode}
+    </select>
+
+    <select id="selectBizProcessRecordByOrderAndProcessCodeAndStepNo" resultMap="BizProcessRecordResult">
+        <include refid="selectBizProcessRecordVo"/>
+        where work_order_code =#{workOrderCode} and process_code = #{processCode} and step_code = #{stepNo}
     </select>
 </mapper>

@@ -88,7 +88,6 @@ public class ProcessController extends BaseController
     /**
      * 删除工序信息
      */
-    //TODO 删除工序要注意关联的任务，以及工序下的工步
     @PreAuthorize("@ss.hasPermi('process:process:remove')")
     @Log(title = "工序信息", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
