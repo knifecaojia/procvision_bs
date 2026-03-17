@@ -73,7 +73,7 @@ public interface BizWorkOrderMapper
 
     List<BizWorkOrder> selectWorkOrderByCraft(@Param("craftCode") String craftCode, @Param("craftVersion") String craftVersion);
 
-    BizWorkOrder selectWorkOrderByCraftAndProcess(@Param("craftCode") String craftCode, @Param("craftVersion") String craftVersion, @Param("processCode") String processCode);
+    int selectWorkOrderByCraftAndProcess(@Param("craftCode") String craftCode, @Param("craftVersion") String craftVersion, @Param("processCode") String processCode);
 
     List<BizWorkOrder> selectByCondition(TaskSelectDTO taskSelectDTO);
 

@@ -218,8 +218,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where craft_code = #{craftCode} and craft_version = #{craftVersion}
     </select>
 
-    <select id="selectWorkOrderByCraftAndProcess" resultType="com.imustsz.order.domain.BizWorkOrder">
-        <include refid="selectBizWorkOrderVo" />
+    <select id="selectWorkOrderByCraftAndProcess">
+        select count(0) from biz_work_order
         where craft_code = #{craftCode} and craft_version = #{craftVersion} and process_code = #{processCode}
     </select>
 

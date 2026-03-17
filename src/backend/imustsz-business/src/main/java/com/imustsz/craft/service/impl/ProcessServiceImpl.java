@@ -123,8 +123,8 @@ public class ProcessServiceImpl implements IProcessService
     private void checkProcess(Long id1) {
         Process process = processMapper.selectProcessById(id1);
         Craft craft = craftMapper.selectCraftById(process.getCraftId());
-        BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectWorkOrderByCraftAndProcess(craft.getCode(), craft.getVersion(), process.getCode());
-        if (bizWorkOrder != null)
+        int count = bizWorkOrderMapper.selectWorkOrderByCraftAndProcess(craft.getCode(), craft.getVersion(), process.getCode());
+        if (count > 0)
             throw new RuntimeException("工序已关联任务，不能删除");
         bizStepMapper.deleteBizStepByProcessId(id1);
     }
