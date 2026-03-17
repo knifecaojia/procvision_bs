@@ -58,3 +58,4 @@ Thumbs.db
 
 src/backend/imustsz-business/src/main/resources/application-dev.yml
 
+/docker/HikLib/
