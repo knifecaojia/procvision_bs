@@ -9,6 +9,8 @@ import java.util.stream.Collectors;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.http.HttpRequest;
+import cn.hutool.json.JSON;
+import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.github.pagehelper.PageHelper;
@@ -251,7 +253,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
             stepVOS.forEach(stepVO -> {
                 try {
                     if (stepVO.getGuide_url() != null)
-                        stepVO.setGuide_url(minioUtils.getPresignedUrl(stepVO.getGuide_url()));
+                        stepVO.setGuide_url(getLabeledUrl(stepVO.getGuide_url()));
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -268,6 +270,11 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
         pageVO.setList(collect);
         pageVO.setTotal((int) pageInfo.getTotal());
         return pageVO;
+    }
+
+    private String getLabeledUrl(String urls) throws Exception {
+        String[] split = urls.substring(1, urls.length() - 1).replace("\"", "").split(",");
+        return minioUtils.getPresignedUrl(split[1]);
     }
 
     @Override
@@ -299,7 +306,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
             stepVOS.forEach(stepVO -> {
                 try {
                     if (stepVO.getGuide_url() != null)
-                        stepVO.setGuide_url(minioUtils.getPresignedUrl(stepVO.getGuide_url()));
+                        stepVO.setGuide_url(getLabeledUrl(stepVO.getGuide_url()));
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

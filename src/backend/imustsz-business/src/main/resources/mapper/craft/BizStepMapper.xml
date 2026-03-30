@@ -10,7 +10,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="name"    column="name"    />
         <result property="content"    column="content"    />
         <result property="guideMapUrl"    column="guide_map_url"    />
-        <result property="guideInfo" column="coords_info"/>
+        <result property="guideInfo" column="guide_info"/>
         <result property="processId"    column="process_id"    />
     </resultMap>
 
@@ -29,7 +29,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
             <if test="content != null  and content != ''"> and content = #{content}</if>
             <if test="guideMapUrl != null  and guideMapUrl != ''"> and guide_map_url = #{guideMapUrl}</if>
-            <if test="coordsInfo != null  and coordsInfo != ''"> and guide_info = #{coordsInfo}</if>
+            <if test="guideInfo != null  and guideInfo != ''"> and guide_info = #{guideInfo}</if>
             <if test="processId != null "> and process_id = #{processId}</if>
             <if test="createTime != null "> and create_time = #{createTime}</if>
             <if test="updateTime != null "> and update_time = #{updateTime}</if>
@@ -51,7 +51,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="name != null">name,</if>
             <if test="content != null">content,</if>
             <if test="guideMapUrl != null">guide_map_url,</if>
-            <if test="coordsInfo != null">guide_info,</if>
+            <if test="guideInfo != null">guide_info,</if>
             <if test="processId != null">process_id,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateTime != null">update_time,</if>
@@ -64,7 +64,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="name != null">#{name},</if>
             <if test="content != null">#{content},</if>
             <if test="guideMapUrl != null">#{guideMapUrl},</if>
-            <if test="coordsInfo != null">#{coordsInfo},</if>
+            <if test="guideInfo != null">#{guideInfo},</if>
             <if test="processId != null">#{processId},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
@@ -81,7 +81,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="name != null">name = #{name},</if>
             <if test="content != null">content = #{content},</if>
             <if test="guideMapUrl != null">guide_map_url = #{guideMapUrl},</if>
-            <if test="coordsInfo != null">guide_info = #{coordsInfo},</if>
+            <if test="guideInfo != null">guide_info = #{guideInfo},</if>
             <if test="processId != null">process_id = #{processId},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
@@ -116,4 +116,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <delete id="deleteBizStepByProcessId">
         delete from biz_step where process_id = #{processId}
     </delete>
+
+    <select id="getStepById" resultType="com.imustsz.craft.domain.BizStep">
+        <include refid="selectBizStepVo"/>
+        where id = #{id}
+    </select>
 </mapper>

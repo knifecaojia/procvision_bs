@@ -77,24 +77,25 @@
         @close="closeCameraDialog"
     >
       <div class="camera-preview-box">
+        <video
+            ref="videoRef"
+            class="live-stream"
+            autoplay
+            playsinline
+            v-show="cameraConnected"
+        ></video>
+
         <div v-if="!cameraConnected" class="camera-loading">
           <el-icon class="is-loading" :size="40">
             <Loading/>
           </el-icon>
-          <p>正在连接相机信号...</p>
+          <p>正在启动摄像头...</p>
         </div>
-        <img
-            v-else
-            :src="previewUrl"
-            class="live-stream"
-            alt="实时监控"
-            @error="handleCameraError"
-        />
       </div>
 
       <div class="camera-controls">
          <span style="color: #909399; margin-right: 20px;">
-           <el-icon><VideoCamera/></el-icon> 实时模式
+           <el-icon><VideoCamera/></el-icon> 本地相机模式
          </span>
         <el-button type="primary" size="large" icon="CameraFilled" :loading="isCapturing" @click="handleCapture">
           立即抓拍并去标注
@@ -128,9 +129,10 @@ const remark = ref('')
 
 // --- 相机相关状态 ---
 const cameraVisible = ref(false);
-const previewUrl = ref('');
-const cameraConnected = ref(false);
+const cameraConnected = ref(false); // 此时表示是否成功获取到流
 const isCapturing = ref(false);
+const videoRef = ref(null); // 新增：视频元素引用
+let mediaStream = null;     // 新增：存储媒体流对象
 let previewTimer = null;
 const BASE_API = import.meta.env.VITE_APP_BASE_API;
 
@@ -290,80 +292,106 @@ const handleFileChange = (file) => {
 
 const openCameraDialog = async () => {
   cameraVisible.value = true;
-  // await checkCamera().then(res => {
-  //   if (res.code === 200){
-  //     cameraConnected.value = true; // 假设一开始是连接的
-  //     startPreview();
-  //   }else
-  //     cameraConnected.value = false;
-  // })
-  cameraConnected.value = true; // 假设一开始是连接的
-  startPreview();
+  cameraConnected.value = false;
+
+  // 等待 DOM 渲染，确保 videoRef 可用
+  await nextTick();
+  startLocalCamera();
+};
+
+const startLocalCamera = async () => {
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      // 请求摄像头权限，这里尽量请求高清分辨率
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      });
+
+      mediaStream = stream;
+      if (videoRef.value) {
+        videoRef.value.srcObject = stream;
+        videoRef.value.play();
+        cameraConnected.value = true;
+      }
+    } catch (err) {
+      console.error("无法启动摄像头:", err);
+      let msg = '无法启动摄像头';
+      if (err.name === 'NotAllowedError') msg = '用户拒绝了摄像头权限';
+      if (err.name === 'NotFoundError') msg = '未检测到摄像头设备';
+      proxy.$modal.msgError(msg);
+      cameraVisible.value = false;
+    }
+  } else {
+    proxy.$modal.msgError('当前浏览器不支持访问摄像头');
+  }
 };
 
 const closeCameraDialog = () => {
-  stopPreview();
+  stopLocalCamera();
   cameraVisible.value = false;
 };
 
-// 开启预览轮询
-const startPreview = () => {
-  stopPreview();
-  // 立即执行一次
-  refreshPreview();
-  // 设置 60ms 刷新一次 (约 16fps)
-  previewTimer = setInterval(refreshPreview, 100);
+// 停止相机流，释放硬件
+const stopLocalCamera = () => {
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
+    mediaStream = null;
+  }
+  if (videoRef.value) {
+    videoRef.value.srcObject = null;
+  }
+  cameraConnected.value = false;
 };
 
-const refreshPreview = () => {
-  // 加上时间戳防止缓存
-  previewUrl.value = `${BASE_API}/camera/preview?t=${Date.now()}`;
+// 拍照：将 Video 当前帧绘制到 Canvas 并转为 File
+const handleCapture = () => {
+  if (!videoRef.value || !cameraConnected.value) return;
+
+  isCapturing.value = true;
+
+  try {
+    const video = videoRef.value;
+    const canvas = document.createElement('canvas');
+    // 设置画布大小与视频实际分辨率一致
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // 转换为 Blob -> File
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        proxy.$modal.msgError('抓拍失败：画面为空');
+        isCapturing.value = false;
+        return;
+      }
+
+      const filename = `local_capture_${Date.now()}.jpg`;
+      const file = new File([blob], filename, { type: 'image/jpeg' });
+
+      // 调用原有的加载逻辑
+      loadFileToCanvas(file);
+
+      proxy.$modal.msgSuccess('抓拍成功！');
+      closeCameraDialog();
+      isCapturing.value = false;
+    }, 'image/jpeg', 1);
+
+  } catch (error) {
+    console.error(error);
+    proxy.$modal.msgError('抓拍处理异常');
+    isCapturing.value = false;
+  }
 };
 
 const stopPreview = () => {
   if (previewTimer) {
     clearInterval(previewTimer);
     previewTimer = null;
-  }
-};
-
-const handleCameraError = () => {
-  // 图片加载失败（可能是后端还没启动好）
-  // cameraConnected.value = false;
-  // 这里的错误处理要小心，因为轮询很快，偶尔一帧失败不用管，一直失败才提示
-};
-
-// 拍照并加载到画布
-const handleCapture = async () => {
-  isCapturing.value = true;
-  try {
-    const res = await axios({
-      method: 'get',
-      url: `${BASE_API}/camera/capture`,
-      responseType: 'blob' // 关键
-    });
-
-    if (res.data.type && res.data.type.includes('json')) {
-      proxy.$modal.msgError('拍照失败，后端返回了错误信息');
-      return;
-    }
-
-    // 将 Blob 转换为 File 对象
-    const blob = res.data;
-    const filename = `capture_${Date.now()}.jpg`;
-    const file = new File([blob], filename, {type: 'image/jpeg'});
-
-    // 调用统一的加载方法
-    loadFileToCanvas(file);
-
-    proxy.$modal.msgSuccess('抓拍成功！');
-    closeCameraDialog(); // 关闭相机弹窗，回到标注界面
-
-  } catch (error) {
-    console.error(error);
-    proxy.$modal.msgError('拍照请求失败');
-  } finally {
-    isCapturing.value = false;
   }
 };
 

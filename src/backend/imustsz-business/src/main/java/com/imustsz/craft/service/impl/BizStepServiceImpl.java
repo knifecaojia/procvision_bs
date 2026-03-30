@@ -2,6 +2,8 @@ package com.imustsz.craft.service.impl;
 
 import java.util.List;
 
+import cn.hutool.json.JSON;
+import cn.hutool.json.JSONUtil;
 import com.imustsz.common.utils.bean.MinioUtils;
 import com.imustsz.craft.domain.dto.GuideInfoDTO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,9 +35,12 @@ public class BizStepServiceImpl implements IBizStepService
      * @return 工步信息
      */
     @Override
-    public BizStep selectBizStepById(Long id)
-    {
-        return bizStepMapper.selectBizStepById(id);
+    public BizStep selectBizStepById(Long id) throws Exception {
+        BizStep step = bizStepMapper.selectBizStepById(id);
+        if (step.getGuideMapUrl() != null) {
+            step.setGuideMapUrl(getLabeledUrl(step.getGuideMapUrl()));
+        }
+        return step;
     }
 
     /**
@@ -45,9 +50,20 @@ public class BizStepServiceImpl implements IBizStepService
      * @return 工步信息
      */
     @Override
-    public List<BizStep> selectBizStepList(BizStep bizStep)
-    {
-        return bizStepMapper.selectBizStepList(bizStep);
+    public List<BizStep> selectBizStepList(BizStep bizStep) throws Exception {
+        List<BizStep> bizSteps = bizStepMapper.selectBizStepList(bizStep);
+        for (BizStep step : bizSteps) {
+            if (step.getGuideMapUrl() != null) {
+                step.setGuideMapUrl(getLabeledUrl(step.getGuideMapUrl()));
+            }
+        }
+
+        return bizSteps;
+    }
+
+    private String getLabeledUrl(String urls) throws Exception {
+        String[] split = urls.substring(1, urls.length() - 1).replace(" ", "").replace("\"", "").split(",");
+        return minioUtils.getPresignedUrl(split[0]);
     }
 
     /**
@@ -71,9 +87,11 @@ public class BizStepServiceImpl implements IBizStepService
     @Override
     @Transactional
     public int updateBizStep(BizStep bizStep) throws Exception {
-        BizStep step = selectBizStepById(bizStep.getId());
+        BizStep step = bizStepMapper.getStepById(bizStep.getId());
         if (step.getGuideMapUrl() != null && bizStep.getGuideMapUrl() != null){
-            minioUtils.deleteFile(step.getGuideMapUrl());
+            String[] objectName = step.getGuideMapUrl().substring(1, step.getGuideMapUrl().length() - 1).replace(" ", "").replace("\"", "").split(",");
+            for (String s : objectName)
+                minioUtils.deleteFile(s);
         }else if (step.getGuideMapUrl() != null && bizStep.getGuideMapUrl() == null)
             bizStep.setGuideMapUrl(step.getGuideMapUrl());
         return bizStepMapper.updateBizStep(bizStep);

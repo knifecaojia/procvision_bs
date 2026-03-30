@@ -1,63 +1,72 @@
 <template>
   <div>
-  <el-dialog title="工步信息" v-model="stepOpen" width="800px" @close="onClose">
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-            type="primary"
-            plain
-            icon="Plus"
-            size="small"
-            @click="handleAdd"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-            type="danger"
-            plain
-            icon="Delete"
-            size="small"
-            :disabled="multiple"
-            @click="handleDelete"
-        >删除</el-button>
-      </el-col>
-    </el-row>
-    <el-table v-loading="loading" :data="stepList" height="600px" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="名称" align="center" prop="name" />
-      <el-table-column label="引导图" align="center">
-        <template #default="scope">
-          <el-tag type="danger" v-if="scope.row.guideMapUrl === '' || scope.row.guideMapUrl === null">未绑定</el-tag>
-          <el-tag v-else type="success">已绑定</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="内容" align="center">
-        <template #default="scope">
-          <el-popover width="200" title="内容" placement="top" :content="scope.row.content">
-            <template #reference>
-              <el-button link type="primary" icon="view">查看</el-button>
-            </template>
-          </el-popover>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" width="300px" class-name="small-padding fixed-width">
-        <template #default="scope">
-          <el-button link type="primary" icon="pointer" @click="handleBind(scope.row)">绑定引导图</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination
-        v-show="total>0"
-        :total="total"
-        v-model:page="queryParams.pageNum"
-        v-model:limit="queryParams.pageSize"
-        @pagination="getList"
-    />
-  </el-dialog>
+    <el-dialog title="工步信息" v-model="stepOpen" width="800px" @close="onClose">
+      <el-row :gutter="10" class="mb8">
+        <el-col :span="1.5">
+          <el-button
+              type="primary"
+              plain
+              icon="Plus"
+              size="small"
+              @click="handleAdd"
+          >新增</el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button
+              type="danger"
+              plain
+              icon="Delete"
+              size="small"
+              :disabled="multiple"
+              @click="handleDelete"
+          >删除</el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button
+              type="success"
+              plain
+              icon="Picture"
+              size="small"
+              :disabled="multiple"
+              @click="handleBatchBind"
+          >批量绑定引导图</el-button>
+        </el-col>
+      </el-row>
+      <el-table v-loading="loading" :data="stepList" height="600px" @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" align="center" />
+        <el-table-column label="名称" align="center" prop="name" />
+        <el-table-column label="引导图" align="center">
+          <template #default="scope">
+            <el-tag type="danger" v-if="scope.row.guideMapUrl === '' || scope.row.guideMapUrl === null">未绑定</el-tag>
+            <el-tag v-else type="success">已绑定</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="内容" align="center">
+          <template #default="scope">
+            <el-popover width="200" title="内容" placement="top" :content="scope.row.content">
+              <template #reference>
+                <el-button link type="primary" icon="view">查看</el-button>
+              </template>
+            </el-popover>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center" width="300px" class-name="small-padding fixed-width">
+          <template #default="scope">
+            <el-button link type="primary" icon="Picture" @click="handleBind(scope.row)">修改引导图</el-button>
+            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)">修改</el-button>
+            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pagination
+          v-show="total>0"
+          :total="total"
+          v-model:page="queryParams.pageNum"
+          v-model:limit="queryParams.pageSize"
+          @pagination="getList"
+      />
+    </el-dialog>
 
-    <!-- 添加或修改工步信息对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
       <el-form ref="stepRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="编码" prop="code">
@@ -78,7 +87,7 @@
       </template>
     </el-dialog>
 
-    <LabelDialog v-model="labelVisible" :visible="labelVisible" :stepIds="ids" :stepId="tempStepId" @change-status="changeStepStatus"/>
+    <LabelDialog v-model="labelVisible" :visible="labelVisible" :stepIds="targetStepIds" @change-status="changeStepStatus"/>
   </div>
 </template>
 
@@ -86,6 +95,7 @@
 import { listStep, getStep, delStep, addStep, updateStep } from "@/api/craft/step"
 import LabelDialog from "@/views/craft/info_craft/LabelDialog.vue";
 import {changeStatus} from "@/api/craft/craft.js";
+import { ref, reactive, toRefs, getCurrentInstance, watch } from "vue";
 
 const { proxy } = getCurrentInstance()
 
@@ -99,7 +109,9 @@ const total = ref(0)
 const title = ref("")
 const stepOpen = defineModel()
 const labelVisible = ref(false)
-const tempStepId = ref(null)
+
+// 新增：用于传递给标注组件的实际操作 ID 数组
+const targetStepIds = ref([])
 
 const data = reactive({
   form: {},
@@ -151,33 +163,18 @@ function reset() {
   proxy.resetForm("stepRef")
 }
 
-/** 搜索按钮操作 */
-function handleQuery() {
-  queryParams.value.pageNum = 1
-  getList()
-}
-
-/** 重置按钮操作 */
-function resetQuery() {
-  proxy.resetForm("queryRef")
-  handleQuery()
-}
-
-// 多选框选中数据
 function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.id)
   single.value = selection.length != 1
   multiple.value = !selection.length
 }
 
-/** 新增按钮操作 */
 function handleAdd() {
   reset()
   open.value = true
   title.value = "添加工步信息"
 }
 
-/** 修改按钮操作 */
 function handleUpdate(row) {
   reset()
   const _id = row.id || ids.value
@@ -188,7 +185,6 @@ function handleUpdate(row) {
   })
 }
 
-/** 提交按钮 */
 function submitForm() {
   proxy.$refs["stepRef"].validate(valid => {
     if (valid) {
@@ -211,7 +207,6 @@ function submitForm() {
   })
 }
 
-/** 删除按钮操作 */
 function handleDelete(row) {
   const _ids = row.id || ids.value
   proxy.$modal.confirm('是否确认删除工步信息？').then(function() {
@@ -226,13 +221,17 @@ function onClose(){
   stepOpen.value = false
 }
 
+// 单个修改引导图
 function handleBind(row){
+  targetStepIds.value = [row.id] // 包装成数组
   labelVisible.value = true
-  tempStepId.value = row.id
-  // ids.value = []
-  // stepList.value.forEach(item => {
-  //   ids.value.push(item.id)
-  // })
+}
+
+// 批量连续绑定引导图
+function handleBatchBind() {
+  if (ids.value.length === 0) return;
+  targetStepIds.value = [...ids.value] // 传入勾选的所有ID
+  labelVisible.value = true
 }
 
 function changeStepStatus(){

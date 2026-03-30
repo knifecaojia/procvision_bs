@@ -20,7 +20,7 @@ public interface IBizStepService
      * @param id 工步信息主键
      * @return 工步信息
      */
-    public BizStep selectBizStepById(Long id);
+    public BizStep selectBizStepById(Long id) throws Exception;
 
     /**
      * 查询工步信息列表
@@ -28,7 +28,7 @@ public interface IBizStepService
      * @param bizStep 工步信息
      * @return 工步信息集合
      */
-    public List<BizStep> selectBizStepList(BizStep bizStep);
+    public List<BizStep> selectBizStepList(BizStep bizStep) throws Exception;
 
     /**
      * 新增工步信息

@@ -67,4 +67,6 @@ public interface BizStepMapper
     BizStep selectBizStepByStepCodeAndProcessId(@Param("stepCode") String stepCode, @Param("processId") Long processId);
 
     void deleteBizStepByProcessId(Long processId);
+
+    BizStep getStepById(Long id);
 }

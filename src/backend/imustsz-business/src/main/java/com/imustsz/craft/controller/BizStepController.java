@@ -41,8 +41,7 @@ public class BizStepController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('craft:step:list')")
     @GetMapping("/list")
-    public TableDataInfo list(BizStep bizStep)
-    {
+    public TableDataInfo list(BizStep bizStep) throws Exception {
         startPage();
         List<BizStep> list = bizStepService.selectBizStepList(bizStep);
         return getDataTable(list);
@@ -54,8 +53,7 @@ public class BizStepController extends BaseController
     @PreAuthorize("@ss.hasPermi('craft:step:export')")
     @Log(title = "工步信息", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
-    public void export(HttpServletResponse response, BizStep bizStep)
-    {
+    public void export(HttpServletResponse response, BizStep bizStep) throws Exception {
         List<BizStep> list = bizStepService.selectBizStepList(bizStep);
         ExcelUtil<BizStep> util = new ExcelUtil<BizStep>(BizStep.class);
         util.exportExcel(response, list, "工步信息数据");
@@ -66,8 +64,7 @@ public class BizStepController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('craft:step:query')")
     @GetMapping(value = "/{id}")
-    public AjaxResult getInfo(@PathVariable("id") Long id)
-    {
+    public AjaxResult getInfo(@PathVariable("id") Long id) throws Exception {
         return success(bizStepService.selectBizStepById(id));
     }
 
