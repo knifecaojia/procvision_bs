@@ -33,7 +33,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>  
             <if test="workOrderCode != null  and workOrderCode != ''"> and work_order_code = #{workOrderCode}</if>
             <if test="prodOrderNo != null "> and prod_order_no like concat('%', #{prodOrderNo}, '%')</if>
-            <if test="prodBatchNo != null "> and prod_batch_no like concat('%', #{prodBatchNo}, '%')</if>
             <if test="craftCode != null  and craftCode != ''"> and craft_code = #{craftCode}</if>
             <if test="craftVersion != null  and craftVersion != ''"> and craft_version = #{craftVersion}</if>
             <if test="status != null "> and status = #{status}</if>
@@ -53,6 +52,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null and updateBy != ''"> and update_by = #{updateBy}</if>
             <if test="remark != null and remark != ''"> and remark = #{remark}</if>
         </where>
+        order by create_time desc
     </select>
     
     <select id="selectBizWorkOrderById" parameterType="Long" resultMap="BizWorkOrderResult">
@@ -260,4 +260,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectBizWorkOrderVo" />
         where work_order_code = #{workOrderCode} and process_code = #{processCode}
     </select>
+
+    <delete id="checkWorkOrderExist">
+        <include refid="selectBizWorkOrderVo" />
+        where work_order_code = #{workOrderNo}
+    </delete>
 </mapper>

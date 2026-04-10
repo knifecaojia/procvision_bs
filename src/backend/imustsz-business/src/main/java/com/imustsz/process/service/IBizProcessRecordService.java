@@ -5,7 +5,6 @@ import java.util.List;
 import com.imustsz.cilent.domain.dto.ProcessDTO;
 import com.imustsz.cilent.domain.vo.ProcessRecordVO;
 import com.imustsz.process.domain.BizProcessRecord;
-import org.springframework.stereotype.Service;
 
 /**
  * 过程记录Service接口
@@ -65,7 +64,7 @@ public interface IBizProcessRecordService
 
     int insertBizProcessRecordByUpload(ProcessDTO processDTO);
 
-    List<ProcessRecordVO> getProcessRecordList(Integer status, String taskNo);
+    List<ProcessRecordVO> getProcessRecordList(Integer status, String taskNo, Integer recordStatus);
 
     ProcessRecordVO getRecordByTaskNoAndProcessCode(String taskNo, String processCode);
 }

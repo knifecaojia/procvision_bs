@@ -45,7 +45,7 @@ public class BizProcessRecordController extends BaseController
     public TableDataInfo list(BizProcessRecord bizProcessRecord, Integer pageNum1, Integer pageSize1) throws Exception {
         int pageNum = pageNum1 == null ? 1 : pageNum1;
         int pageSize = pageSize1 == null ? 10 : pageSize1;
-        List<ProcessRecordVO> list = bizProcessRecordService.getProcessRecordList(null, bizProcessRecord.getWorkOrderCode());
+        List<ProcessRecordVO> list = bizProcessRecordService.getProcessRecordList(null, bizProcessRecord.getWorkOrderCode(), 2);
         int i1 = pageNum*pageSize < list.size() ? (pageNum-1)*pageSize+pageSize : list.size();
         List<ProcessRecordVO> list1 = new ArrayList<>();
         for (int i = (pageNum-1)*pageSize; i < i1; i++){

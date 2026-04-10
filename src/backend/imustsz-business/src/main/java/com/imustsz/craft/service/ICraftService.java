@@ -69,4 +69,6 @@ public interface ICraftService
     List<String> getCraftSelector();
 
     List<SelectorInfoVO> getSelectorOptions();
+
+    int insertCraftByHand(Craft craft);
 }

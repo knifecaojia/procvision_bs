@@ -260,7 +260,17 @@
 
     <select id="selectBizProcessRecordByOrderAndProcessCode" resultMap="BizProcessRecordResult">
         <include refid="selectBizProcessRecordVo"/>
-        where work_order_code = #{workOrderCode} and process_code = #{processCode}
+        <where>
+            <if test="workOrderCode != null and workOrderCode != ''">
+                and work_order_code = #{workOrderCode}
+            </if>
+            <if test="processCode != null and processCode != ''">
+                and process_code = #{processCode}
+            </if>
+            <if test="stepStatus != null">
+                and step_status = #{stepStatus}
+            </if>
+        </where>
     </select>
 
     <select id="selectBizProcessRecordByOrderAndProcessCodeAndStepNo" resultMap="BizProcessRecordResult">

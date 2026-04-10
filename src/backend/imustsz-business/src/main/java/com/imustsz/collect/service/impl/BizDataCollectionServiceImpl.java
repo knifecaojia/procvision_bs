@@ -1,6 +1,8 @@
 package com.imustsz.collect.service.impl;
 
 import java.util.List;
+
+import com.imustsz.framework.aspectj.AutoFill;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.imustsz.collect.mapper.BizDataCollectionMapper;
@@ -50,6 +52,7 @@ public class BizDataCollectionServiceImpl implements IBizDataCollectionService
      * @return 结果
      */
     @Override
+    @AutoFill("insert")
     public int insertBizDataCollection(BizDataCollection bizDataCollection)
     {
         return bizDataCollectionMapper.insertBizDataCollection(bizDataCollection);
@@ -62,6 +65,7 @@ public class BizDataCollectionServiceImpl implements IBizDataCollectionService
      * @return 结果
      */
     @Override
+    @AutoFill("update")
     public int updateBizDataCollection(BizDataCollection bizDataCollection)
     {
         return bizDataCollectionMapper.updateBizDataCollection(bizDataCollection);

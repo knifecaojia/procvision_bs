@@ -85,6 +85,14 @@ public class CraftController extends BaseController
         return toAjax(craftService.insertCraft(craft));
     }
 
+    @PreAuthorize("@ss.hasPermi('craft:craft:add')")
+    @Log(title = "工艺信息", businessType = BusinessType.INSERT)
+    @PostMapping("/hand")
+    public AjaxResult addByHand(@RequestBody Craft craft)
+    {
+        return toAjax(craftService.insertCraftByHand(craft));
+    }
+
     /**
      * 修改工艺信息
      */

@@ -28,6 +28,7 @@ import com.imustsz.craft.domain.Process;
 import com.imustsz.craft.mapper.BizStepMapper;
 import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
+import com.imustsz.framework.aspectj.AutoFill;
 import com.imustsz.order.domain.dto.FinishedOrderDTO;
 import com.imustsz.order.domain.json.*;
 import com.imustsz.order.domain.vo.PageVO;
@@ -113,6 +114,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
      * @return 结果
      */
     @Override
+    @AutoFill("insert")
     public int insertBizWorkOrder(BizWorkOrder bizWorkOrder)
     {
         Craft craft = craftMapper.selectCraftByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
@@ -138,6 +140,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
      * @return 结果
      */
     @Override
+    @AutoFill("update")
     public int updateBizWorkOrder(BizWorkOrder bizWorkOrder)
     {
         return bizWorkOrderMapper.updateBizWorkOrder(bizWorkOrder);
@@ -176,6 +179,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
      */
     @Override
     @Transactional
+    @AutoFill("insert")
     public int importOrderFromMMo(WorkOrderTaskData workOrderTaskData) {
         int flag = 0;
         String productionOrderNo = workOrderTaskData.getProductionOrderNo();
@@ -193,6 +197,10 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
                 bizWorkOrder.setProdOrderNo(productionOrderNo);
                 bizWorkOrder.setCraftCode(craft.getCode());
                 bizWorkOrder.setCraftVersion(craft.getVersion());
+
+                BizWorkOrder existFlag = bizWorkOrderMapper.checkWorkOrderExist(order.getWorkOrderNo());
+                if (existFlag != null)
+                    throw new RuntimeException(String.format("工单：%s已存在", order.getWorkOrderNo()));
 
                 if(craft.getStatus() == 1 || craft.getStatus() == 2)
                     bizWorkOrder.setStatus(-2);
@@ -418,12 +426,14 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
 
     @Override
     @Transactional
+    @AutoFill("update")
     public int changeWorkOrderStatusByCode(String workOrderCode, String statusCode) {
         return bizWorkOrderMapper.changeWorkOrderStatusByCode(workOrderCode, statusCode);
     }
 
     @Override
     @Transactional
+    @AutoFill("update")
     public int updateBizWorkOrderResultByUpload(ResultDTO resultDTO) {
         BizWorkOrder bizWorkOrder = new BizWorkOrder();
         bizWorkOrder.setStatus(resultDTO.getResult_status());

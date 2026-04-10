@@ -78,4 +78,6 @@ public interface BizWorkOrderMapper
     List<BizWorkOrder> selectByCondition(TaskSelectDTO taskSelectDTO);
 
     BizWorkOrder selectBizWorkOrderByCodeAndProcessCode(@Param("workOrderCode") String workOrderCode, @Param("processCode") String processCode);
+
+    BizWorkOrder checkWorkOrderExist(String workOrderNo);
 }

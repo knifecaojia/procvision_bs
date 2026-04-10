@@ -71,7 +71,7 @@ public interface BizProcessRecordMapper
 
     List<UniqueRecordParams> selectBizProcessRecords(@Param("workOrderCode") String taskNo);
 
-    List<BizProcessRecord> selectBizProcessRecordByOrderAndProcessCode(@Param("workOrderCode") String workOrderCode, @Param("processCode") String processCode);
+    List<BizProcessRecord> selectBizProcessRecordByOrderAndProcessCode(@Param("workOrderCode") String workOrderCode, @Param("processCode") String processCode, @Param("stepStatus") Integer stepStatus);
 
     BizProcessRecord selectBizProcessRecordByOrderAndProcessCodeAndStepNo(@Param("workOrderCode") String workOrderCode, @Param("processCode") String processCode, @Param("stepNo") String stepNo);
 }

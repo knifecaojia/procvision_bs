@@ -90,3 +90,6 @@ minio:
   bucketName: dev
   # 预签名链接默认有效期（秒），7天
   presigned-url-expire: 604800
+
+webservice:
+  url: http://${WEBSERVICE_HOST}:${WEBSERVICE_PORT}/ws/product

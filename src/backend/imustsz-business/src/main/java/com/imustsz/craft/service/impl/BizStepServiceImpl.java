@@ -2,10 +2,9 @@ package com.imustsz.craft.service.impl;
 
 import java.util.List;
 
-import cn.hutool.json.JSON;
-import cn.hutool.json.JSONUtil;
 import com.imustsz.common.utils.bean.MinioUtils;
 import com.imustsz.craft.domain.dto.GuideInfoDTO;
+import com.imustsz.framework.aspectj.AutoFill;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.imustsz.craft.mapper.BizStepMapper;
@@ -73,6 +72,7 @@ public class BizStepServiceImpl implements IBizStepService
      * @return 结果
      */
     @Override
+    @AutoFill("insert")
     public int insertBizStep(BizStep bizStep)
     {
         return bizStepMapper.insertBizStep(bizStep);
@@ -86,6 +86,7 @@ public class BizStepServiceImpl implements IBizStepService
      */
     @Override
     @Transactional
+    @AutoFill("update")
     public int updateBizStep(BizStep bizStep) throws Exception {
         BizStep step = bizStepMapper.getStepById(bizStep.getId());
         if (step.getGuideMapUrl() != null && bizStep.getGuideMapUrl() != null){
@@ -123,6 +124,7 @@ public class BizStepServiceImpl implements IBizStepService
 
     @Override
     @Transactional
+    @AutoFill("update")
     public int bindImgAndInfo(GuideInfoDTO guideInfoDTO) {
         BizStep step = new BizStep();
         step.setId(guideInfoDTO.getId());

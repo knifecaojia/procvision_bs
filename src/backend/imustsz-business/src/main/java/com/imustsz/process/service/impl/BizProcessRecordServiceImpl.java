@@ -16,6 +16,7 @@ import com.imustsz.craft.domain.Process;
 import com.imustsz.craft.mapper.BizStepMapper;
 import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
+import com.imustsz.framework.aspectj.AutoFill;
 import com.imustsz.order.domain.BizWorkOrder;
 import com.imustsz.order.mapper.BizWorkOrderMapper;
 import com.imustsz.process.domain.UniqueRecordParams;
@@ -90,6 +91,7 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
      * @return 结果
      */
     @Override
+    @AutoFill("insert")
     public int insertBizProcessRecord(BizProcessRecord bizProcessRecord) {
         BizProcessRecord record = bizProcessRecordMapper.selectBizProcessRecordByTaskNoAndStepCode(bizProcessRecord.getWorkOrderCode(), bizProcessRecord.getStepCode());
         if (record != null) {
@@ -109,6 +111,7 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
      * @return 结果
      */
     @Override
+    @AutoFill("update")
     public int updateBizProcessRecord(BizProcessRecord bizProcessRecord) {
         return bizProcessRecordMapper.updateBizProcessRecord(bizProcessRecord);
     }
@@ -137,9 +140,10 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
 
     @Override
     @Transactional
+    @AutoFill("insert")
     public int insertBizProcessRecordByUpload(ProcessDTO processDTO) {
 
-        BizProcessRecord record = bizProcessRecordMapper.selectRecordByTaskNoAndProcessCodeAndStepCode(processDTO.getTask_no(), processDTO.getProcess_code(), processDTO.getStep_code());
+//        BizProcessRecord record = bizProcessRecordMapper.selectRecordByTaskNoAndProcessCodeAndStepCode(processDTO.getTask_no(), processDTO.getProcess_code(), processDTO.getStep_code());
 
         BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCodeAndProcessCode(processDTO.getTask_no(), processDTO.getProcess_code());
 
@@ -151,16 +155,16 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
 
         BizProcessRecord bizProcessRecord = getBizProcessRecord(processDTO, bizStep);
 
-        if (record == null)
+//        if (record == null)
             return bizProcessRecordMapper.insertBizProcessRecord(bizProcessRecord);
-        else {
-            bizProcessRecord.setId(record.getId());
-            return bizProcessRecordMapper.updateBizProcessRecord(bizProcessRecord);
-        }
+//        else {
+//            bizProcessRecord.setId(record.getId());
+//            return bizProcessRecordMapper.updateBizProcessRecord(bizProcessRecord);
+//        }
     }
 
     @Override
-    public List<ProcessRecordVO> getProcessRecordList(Integer status, String taskNo) {
+    public List<ProcessRecordVO> getProcessRecordList(Integer status, String taskNo, Integer recordStatus) {
 
         List<UniqueRecordParams> paramList = bizProcessRecordMapper.selectBizProcessRecords(taskNo);
 
@@ -170,7 +174,7 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
             processRecordVO.setProcessNo(param.getProcessCode());
             BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCodeAndProcessCode(param.getWorkOrderCode(), param.getProcessCode());
             processRecordVO.setTaskStatus(bizWorkOrder.getStatus());
-            List<BizProcessRecord> records = bizProcessRecordMapper.selectBizProcessRecordByOrderAndProcessCode(param.getWorkOrderCode(), param.getProcessCode());
+            List<BizProcessRecord> records = bizProcessRecordMapper.selectBizProcessRecordByOrderAndProcessCode(param.getWorkOrderCode(), param.getProcessCode(), recordStatus);
             processRecordVO.setProcessName(bizWorkOrder.getProcessName());
             processRecordVO.setStepInfo(records.stream().map(record -> {
                 StepRecordVO stepRecordVO = new StepRecordVO();
@@ -207,7 +211,7 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
         processRecordVO.setTaskStatus(bizWorkOrder.getStatus());
         processRecordVO.setProcessNo(bizWorkOrder.getProcessCode());
         processRecordVO.setProcessName(bizWorkOrder.getProcessName());
-        List<BizProcessRecord> bizProcessRecords = bizProcessRecordMapper.selectBizProcessRecordByOrderAndProcessCode(taskNo, processCode);
+        List<BizProcessRecord> bizProcessRecords = bizProcessRecordMapper.selectBizProcessRecordByOrderAndProcessCode(taskNo, processCode, null);
         List<StepRecordVO> stepRecordVOS = new ArrayList<>();
         bizProcessRecords.forEach(bizProcessRecord -> {
             StepRecordVO stepRecordVO = new StepRecordVO();

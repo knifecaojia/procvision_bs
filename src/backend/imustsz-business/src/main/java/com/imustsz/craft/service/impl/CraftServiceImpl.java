@@ -14,12 +14,15 @@ import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
 import com.imustsz.craft.service.ICraftService;
 import com.imustsz.craft.service.IProcessService;
+import com.imustsz.framework.aspectj.AutoFill;
 import com.imustsz.order.domain.BizWorkOrder;
 import com.imustsz.order.mapper.BizWorkOrderMapper;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -74,6 +77,7 @@ public class CraftServiceImpl implements ICraftService {
      * @return 结果
      */
     @Override
+    @AutoFill("insert")
     public int insertCraft(Craft craft) {
         return craftMapper.insertCraft(craft);
     }
@@ -85,6 +89,7 @@ public class CraftServiceImpl implements ICraftService {
      * @return 结果
      */
     @Override
+    @AutoFill("update")
     public int updateCraft(Craft craft) {
         return craftMapper.updateCraft(craft);
     }
@@ -121,6 +126,7 @@ public class CraftServiceImpl implements ICraftService {
      */
     @Override
     @Transactional
+    @AutoFill("insert")
     public void importCraftFromMMo(OrderProcessData CrackProcess) {
         ProcessInfo crackInfo = CrackProcess.getProcessInfo();
         List<Operation> operationList = CrackProcess.getOperationList();
@@ -173,6 +179,7 @@ public class CraftServiceImpl implements ICraftService {
     }
 
     @Override
+    @AutoFill("update")
     public void checkStatus(Long id) {
         boolean isNotAlg = false;
         boolean isNotGuide = false;
@@ -229,5 +236,16 @@ public class CraftServiceImpl implements ICraftService {
     public List<SelectorInfoVO> getSelectorOptions() {
 
         return List.of();
+    }
+
+    @Override
+    @Transactional
+    @AutoFill("insert")
+    public int insertCraftByHand(Craft craft) {
+        Date now = new Date();
+        String sb = "100" + DateFormatUtils.format(now, "MMdd") +
+                DateUtils.dateTimeNow().substring(DateUtils.dateTimeNow().length() - 2) + "C";
+        craft.setProductionOrderNo(sb);
+        return craftMapper.insertCraft(craft);
     }
 }

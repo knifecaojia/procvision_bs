@@ -76,6 +76,7 @@
 
       <el-table v-loading="loading" :data="craftList" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center"/>
+        <el-table-column label="生产订单号" align="center", prop="productionOrderNo"/>
         <el-table-column label="编码" align="center" prop="code"/>
         <el-table-column label="名称" align="center" prop="name"/>
         <el-table-column label="状态" align="center">

@@ -20,7 +20,7 @@ export function getCraft(id) {
 // 新增工艺信息
 export function addCraft(data) {
   return request({
-    url: '/craft/info',
+    url: '/craft/info/hand',
     method: 'post',
     data: data
   })

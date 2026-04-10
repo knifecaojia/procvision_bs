@@ -18,7 +18,8 @@ services:
       - SPRING_REDIS_HOST=redis
       - MINIO_HOST=192.168.80.132
       - MINIO_PORT=9000
-      - LD_LIBRARY_PATH=/usr/HikLib:$LD_LIBRARY_PATH
+      - WEBSERVICE_HOST=webservice
+      - WEBSERVICE_PORT=8083
     restart: unless-stopped
     depends_on:
       mysql:

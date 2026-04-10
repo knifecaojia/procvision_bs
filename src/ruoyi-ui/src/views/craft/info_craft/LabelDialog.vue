@@ -170,8 +170,9 @@ const loadCurrentStepData = async () => {
   if (!currentStepId.value) return;
 
   canvasLoading.value = true;
-  uploadFile.value = null; // 重置文件
   stepCount.value = 1;
+
+  // 仅清空标注框，保留 canvas 背景图（视觉保留）
   clearCanvasAnnotations();
 
   try {
@@ -181,29 +182,36 @@ const loadCurrentStepData = async () => {
     if (urlsStr) {
       let urls = [];
       try {
-        urls = JSON.parse(urlsStr); // 解析后端返回的 JSON 数组
+        urls = JSON.parse(urlsStr);
       } catch (e) {
-        urls = [urlsStr]; // 兼容旧版本只有一张图字符串的情况
+        urls = [urlsStr];
       }
 
-      const originalUrl = urls[0]; // 约定数组第一项是原图
+      const originalUrl = urls[0];
       if (originalUrl) {
         const fullUrl = originalUrl.startsWith('http') ? originalUrl : BASE_API + originalUrl;
-
-        // 使用 fetch 获取图片并转为 File，保证可以再次被上传
         const response = await fetch(fullUrl, { cache: "no-cache" });
         const blob = await response.blob();
         const file = new File([blob], `history_${Date.now()}.jpg`, { type: blob.type });
+        // loadFileToCanvas 内部会用新文件覆盖 uploadFile.value
         loadFileToCanvas(file);
       }
     } else {
-      // 当前工步没有原图，如果不是第一步，则默认保留上一步的底图(不清空 canvas 背景)
-      if (currentIndex.value === 0 && canvas.value) {
-        canvas.value.clear();
+      // 当前工步没有原图
+      if (currentIndex.value === 0) {
+        // 场景 A：如果是第一步且没图，说明没有任何基准，清空画布和文件
+        if (canvas.value) canvas.value.clear();
+        uploadFile.value = null;
+      } else {
+        // 场景 B：如果是第二步以后且没图，系统默认沿用上一张图。
+        // 【核心修复】：此时什么也不做！保留 canvas 背景的同时，也保留上一轮的 uploadFile.value
+        console.log("沿用上一工步的底图及文件对象");
       }
     }
   } catch (err) {
     console.error("加载工步历史图片失败", err);
+    // 发生异常时，如果是第一步也需清空防止卡死
+    if (currentIndex.value === 0) uploadFile.value = null;
   } finally {
     canvasLoading.value = false;
   }
@@ -363,6 +371,7 @@ const startLocalCamera = async () => {
 };
 
 const closeCameraDialog = () => { stopLocalCamera(); cameraVisible.value = false; };
+
 const stopLocalCamera = () => {
   if (mediaStream) { mediaStream.getTracks().forEach(track => track.stop()); mediaStream = null; }
   if (videoRef.value) videoRef.value.srcObject = null;

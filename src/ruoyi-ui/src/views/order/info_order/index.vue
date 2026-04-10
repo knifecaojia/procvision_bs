@@ -1,17 +1,17 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="98px">
-      <el-form-item label="项目号" prop="projectNo">
+<!--      <el-form-item label="项目号" prop="projectNo">-->
+<!--        <el-input-->
+<!--            v-model="queryParams.projectNo"-->
+<!--            placeholder="请输入项目号"-->
+<!--            clearable-->
+<!--            @keyup.enter="handleQuery"-->
+<!--        />-->
+<!--      </el-form-item>-->
+      <el-form-item label="订单编码" prop="workOrderCode">
         <el-input
-            v-model="queryParams.projectNo"
-            placeholder="请输入项目号"
-            clearable
-            @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="订单编码" prop="prodOrderNo">
-        <el-input
-            v-model="queryParams.prodOrderNo"
+            v-model="queryParams.workOrderCode"
             placeholder="请输入订单编码"
             clearable
             @keyup.enter="handleQuery"
@@ -192,30 +192,20 @@
     </el-dialog>
 
     <el-dialog title="任务详情" v-model="isWorkOrderInfoOpen" width="580px">
-      <el-form :model="workOrderInfo">
-        <el-row :gutter="15">
-          <el-col :span="12">
-            <el-form-item label="工序编码">
+      <el-descriptions size="large" :column="2" border>
+            <el-descriptions-item label="工序编码">
               {{ workOrderInfo.processCode }}
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="工序名称">
+            </el-descriptions-item>
+            <el-descriptions-item label="工序名称">
               {{ workOrderInfo.processName }}
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="装配工人编码">
+            </el-descriptions-item>
+            <el-descriptions-item label="装配工人编码">
               {{ workOrderInfo.workerCode }}
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="装配工人姓名">
+            </el-descriptions-item>
+            <el-descriptions-item label="装配工人姓名">
               {{ workOrderInfo.workerName }}
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
+            </el-descriptions-item>
+      </el-descriptions>
     </el-dialog>
 
     <el-dialog title="任务结果" v-model="isWorkOrderResult" width="600px">

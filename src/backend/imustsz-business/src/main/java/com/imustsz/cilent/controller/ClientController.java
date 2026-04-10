@@ -118,7 +118,7 @@ public class ClientController extends BaseController {
     public TableDataInfo getProcessList(RecordPageDTO recordPageDTO) {
         int pageNum = recordPageDTO.getPageNum() == null ? 1 : recordPageDTO.getPageNum();
         int pageSize = recordPageDTO.getPageSize() == null ? 10 : recordPageDTO.getPageSize();
-        List<ProcessRecordVO> processRecordVOList = bizProcessRecordService.getProcessRecordList(recordPageDTO.getStatus(), null);
+        List<ProcessRecordVO> processRecordVOList = bizProcessRecordService.getProcessRecordList(recordPageDTO.getStatus(), null, null);
         int i1 = pageNum*pageSize < processRecordVOList.size() ? (pageNum-1)*pageSize+pageSize : processRecordVOList.size();
         List<ProcessRecordVO> list1 = new ArrayList<>();
         for (int i = (pageNum-1)*pageSize; i < i1; i++){
