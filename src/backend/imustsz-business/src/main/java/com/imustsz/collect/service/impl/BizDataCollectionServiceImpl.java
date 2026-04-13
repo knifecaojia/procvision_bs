@@ -52,7 +52,6 @@ public class BizDataCollectionServiceImpl implements IBizDataCollectionService
      * @return 结果
      */
     @Override
-    @AutoFill("insert")
     public int insertBizDataCollection(BizDataCollection bizDataCollection)
     {
         return bizDataCollectionMapper.insertBizDataCollection(bizDataCollection);
@@ -65,7 +64,6 @@ public class BizDataCollectionServiceImpl implements IBizDataCollectionService
      * @return 结果
      */
     @Override
-    @AutoFill("update")
     public int updateBizDataCollection(BizDataCollection bizDataCollection)
     {
         return bizDataCollectionMapper.updateBizDataCollection(bizDataCollection);

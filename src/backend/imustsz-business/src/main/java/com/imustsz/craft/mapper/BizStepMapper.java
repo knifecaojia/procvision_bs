@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.imustsz.cilent.domain.vo.StepVO;
 import com.imustsz.craft.domain.BizStep;
+import com.imustsz.framework.aspectj.AutoFill;
 import org.apache.ibatis.annotations.Param;
 
 /**
@@ -36,6 +37,7 @@ public interface BizStepMapper
      * @param bizStep 工步信息
      * @return 结果
      */
+    @AutoFill("insert")
     public int insertBizStep(BizStep bizStep);
 
     /**
@@ -44,6 +46,7 @@ public interface BizStepMapper
      * @param bizStep 工步信息
      * @return 结果
      */
+    @AutoFill("update")
     public int updateBizStep(BizStep bizStep);
 
     /**

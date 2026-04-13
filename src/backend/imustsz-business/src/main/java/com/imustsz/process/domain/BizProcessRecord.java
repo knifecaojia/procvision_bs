@@ -48,10 +48,30 @@ public class BizProcessRecord extends BaseEntity
     @Excel(name = "拓展数据")
     private String data;
 
+    private Integer algResult;
+
+    private String ngReason;
+
     /** 提交时间 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "提交时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date submitTime;
+
+    public Integer getAlgResult() {
+        return algResult;
+    }
+
+    public void setAlgResult(Integer algResult) {
+        this.algResult = algResult;
+    }
+
+    public String getNgReason() {
+        return ngReason;
+    }
+
+    public void setNgReason(String ngReason) {
+        this.ngReason = ngReason;
+    }
 
     public String getProcessCode() {
         return processCode;

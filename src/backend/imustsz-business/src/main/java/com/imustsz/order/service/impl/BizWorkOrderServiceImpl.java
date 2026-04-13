@@ -77,6 +77,12 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
     @Value("${webservice.url}")
     private String webserviceUrl;
 
+    @Value("${webservice.targetNamespace}")
+    private String targetNamespace;
+
+    @Value("${webservice.serviceName}")
+    private String serviceName;
+
     private final Logger log =  LoggerFactory.getLogger(BizWorkOrderServiceImpl.class.getName());
 
     /**
@@ -114,7 +120,6 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
      * @return 结果
      */
     @Override
-    @AutoFill("insert")
     public int insertBizWorkOrder(BizWorkOrder bizWorkOrder)
     {
         Craft craft = craftMapper.selectCraftByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
@@ -140,7 +145,6 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
      * @return 结果
      */
     @Override
-    @AutoFill("update")
     public int updateBizWorkOrder(BizWorkOrder bizWorkOrder)
     {
         return bizWorkOrderMapper.updateBizWorkOrder(bizWorkOrder);
@@ -179,7 +183,6 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
      */
     @Override
     @Transactional
-    @AutoFill("insert")
     public int importOrderFromMMo(WorkOrderTaskData workOrderTaskData) {
         int flag = 0;
         String productionOrderNo = workOrderTaskData.getProductionOrderNo();
@@ -335,9 +338,9 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
 
     // TODO 照片回传
     @Override
-    public int uploadToMMO(FinishedOrderDTO finishedOrderDTO) {
-        BizWorkOrder workOrder = bizWorkOrderMapper.selectBizWorkOrderByCodeAndProcessCode(finishedOrderDTO.getWorkOrderCode(), finishedOrderDTO.getProcessCode());
-        BizProcessRecord record = bizProcessRecordMapper.selectBizProcessRecordByOrderAndProcessCodeAndStepNo(workOrder.getWorkOrderCode(), workOrder.getProcessCode(), finishedOrderDTO.getStepNo());
+    public int uploadToMOM(FinishedOrderDTO finishedOrderDTO) {
+//        BizWorkOrder workOrder = bizWorkOrderMapper.selectBizWorkOrderByCodeAndProcessCode(finishedOrderDTO.getWorkOrderCode(), finishedOrderDTO.getProcessCode());
+//        BizProcessRecord record = bizProcessRecordMapper.selectBizProcessRecordByOrderAndProcessCodeAndStepNo(workOrder.getWorkOrderCode(), workOrder.getProcessCode(), finishedOrderDTO.getStepNo());
 
         //构建内层JSON
         JSONObject innerJson = new JSONObject();
@@ -347,8 +350,8 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
         batchInfo.put("operation_no", finishedOrderDTO.getProcessCode());
         batchInfo.put("total_count", 1);
         batchInfo.put("upload_time", DateUtil.now().replace(" ", "T"));
-        batchInfo.put("worker_name", workOrder.getWorkerName());
-        batchInfo.put("worker_code", workOrder.getWorkerCode());
+        batchInfo.put("worker_name", finishedOrderDTO.getWorkerName());
+        batchInfo.put("worker_code", finishedOrderDTO.getWorkerCode());
         batchInfo.put("system_Id", "VGS");
 
         innerJson.put("batch_info", batchInfo);
@@ -357,7 +360,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
         for (int i = 0; i < 1; i++) {
             String base64Image = "";
 
-            try (InputStream stream = minioUtils.getFileInputStream(bucketName, record.getImagePath())){
+            try (InputStream stream = minioUtils.getFileInputStream(bucketName, finishedOrderDTO.getObjectName())){
                 base64Image = Base64.encode(IoUtil.readBytes(stream));
             } catch (Exception e) {
                 log.error("从 MinIO 读取图片失败", e);
@@ -371,7 +374,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
             imageObj.put("image_no", fileName);
             imageObj.put("image_base64", base64Image);
             imageObj.put("image_format", "png");
-            imageObj.put("image_desc", "工序:" + finishedOrderDTO.getProcessCode() + "-" + finishedOrderDTO.getProcessName() + "步骤:" + finishedOrderDTO.getStepNo() + "-" + finishedOrderDTO.getStepName());
+            imageObj.put("image_desc", "工序:" + finishedOrderDTO.getProcessCode() + "-" + finishedOrderDTO.getProcessName() + "，步骤:" + finishedOrderDTO.getStepNo() + "-" + finishedOrderDTO.getStepName());
 
             imageList.add(imageObj);
         }
@@ -383,7 +386,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
         JSONObject rootJson = new JSONObject();
         rootJson.put("oriSysName", "视觉引导系统");
         rootJson.put("oriSysNum", "VGS");
-        rootJson.put("uniqueFlag", "1000001");
+        rootJson.put("uniqueFlag", "1000002");
         rootJson.put("timestamp", String.valueOf(System.currentTimeMillis()));
 
         JSONArray outerFileDataArray = new JSONArray();
@@ -398,12 +401,12 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
         log.info("构建完成的外层 JSON: {}", finalJsonString);
 
         //构建 SOAP XML 并发送
-        String soapXml = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:web=\"http://webservice.example.com/\">\n" +
+        String soapXml = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:if=\"" + targetNamespace + "\">\n" +
                 "   <soapenv:Header/>\n" +
                 "   <soapenv:Body>\n" +
-                "      <web:yourMethodName>\n" +
-                "         <data><![CDATA[" + finalJsonString + "]]></data>\n" +
-                "      </web:yourMethodName>\n" +
+                "      <if:" + serviceName +">\n" +
+                "         <if:sContent><![CDATA[" + finalJsonString + "]]></if:sContent>\n" +
+                "      </if:"+ serviceName +">\n" +
                 "   </soapenv:Body>\n" +
                 "</soapenv:Envelope>";
 
@@ -411,7 +414,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
             String resultXml = HttpRequest.post(webserviceUrl)
                     .header("Content-Type", "text/xml;charset=UTF-8")
                     .body(soapXml)
-                    .timeout(60000) // 多张图片 Base64 会很大，超时时间放宽到 60 秒
+                    .timeout(60000)
                     .execute()
                     .body();
 
@@ -426,14 +429,12 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
 
     @Override
     @Transactional
-    @AutoFill("update")
     public int changeWorkOrderStatusByCode(String workOrderCode, String statusCode) {
         return bizWorkOrderMapper.changeWorkOrderStatusByCode(workOrderCode, statusCode);
     }
 
     @Override
     @Transactional
-    @AutoFill("update")
     public int updateBizWorkOrderResultByUpload(ResultDTO resultDTO) {
         BizWorkOrder bizWorkOrder = new BizWorkOrder();
         bizWorkOrder.setStatus(resultDTO.getResult_status());

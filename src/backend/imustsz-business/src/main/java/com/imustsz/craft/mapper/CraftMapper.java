@@ -1,6 +1,7 @@
 package com.imustsz.craft.mapper;
 
 import com.imustsz.craft.domain.Craft;
+import com.imustsz.framework.aspectj.AutoFill;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -35,6 +36,7 @@ public interface CraftMapper
      * @param craft 工艺信息
      * @return 结果
      */
+    @AutoFill("insert")
     public int insertCraft(Craft craft);
 
     /**
@@ -43,6 +45,7 @@ public interface CraftMapper
      * @param craft 工艺信息
      * @return 结果
      */
+    @AutoFill("update")
     public int updateCraft(Craft craft);
 
     /**
@@ -63,6 +66,7 @@ public interface CraftMapper
 
     Craft selectCraftByCodeAndVersion(@Param("code") String code, @Param("version") String version);
 
+    @AutoFill("update")
     int changeCraftStatus(@Param("id") Long id, @Param("status") Integer status);
 
     Craft selectCraftByCode(String code);

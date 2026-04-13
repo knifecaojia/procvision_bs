@@ -198,8 +198,8 @@ public class BizWorkOrderController extends BaseController
         return success(workOrderTaskData);
     }
 
-    @PostMapping("/uploadToMMO")
+    @PostMapping("/uploadToMOM")
     public AjaxResult getOrderByCode(@RequestBody FinishedOrderDTO finishedOrderDTO) throws Exception {
-        return toAjax(bizWorkOrderService.uploadToMMO(finishedOrderDTO));
+        return toAjax(bizWorkOrderService.uploadToMOM(finishedOrderDTO));
     }
 }

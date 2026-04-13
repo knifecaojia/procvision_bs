@@ -5,6 +5,7 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
 import java.util.Date;
@@ -34,8 +35,14 @@ public class AutoFillAspect {
     }
 
     private void setField(Object obj, String fieldName, Object value) throws Exception {
-        Field field = obj.getClass().getSuperclass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(obj, value);
+        Field field = ReflectionUtils.findField(obj.getClass(), fieldName);
+        if (field != null) {
+            // 取消 Java 语言访问检查以访问 private 变量
+            ReflectionUtils.makeAccessible(field);
+            // 赋值
+            ReflectionUtils.setField(field, obj, value);
+        } else {
+             System.out.println("警告: 类 " + obj.getClass().getName() + " 中没有找到字段 " + fieldName);
+        }
     }
 }

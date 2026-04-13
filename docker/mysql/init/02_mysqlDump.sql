@@ -481,6 +481,8 @@ CREATE TABLE `biz_process_record` (
   `step_name` varchar(50) DEFAULT NULL COMMENT '工步名称',
   `step_status` tinyint DEFAULT NULL COMMENT '工步状态(1未完成，2已完成)',
   `image_path` varchar(255) DEFAULT NULL COMMENT 'Minio Key',
+  `alg_result` tinyint DEFAULT NULL COMMENT '算法执行结果(0为ok，1为ng，-1为算法执行失败)',
+  `ng_reason` varchar(255) DEFAULT NULL COMMENT 'ng原因',
   `data` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci COMMENT '算法返回的数据(json)',
   `submit_time` datetime DEFAULT NULL COMMENT '提交时间',
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',

@@ -8,7 +8,6 @@ import com.imustsz.cilent.domain.dto.WorkOrderProperties;
 import com.imustsz.cilent.domain.vo.StepVO;
 import com.imustsz.order.domain.BizWorkOrder;
 import com.imustsz.order.domain.dto.FinishedOrderDTO;
-import com.imustsz.order.domain.json.Task;
 import com.imustsz.order.domain.json.WorkOrderTaskData;
 import com.imustsz.order.domain.vo.PageVO;
 
@@ -82,5 +81,5 @@ public interface IBizWorkOrderService
 
     PageVO selectByCondition(TaskSelectDTO taskSelectDTO);
 
-    int uploadToMMO(FinishedOrderDTO finishedOrderDTO) throws Exception;
+    int uploadToMOM(FinishedOrderDTO finishedOrderDTO) throws Exception;
 }

@@ -93,3 +93,5 @@ minio:
 
 webservice:
   url: http://${WEBSERVICE_HOST}:${WEBSERVICE_PORT}/ws/product
+  targetNamespace: ${TARGET_NAMESPACE}
+  serviceName: ${SERVICE_NAME}

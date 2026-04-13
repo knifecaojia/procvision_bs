@@ -77,7 +77,6 @@ public class CraftServiceImpl implements ICraftService {
      * @return 结果
      */
     @Override
-    @AutoFill("insert")
     public int insertCraft(Craft craft) {
         return craftMapper.insertCraft(craft);
     }
@@ -89,7 +88,6 @@ public class CraftServiceImpl implements ICraftService {
      * @return 结果
      */
     @Override
-    @AutoFill("update")
     public int updateCraft(Craft craft) {
         return craftMapper.updateCraft(craft);
     }
@@ -126,7 +124,6 @@ public class CraftServiceImpl implements ICraftService {
      */
     @Override
     @Transactional
-    @AutoFill("insert")
     public void importCraftFromMMo(OrderProcessData CrackProcess) {
         ProcessInfo crackInfo = CrackProcess.getProcessInfo();
         List<Operation> operationList = CrackProcess.getOperationList();
@@ -179,7 +176,6 @@ public class CraftServiceImpl implements ICraftService {
     }
 
     @Override
-    @AutoFill("update")
     public void checkStatus(Long id) {
         boolean isNotAlg = false;
         boolean isNotGuide = false;
@@ -240,7 +236,6 @@ public class CraftServiceImpl implements ICraftService {
 
     @Override
     @Transactional
-    @AutoFill("insert")
     public int insertCraftByHand(Craft craft) {
         Date now = new Date();
         String sb = "100" + DateFormatUtils.format(now, "MMdd") +

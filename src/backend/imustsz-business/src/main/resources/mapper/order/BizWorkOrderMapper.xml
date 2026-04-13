@@ -261,8 +261,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where work_order_code = #{workOrderCode} and process_code = #{processCode}
     </select>
 
-    <delete id="checkWorkOrderExist">
+    <select id="checkWorkOrderExist" resultMap="BizWorkOrderResult">
         <include refid="selectBizWorkOrderVo" />
         where work_order_code = #{workOrderNo}
-    </delete>
+    </select>
 </mapper>

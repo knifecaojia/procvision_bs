@@ -2,6 +2,7 @@ package com.imustsz.craft.mapper;
 
 import com.imustsz.craft.domain.Process;
 import com.imustsz.craft.domain.dto.ProcessCodeAndNameVO;
+import com.imustsz.framework.aspectj.AutoFill;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -36,6 +37,7 @@ public interface ProcessMapper
      * @param process 工序信息
      * @return 结果
      */
+    @AutoFill("insert")
     public int insertProcess(Process process);
 
     /**
@@ -44,6 +46,7 @@ public interface ProcessMapper
      * @param process 工序信息
      * @return 结果
      */
+    @AutoFill("update")
     public int updateProcess(Process process);
 
     /**
@@ -68,6 +71,7 @@ public interface ProcessMapper
 
     Long[] getDelIdsByCraftId(Long craftId);
 
+    @AutoFill("update")
     int bindAlg(@Param("id") Long id, @Param("algId") Long algId);
 
     List<Process> selectProcessByCraftId(Long craftId);

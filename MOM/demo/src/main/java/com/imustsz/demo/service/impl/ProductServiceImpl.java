@@ -24,9 +24,9 @@ public class ProductServiceImpl implements ProductService {
             ObjectMapper mapper = new ObjectMapper();
             MesData data = mapper.readValue(sContent, MesData.class);
 
-            if (data.getUniqueFlag().equals("1000001")){
+            if (data.getUniqueFlag().equals(ConfigUtil.get("unique.flag.craft"))){
                 targetUrl = ConfigUtil.get("target.address.craft");
-            }else if (data.getUniqueFlag().equals("1000002"))
+            }else if (data.getUniqueFlag().equals(ConfigUtil.get("unique.flag.order")))
                 targetUrl = ConfigUtil.get("target.address.order");
             else
                 return "ERROR: 无效的标识";

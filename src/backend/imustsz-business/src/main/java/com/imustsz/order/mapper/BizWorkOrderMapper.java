@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.imustsz.cilent.domain.dto.TaskSelectDTO;
 import com.imustsz.cilent.domain.vo.WorkOrderVO;
+import com.imustsz.framework.aspectj.AutoFill;
 import com.imustsz.order.domain.BizWorkOrder;
 import org.apache.ibatis.annotations.Param;
 
@@ -37,6 +38,7 @@ public interface BizWorkOrderMapper
      * @param bizWorkOrder 工单
      * @return 结果
      */
+    @AutoFill("insert")
     public int insertBizWorkOrder(BizWorkOrder bizWorkOrder);
 
     /**
@@ -45,6 +47,7 @@ public interface BizWorkOrderMapper
      * @param bizWorkOrder 工单
      * @return 结果
      */
+    @AutoFill("update")
     public int updateBizWorkOrder(BizWorkOrder bizWorkOrder);
 
     /**
@@ -65,10 +68,12 @@ public interface BizWorkOrderMapper
 
     List<WorkOrderVO> getWorkOrderVOList(Integer status);
 
+    @AutoFill("update")
     int changeWorkOrderStatusByCode(@Param("workOrderCode") String workOrderCode, @Param("statusCode") String statusCode);
 
     BizWorkOrder selectBizWorkOrderByCode(@Param("workOrderCode") String workOrderCode);
 
+    @AutoFill("update")
     int updateBizWorkOrderByCode(BizWorkOrder bizWorkOrder);
 
     List<BizWorkOrder> selectWorkOrderByCraft(@Param("craftCode") String craftCode, @Param("craftVersion") String craftVersion);

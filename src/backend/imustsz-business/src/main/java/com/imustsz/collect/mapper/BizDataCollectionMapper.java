@@ -2,6 +2,7 @@ package com.imustsz.collect.mapper;
 
 import java.util.List;
 import com.imustsz.collect.domain.BizDataCollection;
+import com.imustsz.framework.aspectj.AutoFill;
 
 /**
  * 数据采集Mapper接口
@@ -33,6 +34,7 @@ public interface BizDataCollectionMapper
      * @param bizDataCollection 数据采集
      * @return 结果
      */
+    @AutoFill("insert")
     public int insertBizDataCollection(BizDataCollection bizDataCollection);
 
     /**
@@ -41,6 +43,7 @@ public interface BizDataCollectionMapper
      * @param bizDataCollection 数据采集
      * @return 结果
      */
+    @AutoFill("update")
     public int updateBizDataCollection(BizDataCollection bizDataCollection);
 
     /**

@@ -66,7 +66,6 @@ public class ProcessServiceImpl implements IProcessService
      * @return 结果
      */
     @Override
-    @AutoFill("insert")
     public int insertProcess(Process process)
     {
         return processMapper.insertProcess(process);
@@ -79,7 +78,6 @@ public class ProcessServiceImpl implements IProcessService
      * @return 结果
      */
     @Override
-    @AutoFill("update")
     public int updateProcess(Process process)
     {
         return processMapper.updateProcess(process);
@@ -133,7 +131,6 @@ public class ProcessServiceImpl implements IProcessService
     }
 
     @Override
-    @AutoFill("update")
     public int bindAlg(Long id, Long algId) {
         return processMapper.bindAlg(id, algId);
     }

@@ -1,6 +1,8 @@
 package com.imustsz.process.mapper;
 
 import java.util.List;
+
+import com.imustsz.framework.aspectj.AutoFill;
 import com.imustsz.process.domain.BizProcessRecord;
 import com.imustsz.process.domain.UniqueRecordParams;
 import org.apache.ibatis.annotations.Param;
@@ -35,6 +37,7 @@ public interface BizProcessRecordMapper
      * @param bizProcessRecord 过程记录
      * @return 结果
      */
+    @AutoFill("insert")
     public int insertBizProcessRecord(BizProcessRecord bizProcessRecord);
 
     /**
@@ -43,6 +46,7 @@ public interface BizProcessRecordMapper
      * @param bizProcessRecord 过程记录
      * @return 结果
      */
+    @AutoFill("update")
     public int updateBizProcessRecord(BizProcessRecord bizProcessRecord);
 
     /**

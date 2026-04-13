@@ -2,9 +2,9 @@ package com.imustsz.process.service.impl;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.alibaba.fastjson2.JSONObject;
 import com.imustsz.cilent.domain.dto.ProcessDTO;
 import com.imustsz.cilent.domain.vo.ProcessRecordVO;
 import com.imustsz.cilent.domain.vo.StepRecordVO;
@@ -18,7 +18,10 @@ import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
 import com.imustsz.framework.aspectj.AutoFill;
 import com.imustsz.order.domain.BizWorkOrder;
+import com.imustsz.order.domain.dto.FinishedOrderDTO;
 import com.imustsz.order.mapper.BizWorkOrderMapper;
+import com.imustsz.order.service.impl.BizWorkOrderServiceImpl;
+import com.imustsz.process.domain.AlgResultJson;
 import com.imustsz.process.domain.UniqueRecordParams;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +56,9 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
 
     @Autowired
     private MinioUtils minioUtils;
+
+    @Autowired
+    private BizWorkOrderServiceImpl bizWorkOrderService;
 
     /**
      * 查询过程记录
@@ -91,7 +97,6 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
      * @return 结果
      */
     @Override
-    @AutoFill("insert")
     public int insertBizProcessRecord(BizProcessRecord bizProcessRecord) {
         BizProcessRecord record = bizProcessRecordMapper.selectBizProcessRecordByTaskNoAndStepCode(bizProcessRecord.getWorkOrderCode(), bizProcessRecord.getStepCode());
         if (record != null) {
@@ -111,7 +116,6 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
      * @return 结果
      */
     @Override
-    @AutoFill("update")
     public int updateBizProcessRecord(BizProcessRecord bizProcessRecord) {
         return bizProcessRecordMapper.updateBizProcessRecord(bizProcessRecord);
     }
@@ -140,7 +144,6 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
 
     @Override
     @Transactional
-    @AutoFill("insert")
     public int insertBizProcessRecordByUpload(ProcessDTO processDTO) {
 
 //        BizProcessRecord record = bizProcessRecordMapper.selectRecordByTaskNoAndProcessCodeAndStepCode(processDTO.getTask_no(), processDTO.getProcess_code(), processDTO.getStep_code());
@@ -155,12 +158,33 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
 
         BizProcessRecord bizProcessRecord = getBizProcessRecord(processDTO, bizStep);
 
-//        if (record == null)
-            return bizProcessRecordMapper.insertBizProcessRecord(bizProcessRecord);
-//        else {
-//            bizProcessRecord.setId(record.getId());
-//            return bizProcessRecordMapper.updateBizProcessRecord(bizProcessRecord);
-//        }
+        AlgResultJson algResultJson = JSONObject.parseObject(processDTO.getAlgo_result(), AlgResultJson.class);
+
+        if ("OK".equals(algResultJson.getStatus())) {
+            if ("OK".equals(algResultJson.getData().getResult_status())) {
+                bizProcessRecord.setAlgResult(0);
+                FinishedOrderDTO finishedOrderDTO = new FinishedOrderDTO();
+                finishedOrderDTO.setWorkOrderCode(processDTO.getTask_no());
+                finishedOrderDTO.setWorkerCode(bizWorkOrder.getWorkerCode());
+                finishedOrderDTO.setWorkerName(bizWorkOrder.getWorkerName());
+                finishedOrderDTO.setProcessCode(processDTO.getProcess_code());
+                finishedOrderDTO.setProcessName(process.getName());
+                finishedOrderDTO.setStepNo(processDTO.getStep_code());
+                finishedOrderDTO.setStepName(bizProcessRecord.getStepName());
+                finishedOrderDTO.setObjectName(processDTO.getObject_name());
+                bizProcessRecordMapper.insertBizProcessRecord(bizProcessRecord);
+                bizWorkOrderService.uploadToMOM(finishedOrderDTO);
+            }else {
+                bizProcessRecord.setAlgResult(1);
+                bizProcessRecord.setNgReason(algResultJson.getData().getNg_reason());
+                bizProcessRecordMapper.insertBizProcessRecord(bizProcessRecord);
+            }
+        }else {
+            bizProcessRecord.setAlgResult(-1);
+            bizProcessRecordMapper.insertBizProcessRecord(bizProcessRecord);
+        }
+
+        return 1;
     }
 
     @Override
@@ -233,6 +257,7 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
 
     @NotNull
     private static BizProcessRecord getBizProcessRecord(ProcessDTO processDTO, BizStep bizStep) {
+
         BizProcessRecord bizProcessRecord = new BizProcessRecord();
         bizProcessRecord.setWorkOrderCode(processDTO.getTask_no());
         bizProcessRecord.setProcessCode(processDTO.getProcess_code());
@@ -242,6 +267,7 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
         bizProcessRecord.setImagePath(processDTO.getObject_name());
         bizProcessRecord.setData(processDTO.getAlgo_result());
         bizProcessRecord.setSubmitTime(DateUtils.getNowDate());
+
         return bizProcessRecord;
     }
 }

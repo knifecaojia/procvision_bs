@@ -72,7 +72,6 @@ public class BizStepServiceImpl implements IBizStepService
      * @return 结果
      */
     @Override
-    @AutoFill("insert")
     public int insertBizStep(BizStep bizStep)
     {
         return bizStepMapper.insertBizStep(bizStep);
@@ -86,7 +85,6 @@ public class BizStepServiceImpl implements IBizStepService
      */
     @Override
     @Transactional
-    @AutoFill("update")
     public int updateBizStep(BizStep bizStep) throws Exception {
         BizStep step = bizStepMapper.getStepById(bizStep.getId());
         if (step.getGuideMapUrl() != null && bizStep.getGuideMapUrl() != null){
@@ -124,7 +122,6 @@ public class BizStepServiceImpl implements IBizStepService
 
     @Override
     @Transactional
-    @AutoFill("update")
     public int bindImgAndInfo(GuideInfoDTO guideInfoDTO) {
         BizStep step = new BizStep();
         step.setId(guideInfoDTO.getId());

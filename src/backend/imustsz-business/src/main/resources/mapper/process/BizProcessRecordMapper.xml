@@ -11,6 +11,8 @@
         <result property="stepName" column="step_name"/>
         <result property="stepStatus" column="step_status"/>
         <result property="imagePath" column="image_path"/>
+        <result property="algResult" column="alg_result"/>
+        <result property="ngReason" column="ng_reason"/>
         <result property="data" column="data"/>
         <result property="submitTime" column="submit_time"/>
     </resultMap>
@@ -28,6 +30,8 @@
                step_name,
                step_status,
                image_path,
+               alg_result,
+               ng_reason,
                data,
                submit_time
         from biz_process_record
@@ -56,6 +60,12 @@
             </if>
             <if test="data != null  and data != ''">
                 and data = #{data}
+            </if>
+            <if test="algResult != null">
+                and alg_result = #{algResult}
+            </if>
+            <if test="ngReason != null  and ngReason != ''">
+                and ng_reason = #{ngReason}
             </if>
             <if test="submitTime != null ">
                 and submit_time = #{submitTime}
@@ -104,6 +114,12 @@
             <if test="imagePath != null">
                 image_path,
             </if>
+            <if test="algResult != null">
+                alg_result,
+            </if>
+            <if test="ngReason != null">
+                ng_reason,
+            </if>
             <if test="data != null">
                 data,
             </if>
@@ -144,6 +160,12 @@
             </if>
             <if test="imagePath != null">
                 #{imagePath},
+            </if>
+            <if test="algResult != null">
+                #{algResult},
+            </if>
+            <if test="ngReason != null">
+                #{ngReason},
             </if>
             <if test="data != null">
                 #{data},
@@ -189,6 +211,12 @@
             </if>
             <if test="imagePath != null">
                 image_path = #{imagePath},
+            </if>
+            <if test="algResult != null">
+                alg_result,
+            </if>
+            <if test="ngReason != null">
+                ng_reason,
             </if>
             <if test="data != null">
                 data = #{data},
