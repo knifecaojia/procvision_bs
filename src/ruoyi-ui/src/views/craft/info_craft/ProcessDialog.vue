@@ -43,18 +43,15 @@
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="250px">
           <template #default="scope">
-            <el-button link type="primary" icon="link" @click="showBindAlg(scope.row)"
-                       >
+            <el-button link type="primary" icon="link" @click="showBindAlg(scope.row)">
               绑定算法
             </el-button>
-            <el-button link type="primary" icon="Edit" @click="handleProcessUpdate(scope.row)"
-                       >
+            <el-button link type="primary" icon="Edit" @click="handleProcessUpdate(scope.row)">
               修改
             </el-button>
-            <el-button link type="primary" icon="Delete" @click="handleProcessDelete(scope.row)"
-                       >删除
+            <el-button link type="primary" icon="Delete" @click="handleProcessDelete(scope.row)">
+              删除
             </el-button>
-<!--            <el-button link type="primary" icon="pointer" @click="handleProcessDelete(scope.row)">查看说明</el-button>-->
           </template>
         </el-table-column>
       </el-table>
@@ -68,20 +65,63 @@
       />
     </el-dialog>
 
-    <StepDialog v-model="stepOpen" :stepOpen="stepOpen" :processId="tempProcessId" :craftId="props.craftId"></StepDialog>
+    <StepDialog v-model="stepOpen" :stepOpen="stepOpen" :processId="tempProcessId" :craftId="props.craftId" :tempCraftType="props.tempCraftType"></StepDialog>
 
-    <!-- 添加或修改工序信息对话框 -->
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="850px" append-to-body>
       <el-form ref="processRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="编码" prop="code">
-          <el-input v-model="form.code" placeholder="请输入编码"/>
-        </el-form-item>
-        <el-form-item label="名称" prop="code">
-          <el-input v-model="form.name" placeholder="请输入名称"/>
-        </el-form-item>
+        <el-row>
+          <el-col :span="12">
+            <el-form-item label="编码" prop="code">
+              <el-input v-model="form.code" placeholder="请输入编码"/>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="名称" prop="name">
+              <el-input v-model="form.name" placeholder="请输入名称"/>
+            </el-form-item>
+          </el-col>
+        </el-row>
         <el-form-item label="说明" prop="desc">
           <el-input v-model="form.desc" type="textarea" placeholder="请输入内容"/>
         </el-form-item>
+
+        <el-divider content-position="left">物料信息</el-divider>
+        <el-row class="mb8">
+          <el-button type="primary" icon="Plus" size="small" @click="handleAddMaterial">添加物料</el-button>
+        </el-row>
+        <el-table :data="materialList" border size="small" style="width: 100%; margin-bottom: 20px;">
+          <el-table-column label="物料号" align="center" width="140">
+            <template #default="scope">
+              <el-input v-model="scope.row.material_no" placeholder="请输入物料号" />
+            </template>
+          </el-table-column>
+          <el-table-column label="物料名称" align="center" width="160">
+            <template #default="scope">
+              <el-input v-model="scope.row.material_name" placeholder="请输入物料名称" />
+            </template>
+          </el-table-column>
+          <el-table-column label="数量" align="center" width="120">
+            <template #default="scope">
+              <el-input-number v-model="scope.row.material_quantity" :min="0" :controls="false" style="width: 100%" placeholder="数量" />
+            </template>
+          </el-table-column>
+          <el-table-column label="单位" align="center" width="100">
+            <template #default="scope">
+              <el-input v-model="scope.row.material_unit" placeholder="如: 件" />
+            </template>
+          </el-table-column>
+          <el-table-column label="防错标识" align="center">
+            <template #default="scope">
+              <el-input v-model="scope.row.error_prevent_mark" placeholder="请输入防错标识" />
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" align="center" width="80" fixed="right">
+            <template #default="scope">
+              <el-button type="danger" icon="Delete" link @click="handleDeleteMaterial(scope.$index)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -92,7 +132,7 @@
     </el-dialog>
 
     <el-dialog title="绑定算法" v-model="bindAlgShow" width="500px" append-to-body>
-      <el-select clearable v-model="selectedAlgId">
+      <el-select clearable v-model="selectedAlgId" style="width: 100%">
         <el-option v-for="item in algList" :key="item.id" :label="item.name + ' —— Ver：' + item.version" :value="item.id">
         </el-option>
       </el-select>
@@ -105,6 +145,7 @@
 </template>
 
 <script setup name="Process">
+import { ref, reactive, toRefs, watch, onMounted, getCurrentInstance } from 'vue'
 import {
   addProcess,
   bindProcessAlgorithm,
@@ -131,6 +172,9 @@ const single = ref(true)
 const tempProcessId = ref(null)
 const bindAlgShow = ref(false)
 const selectedAlgId = ref(null)
+
+// 新增：物料列表的数据源
+const materialList = ref([])
 
 const data = reactive({
   algList: [],
@@ -161,10 +205,30 @@ const props = defineProps({
   processOpen: {
     type: Boolean,
     default: false
+  },
+  tempCraftType: {
+    type: String,
+    default: null
   }
 })
 
 const emit = defineEmits(['check-status'])
+
+/** 新增物料行 */
+function handleAddMaterial() {
+  materialList.value.push({
+    materialNo: undefined,
+    materialName: undefined,
+    materialQuantity: undefined,
+    materialUnit: undefined,
+    errorPreventMark: undefined
+  })
+}
+
+/** 删除物料行 */
+function handleDeleteMaterial(index) {
+  materialList.value.splice(index, 1)
+}
 
 /** 新增按钮操作 */
 function handleAdd() {
@@ -190,9 +254,12 @@ function reset() {
     id: null,
     code: null,
     name: null,
+    processMaterialInfo: null,
     desc: null
   }
-  proxy.resetForm("craftRef")
+  materialList.value = [] // 重置时清空物料列表
+  // 修正：表单的ref是 processRef，原代码写成了 craftRef 会导致报错或无法重置
+  proxy.resetForm("processRef")
 }
 
 function onClose() {
@@ -219,10 +286,18 @@ function handleSelectionChange(selection) {
 
 function handleProcessUpdate(row) {
   reset()
-  open.value = true
   const _id = row.id || ids.value
   getProcess(_id).then(response => {
     form.value = response.data
+    // 【核心】回显时：将 JSON 字符串还原成数组
+    if (form.value.processMaterialInfo) {
+      try {
+        materialList.value = JSON.parse(form.value.processMaterialInfo)
+      } catch (e) {
+        console.error("物料信息解析失败", e)
+        materialList.value = []
+      }
+    }
     open.value = true
     title.value = "修改工序信息"
   })
@@ -231,6 +306,9 @@ function handleProcessUpdate(row) {
 function submitForm() {
   proxy.$refs["processRef"].validate(valid => {
     if (valid) {
+      form.value.processMaterialInfo = materialList.value.length > 0
+          ? JSON.stringify(materialList.value)
+          : null;
       if (form.value.id != null) {
         updateProcess(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功")
@@ -250,7 +328,7 @@ function submitForm() {
   })
 }
 
-/** 删除按钮操作 */
+/** 内部列表单独操作的删除 */
 function handleProcessDelete(row) {
   const _ids = row.id || ids.value
   proxy.$modal.confirm('是否确认删除工序信息？').then(function () {
@@ -308,5 +386,4 @@ watch(() => props.processOpen, (val) => {
 onMounted(() => {
   getAlgList()
 })
-
 </script>

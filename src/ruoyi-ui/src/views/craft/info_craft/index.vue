@@ -137,7 +137,7 @@
         </template>
       </el-dialog>
 
-      <ProcessDialog v-model="processOpen" :processOpen="processOpen" :craftId="tempCraftId"
+      <ProcessDialog v-model="processOpen" :processOpen="processOpen" :craftId="tempCraftId" :tempCraftType="tempCraftType"
                      @check-status="checkStatus"/>
 
       <!-- 导入对话框 -->
@@ -181,6 +181,7 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
 const tempCraftId = ref(null)
+const tempCraftType = ref(null)
 const isPageAlive = ref(true)
 const uploading = ref(false)
 
@@ -407,6 +408,7 @@ function handleDelete(row) {
 function showProcess(row) {
   processOpen.value = true
   tempCraftId.value = row.id
+  tempCraftType.value = row.code.includes("TX") ? "TX" : "BJ"
 }
 
 function checkStatus() {

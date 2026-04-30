@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.imustsz.collect.mapper.BizDatasetMapper">
+    
+    <resultMap type="BizDataset" id="BizDatasetResult">
+        <result property="id"    column="id"    />
+        <result property="name"    column="name"    />
+        <result property="desc"    column="desc"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectBizDatasetVo">
+        select id, `name`, `desc`, create_time from biz_dataset
+    </sql>
+
+    <select id="selectBizDatasetList" parameterType="BizDataset" resultMap="BizDatasetResult">
+        <include refid="selectBizDatasetVo"/>
+        <where>  
+            <if test="name != null  and name != ''"> and `name` = #{name}</if>
+            <if test="desc != null  and desc != ''"> and `desc` like concat('%',#{desc},'%')</if>
+            <if test="createTime != null"> and create_time = #{createTime}</if>
+            <if test="updateTime != null">and update_time = #{updateTime}</if>
+            <if test="createBy != null and createBy != ''">and create_by = #{createBy}</if>
+            <if test="updateBy != null and updateBy != ''">and update_by = #{updateBy}</if>
+            <if test="remark != null and remark != ''">and remark = #{remark}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizDatasetById" parameterType="Long" resultMap="BizDatasetResult">
+        <include refid="selectBizDatasetVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertBizDataset" parameterType="BizDataset" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_dataset
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="name != null">name,</if>
+            <if test="desc != null">`desc`,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="updateBy != null and updateBy != ''">update_by,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="name != null">#{name},</if>
+            <if test="desc != null">#{desc},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizDataset" parameterType="BizDataset">
+        update biz_dataset
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="name != null">name = #{name},</if>
+            <if test="desc != null">`desc` = #{desc},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="createBy != null and createBy != ''">create_by = #{createBy},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBizDatasetById" parameterType="Long">
+        delete from biz_dataset where id = #{id}
+    </delete>
+
+    <delete id="deleteBizDatasetByIds" parameterType="String">
+        delete from biz_dataset where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

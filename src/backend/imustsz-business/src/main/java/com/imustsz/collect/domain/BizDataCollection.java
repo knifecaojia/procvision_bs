@@ -23,10 +23,40 @@ public class BizDataCollection extends BaseEntity
     private String imagePath;
 
     /** 数据 */
-    @Excel(name = "数据")
+    @Excel(name = "产品信息")
     private String data;
 
-    public void setId(Long id) 
+    private Integer datasetId;
+
+    private String labelImage;
+
+    private String coordsInfo;
+
+    public String getCoordsInfo() {
+        return coordsInfo;
+    }
+
+    public void setCoordsInfo(String coordsInfo) {
+        this.coordsInfo = coordsInfo;
+    }
+
+    public String getLabelImage() {
+        return labelImage;
+    }
+
+    public void setLabelImage(String labelImage) {
+        this.labelImage = labelImage;
+    }
+
+    public Integer getDatasetId() {
+        return datasetId;
+    }
+
+    public void setDatasetId(Integer datasetId) {
+        this.datasetId = datasetId;
+    }
+
+    public void setId(Long id)
     {
         this.id = id;
     }

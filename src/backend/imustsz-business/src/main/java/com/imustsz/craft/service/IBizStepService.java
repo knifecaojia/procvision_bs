@@ -63,4 +63,8 @@ public interface IBizStepService
     public int deleteBizStepById(Long id);
 
     int bindImgAndInfo(GuideInfoDTO guideInfoDTO);
+
+    int deleteStepByCodeAndProcessId(String code, Long processId);
+
+    String getObjectNameById(Long id);
 }

@@ -37,7 +37,7 @@ public class BizStepServiceImpl implements IBizStepService
     public BizStep selectBizStepById(Long id) throws Exception {
         BizStep step = bizStepMapper.selectBizStepById(id);
         if (step.getGuideMapUrl() != null) {
-            step.setGuideMapUrl(getLabeledUrl(step.getGuideMapUrl()));
+            step.setGuideMapUrl(getLabeledUrl(step.getGuideMapUrl(), 0));
         }
         return step;
     }
@@ -53,16 +53,16 @@ public class BizStepServiceImpl implements IBizStepService
         List<BizStep> bizSteps = bizStepMapper.selectBizStepList(bizStep);
         for (BizStep step : bizSteps) {
             if (step.getGuideMapUrl() != null) {
-                step.setGuideMapUrl(getLabeledUrl(step.getGuideMapUrl()));
+                step.setGuideMapUrl(getLabeledUrl(step.getGuideMapUrl(), 1));
             }
         }
 
         return bizSteps;
     }
 
-    private String getLabeledUrl(String urls) throws Exception {
+    private String getLabeledUrl(String urls, Integer index) throws Exception {
         String[] split = urls.substring(1, urls.length() - 1).replace(" ", "").replace("\"", "").split(",");
-        return minioUtils.getPresignedUrl(split[0]);
+        return minioUtils.getPresignedUrl(split[index]);
     }
 
     /**
@@ -128,5 +128,16 @@ public class BizStepServiceImpl implements IBizStepService
         step.setCoordsInfo(guideInfoDTO.getCoordsInfo());
         step.setGuideMapUrl(guideInfoDTO.getObjectName());
         return bizStepMapper.updateBizStep(step);
+    }
+
+    @Override
+    public int deleteStepByCodeAndProcessId(String code, Long processId) {
+        return bizStepMapper.deleteStepByCodeAndProcessId(code, processId);
+    }
+
+    @Override
+    public String getObjectNameById(Long id) {
+        BizStep step = bizStepMapper.selectBizStepById(id);
+        return step.getGuideMapUrl();
     }
 }

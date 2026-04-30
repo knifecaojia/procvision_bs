@@ -1,9 +1,9 @@
 import request from '@/utils/request'
 
 // 查询数据采集列表
-export function listData(query) {
+export function listDataset(query) {
     return request({
-        url: '/collection/data/list',
+        url: '/collection/dataset/list',
         method: 'get',
         params: query
     })
@@ -12,7 +12,7 @@ export function listData(query) {
 // 查询数据采集详细
 export function getData(id) {
     return request({
-        url: '/collection/data/' + id,
+        url: '/collection/dataset/' + id,
         method: 'get'
     })
 }
@@ -20,7 +20,7 @@ export function getData(id) {
 // 新增数据采集
 export function addData(data) {
     return request({
-        url: '/collection/data',
+        url: '/collection/dataset',
         method: 'post',
         data: data
     })
@@ -29,7 +29,7 @@ export function addData(data) {
 // 修改数据采集
 export function updateData(data) {
     return request({
-        url: '/collection/data',
+        url: '/collection/dataset',
         method: 'put',
         data: data
     })
@@ -38,26 +38,18 @@ export function updateData(data) {
 // 删除数据采集
 export function delData(id) {
     return request({
-        url: '/collection/data/' + id,
+        url: '/collection/dataset/' + id,
         method: 'delete'
     })
 }
 
 export function uploadData(formData) {
     return request({
-        url: '/collection/data/process',
+        url: '/collection/dataset/process',
         method: 'post',
         data: formData,
         headers: {
             'Content-Type': 'multipart/form-data'
         }
-    })
-}
-
-export function checkExist(productionInfo) {
-    return request({
-        url: '/collection/data/check',
-        method: 'get',
-        params: {'productionInfo': productionInfo}
     })
 }

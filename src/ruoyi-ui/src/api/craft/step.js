@@ -42,3 +42,10 @@ export function delStep(id) {
     method: 'delete'
   })
 }
+
+export function deleteStepByCodeAndProcessId(code, processId){
+    return request({
+        url: '/craft/step/' + code + '/' + processId,
+        method: 'delete',
+    })
+}

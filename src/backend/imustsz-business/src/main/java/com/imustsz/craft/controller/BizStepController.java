@@ -6,14 +6,7 @@ import javax.servlet.http.HttpServletResponse;
 import com.imustsz.craft.domain.dto.GuideInfoDTO;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import com.imustsz.common.annotation.Log;
 import com.imustsz.common.core.controller.BaseController;
 import com.imustsz.common.core.domain.AjaxResult;
@@ -103,5 +96,15 @@ public class BizStepController extends BaseController
     @PostMapping("/bindImg")
     public AjaxResult bindImgAndInfo(@RequestBody GuideInfoDTO guideInfoDTO) throws Exception {
         return toAjax(bizStepService.bindImgAndInfo(guideInfoDTO));
+    }
+
+    @DeleteMapping("/{code}/{processId}")
+    public AjaxResult deleteStepByCodeAndProcessId(@PathVariable String code, @PathVariable Long processId) throws Exception {
+        return toAjax(bizStepService.deleteStepByCodeAndProcessId(code, processId));
+    }
+
+    @GetMapping("/getUrl")
+    public AjaxResult getUrl(@RequestParam Long id) throws Exception {
+        return success(bizStepService.getObjectNameById(id));
     }
 }

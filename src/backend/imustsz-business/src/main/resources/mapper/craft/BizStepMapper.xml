@@ -37,6 +37,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null  and updateBy != ''"> and update_by = #{updateBy}</if>
             <if test="remark != null  and remark != ''"> and remark = #{remark}</if>
         </where>
+        order by code
     </select>
     
     <select id="selectBizStepById" parameterType="Long" resultMap="BizStepResult">
@@ -117,8 +118,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         delete from biz_step where process_id = #{processId}
     </delete>
 
-    <select id="getStepById" resultType="com.imustsz.craft.domain.BizStep">
+    <select id="getStepById" resultMap="BizStepResult">
         <include refid="selectBizStepVo"/>
         where id = #{id}
     </select>
+
+    <delete id="deleteStepByCodeAndProcessId">
+        delete from procvision.biz_step where code = #{code} and process_id = #{processId}
+    </delete>
 </mapper>

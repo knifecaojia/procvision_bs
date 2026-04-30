@@ -23,6 +23,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	<select id="selectDictTypeList" parameterType="SysDictType" resultMap="SysDictTypeResult">
 	    <include refid="selectDictTypeVo"/>
 		<where>
+            dict_id > 10
 		    <if test="dictName != null and dictName != ''">
 				AND dict_name like concat('%', #{dictName}, '%')
 			</if>

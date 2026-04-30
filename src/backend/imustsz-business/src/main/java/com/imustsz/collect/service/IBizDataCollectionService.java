@@ -2,6 +2,7 @@ package com.imustsz.collect.service;
 
 import java.util.List;
 import com.imustsz.collect.domain.BizDataCollection;
+import com.imustsz.common.core.domain.AjaxResult;
 
 /**
  * 数据采集Service接口
@@ -58,4 +59,6 @@ public interface IBizDataCollectionService
      * @return 结果
      */
     public int deleteBizDataCollectionById(Long id);
+
+    int checkProduction(String productionInfo);
 }

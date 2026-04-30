@@ -221,11 +221,11 @@
                 {{ activity.stepName }}
               </el-descriptions-item>
               <el-descriptions-item label="图片" width="100px" span="2" :rowspan="2" align="center">
-                <el-image :src="activity.imgUrl" :previewSrcList="[activity.imgUrl]" style="width: 200px; height: 100px;"/>
+                <el-image :src="activity.imgUrl" :previewSrcList="[activity.imgUrl]" fit="cover" :preview-teleported="true" lazy style="width: 100px; height: 100px; border-radius: 4px;"/>
               </el-descriptions-item>
               <el-descriptions-item label="工步状态" width="100px">
-                <el-tag v-if="activity.stepStatus === 1" type="danger">未完成</el-tag>
-                <el-tag v-else-if="activity.stepStatus === 2" type="success">已完成</el-tag>
+                <el-tag v-if="activity.stepStatus === 2" type="success">已完成</el-tag>
+                <el-tag v-else type="danger">未完成</el-tag>
               </el-descriptions-item>
             </el-descriptions>
           </el-timeline-item>

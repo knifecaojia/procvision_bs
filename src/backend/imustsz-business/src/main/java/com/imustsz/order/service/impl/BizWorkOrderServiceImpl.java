@@ -20,6 +20,8 @@ import com.imustsz.cilent.domain.dto.TaskSelectDTO;
 import com.imustsz.cilent.domain.dto.WorkOrderProperties;
 import com.imustsz.cilent.domain.vo.StepVO;
 import com.imustsz.cilent.domain.vo.WorkOrderVO;
+import com.imustsz.common.core.domain.entity.SysUser;
+import com.imustsz.common.core.domain.model.LoginUser;
 import com.imustsz.common.utils.bean.MinioUtils;
 import com.imustsz.common.utils.sign.Base64;
 import com.imustsz.craft.domain.BizStep;
@@ -38,6 +40,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import com.imustsz.order.mapper.BizWorkOrderMapper;
 import com.imustsz.order.domain.BizWorkOrder;
@@ -185,55 +189,67 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
     @Transactional
     public int importOrderFromMMo(WorkOrderTaskData workOrderTaskData) {
         int flag = 0;
-        String productionOrderNo = workOrderTaskData.getProductionOrderNo();
-        List<WorkOrder> taskSync = workOrderTaskData.getWorkOrderList();
-        for (WorkOrder order : taskSync) {
-            List<DispatchTask> dispatchTaskInfo = order.getDispatchTaskInfo();
-            Craft craft = craftMapper.selectCraftByProductionOrderNo(productionOrderNo);
-            if (craft == null)
-                throw new RuntimeException("工艺信息有误，请核对工艺信息");
 
-            for (DispatchTask task : dispatchTaskInfo) {
+        try {
+            LoginUser fakeUser = new LoginUser();
+            SysUser sysUser = new SysUser();
+            sysUser.setUserName("单导系统导入");
+            fakeUser.setUser(sysUser);
 
-                BizWorkOrder bizWorkOrder = new BizWorkOrder();
-                bizWorkOrder.setWorkOrderCode(order.getWorkOrderNo());
-                bizWorkOrder.setProdOrderNo(productionOrderNo);
-                bizWorkOrder.setCraftCode(craft.getCode());
-                bizWorkOrder.setCraftVersion(craft.getVersion());
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(fakeUser, null, null);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                BizWorkOrder existFlag = bizWorkOrderMapper.checkWorkOrderExist(order.getWorkOrderNo());
-                if (existFlag != null)
-                    throw new RuntimeException(String.format("工单：%s已存在", order.getWorkOrderNo()));
+            String productionOrderNo = workOrderTaskData.getProductionOrderNo();
+            List<WorkOrder> taskSync = workOrderTaskData.getWorkOrderList();
+            for (WorkOrder order : taskSync) {
+                List<DispatchTask> dispatchTaskInfo = order.getDispatchTaskInfo();
+                Craft craft = craftMapper.selectCraftByProductionOrderNo(productionOrderNo);
+                if (craft == null)
+                    throw new RuntimeException("工艺信息有误，请核对工艺信息");
 
-                if(craft.getStatus() == 1 || craft.getStatus() == 2)
-                    bizWorkOrder.setStatus(-2);
-                else if (craft.getStatus() == 3)
-                    bizWorkOrder.setStatus(-1);
-                else
-                    bizWorkOrder.setStatus(1);
+                for (DispatchTask task : dispatchTaskInfo) {
 
-                Process process = processMapper.selectProcessByCodeAndNameAndCraftId(task.getOperationNo(), task.getOperationName(), craft.getId());
-                if (process == null)
-                    throw new RuntimeException("工序信息有误，请核对工序信息");
+                    BizWorkOrder bizWorkOrder = new BizWorkOrder();
+                    bizWorkOrder.setWorkOrderCode(order.getWorkOrderNo());
+                    bizWorkOrder.setProdOrderNo(productionOrderNo);
+                    bizWorkOrder.setCraftCode(craft.getCode());
+                    bizWorkOrder.setCraftVersion(craft.getVersion());
 
-                bizWorkOrder.setProcessCode(task.getOperationNo());
-                bizWorkOrder.setProcessName(task.getOperationName());
+                    BizWorkOrder existFlag = bizWorkOrderMapper.checkWorkOrderExist(order.getWorkOrderNo());
+                    if (existFlag != null)
+                        throw new RuntimeException(String.format("工单：%s已存在", order.getWorkOrderNo()));
 
-                Date date1 = Date.from(task.getPlannedStartTime().atZone(ZoneId.systemDefault()).toInstant());
-                Date date2 = Date.from(task.getPlannedEndTime().atZone(ZoneId.systemDefault()).toInstant());
-                bizWorkOrder.setStartTime(date1);
-                bizWorkOrder.setEndTime(date2);
+                    if (craft.getStatus() == 1 || craft.getStatus() == 2)
+                        bizWorkOrder.setStatus(-2);
+                    else if (craft.getStatus() == 3)
+                        bizWorkOrder.setStatus(-1);
+                    else
+                        bizWorkOrder.setStatus(1);
 
-                bizWorkOrder.setWorkerCode(task.getWorkerCode());
-                bizWorkOrder.setWorkerName(task.getWorkerName());
+                    Process process = processMapper.selectProcessByCodeAndNameAndCraftId(task.getOperationNo(), task.getOperationName(), craft.getId());
+                    if (process == null)
+                        throw new RuntimeException("工序信息有误，请核对工序信息");
 
-                flag += bizWorkOrderMapper.insertBizWorkOrder(bizWorkOrder);
+                    bizWorkOrder.setProcessCode(task.getOperationNo());
+                    bizWorkOrder.setProcessName(task.getOperationName());
+
+                    Date date1 = Date.from(task.getPlannedStartTime().atZone(ZoneId.systemDefault()).toInstant());
+                    Date date2 = Date.from(task.getPlannedEndTime().atZone(ZoneId.systemDefault()).toInstant());
+                    bizWorkOrder.setStartTime(date1);
+                    bizWorkOrder.setEndTime(date2);
+
+                    bizWorkOrder.setWorkerCode(task.getWorkerCode());
+                    bizWorkOrder.setWorkerName(task.getWorkerName());
+
+                    flag += bizWorkOrderMapper.insertBizWorkOrder(bizWorkOrder);
+                }
+
             }
-
+        }finally {
+            SecurityContextHolder.clearContext();
         }
 
         return flag;
-
     }
     public PageVO workOrderVOList(WorkOrderProperties workOrderProperties) {
         BizWorkOrder bizWorkOrder = new BizWorkOrder();
@@ -336,7 +352,6 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
         return pageVO;
     }
 
-    // TODO 照片回传
     @Override
     public int uploadToMOM(FinishedOrderDTO finishedOrderDTO) {
 //        BizWorkOrder workOrder = bizWorkOrderMapper.selectBizWorkOrderByCodeAndProcessCode(finishedOrderDTO.getWorkOrderCode(), finishedOrderDTO.getProcessCode());

@@ -77,12 +77,12 @@
       </span>
     </div>
 
-    <div class="drawer-item">
-      <span>底部版权</span>
-      <span class="comp-style">
-        <el-switch v-model="settingsStore.footerVisible" class="drawer-switch" />
-      </span>
-    </div>
+<!--    <div class="drawer-item">-->
+<!--      <span>底部版权</span>-->
+<!--      <span class="comp-style">-->
+<!--        <el-switch v-model="settingsStore.footerVisible" class="drawer-switch" />-->
+<!--      </span>-->
+<!--    </div>-->
 
     <el-divider />
 

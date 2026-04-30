@@ -8,6 +8,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="id"    column="id"    />
         <result property="imagePath"    column="image_path"    />
         <result property="data"    column="data"    />
+        <result property="datasetId"    column="dataset_id"    />
+        <result property="coordsInfo"   column="coords_info" />
+        <result property="labelImage"   column="label_image" />
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
         <result property="createBy"    column="create_by"    />
@@ -16,20 +19,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizDataCollectionVo">
-        select id, image_path, data from biz_data_collection
+        select id, image_path, data, dataset_id, label_image, coords_info, create_time, remark from biz_data_collection
     </sql>
 
     <select id="selectBizDataCollectionList" parameterType="BizDataCollection" resultMap="BizDataCollectionResult">
         <include refid="selectBizDataCollectionVo"/>
         <where>  
             <if test="imagePath != null  and imagePath != ''"> and image_path = #{imagePath}</if>
-            <if test="data != null  and data != ''"> and data = #{data}</if>
+            <if test="data != null  and data != ''"> and data like concat('%',#{data},'%')</if>
+            <if test="datasetId != null">and dataset_id = #{datasetId}</if>
+            <if test="coordsInfo != null and coordsInfo != ''">and coords_info = #{coordsInfo}</if>
+            <if test="labelImage != null and labelImage != ''">and label_image = #{labelImage}</if>
             <if test="createTime != null"> and create_time = #{createTime}</if>
             <if test="updateTime != null">and update_time = #{updateTime}</if>
             <if test="createBy != null and createBy != ''">and create_by = #{createBy}</if>
             <if test="updateBy != null and updateBy != ''">and update_by = #{updateBy}</if>
             <if test="remark != null and remark != ''">and remark = #{remark}</if>
         </where>
+        order by create_time desc
     </select>
     
     <select id="selectBizDataCollectionById" parameterType="Long" resultMap="BizDataCollectionResult">
@@ -42,6 +49,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="imagePath != null">image_path,</if>
             <if test="data != null">data,</if>
+            <if test="datasetId != null">dataset_id,</if>
+            <if test="coordsInfo != null">coords_info,</if>
+            <if test="labelImage != null">label_image,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="createBy != null and createBy != ''">create_by,</if>
@@ -51,10 +61,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="imagePath != null">#{imagePath},</if>
             <if test="data != null">#{data},</if>
-            <if test="createTime != null">#{create_time},</if>
-            <if test="updateTime != null">#{update_time},</if>
-            <if test="createBy != null and createBy != ''">#{create_by},</if>
-            <if test="updateBy != null and updateBy != ''">#{update_by},</if>
+            <if test="datasetId != null">#{datasetId},</if>
+            <if test="coordsInfo != null and coordsInfo != ''">#{coordsInfo},</if>
+            <if test="labelImage != null and labelImage != ''">#{labelImage},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
             <if test="remark != null">#{remark},</if>
          </trim>
     </insert>
@@ -64,10 +77,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="imagePath != null">image_path = #{imagePath},</if>
             <if test="data != null">data = #{data},</if>
-            <if test="createTime != null">create_time = #{create_time},</if>
-            <if test="updateTime != null">update_time = #{update_time},</if>
-            <if test="createBy != null and createBy != ''">create_by = #{create_by},</if>
-            <if test="updateBy != null and updateBy != ''">update_by = #{update_by},</if>
+            <if test="datasetId != null">dataset_id = #{datasetId},</if>
+            <if test="coordsInfo != null and coordsInfo != ''">coords_info = #{coordsInfo},</if>
+            <if test="labelImage != null and labelImage != ''">label_image = #{labelImage},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="createBy != null and createBy != ''">create_by = #{createBy},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             <if test="remark != null">remark = #{remark},</if>
         </trim>
         where id = #{id}
@@ -83,4 +99,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </delete>
+
+    <select id="checkData" resultType="Integer">
+        select count(0) from biz_data_collection where data = #{data}
+    </select>
 </mapper>

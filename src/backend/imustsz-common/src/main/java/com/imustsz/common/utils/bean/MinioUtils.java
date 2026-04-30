@@ -34,6 +34,9 @@ public class MinioUtils {
     @Value("${minio.presigned-url-expire}")
     private int presignedUrlExpire;
 
+    @Value("${minio.endpoint}")
+    private String endpoint;
+
     public MinioUtils(MinioClient minioClient) {
         this.minioClient = minioClient;
     }
@@ -291,6 +294,18 @@ public class MinioUtils {
      * @return 预签名 URL 字符串
      */
     public String generatePresignedUploadUrl(String objectName) throws MinioException, InvalidKeyException, NoSuchAlgorithmException, IOException {
+        // 生成预签名 URL
+        return minioClient.getPresignedObjectUrl(
+                GetPresignedObjectUrlArgs.builder()
+                        .bucket(bucketName)
+                        .object(objectName)
+                        .method(Method.PUT)
+                        .expiry(presignedUrlExpire, TimeUnit.SECONDS)
+                        .build()
+        );
+    }
+
+    public String generatePresignedUploadUrl(String bucketName, String objectName) throws MinioException, InvalidKeyException, NoSuchAlgorithmException, IOException {
         // 生成预签名 URL
         return minioClient.getPresignedObjectUrl(
                 GetPresignedObjectUrlArgs.builder()

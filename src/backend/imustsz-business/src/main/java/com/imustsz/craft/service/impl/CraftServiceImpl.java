@@ -2,6 +2,8 @@ package com.imustsz.craft.service.impl;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.imustsz.cilent.domain.vo.StepVO;
+import com.imustsz.common.core.domain.entity.SysUser;
+import com.imustsz.common.core.domain.model.LoginUser;
 import com.imustsz.common.utils.DateUtils;
 import com.imustsz.common.utils.SecurityUtils;
 import com.imustsz.craft.domain.BizStep;
@@ -19,6 +21,8 @@ import com.imustsz.order.domain.BizWorkOrder;
 import com.imustsz.order.mapper.BizWorkOrderMapper;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -125,53 +129,62 @@ public class CraftServiceImpl implements ICraftService {
     @Override
     @Transactional
     public void importCraftFromMMo(OrderProcessData CrackProcess) {
-        ProcessInfo crackInfo = CrackProcess.getProcessInfo();
-        List<Operation> operationList = CrackProcess.getOperationList();
+        try {
 
-        Craft cf = craftMapper.selectCraftByCodeAndVersion(crackInfo.getProcessNo(), crackInfo.getProcessVersion());
+            LoginUser fakeUser = new LoginUser();
+            SysUser sysUser = new SysUser();
+            sysUser.setUserName("单导系统导入");
+            fakeUser.setUser(sysUser);
 
-        if (cf != null)
-            throw new RuntimeException("该工艺已存在");
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(fakeUser, null, null);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        //导入工艺基本信息
-        Craft craft = new Craft();
-        craft.setProductionOrderNo(crackInfo.getProductionOrderNo());
-        craft.setCode(crackInfo.getProcessNo());
-        craft.setName(crackInfo.getProcessName());
-        craft.setVersion(crackInfo.getProcessVersion());
-        craft.setDesc(crackInfo.getProcessDesc());
-        craft.setStatus(1);
-        craft.setCreateTime(DateUtils.getNowDate());
-        craft.setCreateBy(SecurityUtils.getUsername());
-        craftMapper.insertCraft(craft);
+            ProcessInfo crackInfo = CrackProcess.getProcessInfo();
+            List<Operation> operationList = CrackProcess.getOperationList();
 
-        //导入工序信息
-        operationList.forEach(processMMO -> {
-            OperationInfo processInfo = processMMO.getOperationInfo();
-            Process process = new Process();
-            process.setCode(processInfo.getOperationNo());
-            process.setName(processInfo.getOperationName());
-            process.setCraftId(craft.getId());
-            process.setCraftCode(craft.getCode());
-            process.setDesc(processInfo.getOperationDesc());
-            process.setProcessMaterialInfo(JSONObject.toJSONString(processMMO.getOperationMaterialInfo()));
-            process.setCreateTime(DateUtils.getNowDate());
-            process.setCreateBy(SecurityUtils.getUsername());
-            processMapper.insertProcess(process);
+            Craft cf = craftMapper.selectCraftByCodeAndVersion(crackInfo.getProcessNo(), crackInfo.getProcessVersion());
 
-            //导入工步信息
-            processMMO.getStepList().forEach(step -> {
-                BizStep bizStep = new BizStep();
-                bizStep.setProcessId(process.getId());
-                bizStep.setCode(step.getStepNo());
-                bizStep.setName(step.getStepName());
-                bizStep.setContent(step.getStepContent());
-                bizStep.setCreateTime(DateUtils.getNowDate());
-                bizStep.setCreateBy(SecurityUtils.getUsername());
-                bizStepMapper.insertBizStep(bizStep);
+            if (cf != null)
+                throw new RuntimeException("该工艺已存在");
+
+            //导入工艺基本信息
+            Craft craft = new Craft();
+            craft.setProductionOrderNo(crackInfo.getProductionOrderNo());
+            craft.setCode(crackInfo.getProcessNo());
+            craft.setName(crackInfo.getProcessName());
+            craft.setVersion(crackInfo.getProcessVersion());
+            craft.setDesc(crackInfo.getProcessDesc());
+            craft.setStatus(1);
+            craft.setCreateTime(DateUtils.getNowDate());
+            craft.setCreateBy(SecurityUtils.getUsername());
+            craftMapper.insertCraft(craft);
+
+            //导入工序信息
+            operationList.forEach(processMMO -> {
+                OperationInfo processInfo = processMMO.getOperationInfo();
+                Process process = new Process();
+                process.setCode(processInfo.getOperationNo());
+                process.setName(processInfo.getOperationName());
+                process.setCraftId(craft.getId());
+                process.setCraftCode(craft.getCode());
+                process.setDesc(processInfo.getOperationDesc());
+                process.setProcessMaterialInfo(JSONObject.toJSONString(processMMO.getOperationMaterialInfo()));
+                processMapper.insertProcess(process);
+
+                //导入工步信息
+                processMMO.getStepList().forEach(step -> {
+                    BizStep bizStep = new BizStep();
+                    bizStep.setProcessId(process.getId());
+                    bizStep.setCode(step.getStepNo());
+                    bizStep.setName(step.getStepName());
+                    bizStep.setContent(step.getStepContent());
+                    bizStepMapper.insertBizStep(bizStep);
+                });
+
             });
-
-        });
+        }finally {
+            SecurityContextHolder.clearContext();
+        }
 
     }
 
