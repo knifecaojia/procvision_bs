@@ -593,7 +593,9 @@ const submitData = async () => {
       resetFlow(true);
     }else{
       proxy.$modal.confirm('数据已存在，是否替换？').then(async function () {
+        postData.id = isExist.data.id
         await updateData(postData)
+        resetFlow(true)
       });
     }
 

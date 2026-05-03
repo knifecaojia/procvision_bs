@@ -4,7 +4,6 @@ import java.util.List;
 
 import com.imustsz.common.utils.bean.MinioUtils;
 import com.imustsz.craft.domain.dto.GuideInfoDTO;
-import com.imustsz.framework.aspectj.AutoFill;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.imustsz.craft.mapper.BizStepMapper;
@@ -14,13 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 工步信息Service业务层处理
- * 
+ *
  * @author imustsz
  * @date 2025-12-19
  */
 @Service
-public class BizStepServiceImpl implements IBizStepService 
-{
+public class BizStepServiceImpl implements IBizStepService {
     @Autowired
     private BizStepMapper bizStepMapper;
 
@@ -29,7 +27,7 @@ public class BizStepServiceImpl implements IBizStepService
 
     /**
      * 查询工步信息
-     * 
+     *
      * @param id 工步信息主键
      * @return 工步信息
      */
@@ -44,7 +42,7 @@ public class BizStepServiceImpl implements IBizStepService
 
     /**
      * 查询工步信息列表
-     * 
+     *
      * @param bizStep 工步信息
      * @return 工步信息
      */
@@ -67,19 +65,18 @@ public class BizStepServiceImpl implements IBizStepService
 
     /**
      * 新增工步信息
-     * 
+     *
      * @param bizStep 工步信息
      * @return 结果
      */
     @Override
-    public int insertBizStep(BizStep bizStep)
-    {
+    public int insertBizStep(BizStep bizStep) {
         return bizStepMapper.insertBizStep(bizStep);
     }
 
     /**
      * 修改工步信息
-     * 
+     *
      * @param bizStep 工步信息
      * @return 结果
      */
@@ -87,36 +84,42 @@ public class BizStepServiceImpl implements IBizStepService
     @Transactional
     public int updateBizStep(BizStep bizStep) throws Exception {
         BizStep step = bizStepMapper.getStepById(bizStep.getId());
-        if (step.getGuideMapUrl() != null && bizStep.getGuideMapUrl() != null){
+        if (step.getGuideMapUrl() != null && bizStep.getGuideMapUrl() != null) {
             String[] objectName = step.getGuideMapUrl().substring(1, step.getGuideMapUrl().length() - 1).replace(" ", "").replace("\"", "").split(",");
             for (String s : objectName)
                 minioUtils.deleteFile(s);
-        }else if (step.getGuideMapUrl() != null && bizStep.getGuideMapUrl() == null)
+        } else if (step.getGuideMapUrl() != null && bizStep.getGuideMapUrl() == null)
             bizStep.setGuideMapUrl(step.getGuideMapUrl());
         return bizStepMapper.updateBizStep(bizStep);
     }
 
     /**
      * 批量删除工步信息
-     * 
+     *
      * @param ids 需要删除的工步信息主键
      * @return 结果
      */
     @Override
-    public int deleteBizStepByIds(Long[] ids)
-    {
+    public int deleteBizStepByIds(Long[] ids) throws Exception {
+        for (Long id : ids) {
+            BizStep step = bizStepMapper.getStepById(id);
+            if (step.getGuideMapUrl() != null) {
+                String[] objectName = step.getGuideMapUrl().substring(1, step.getGuideMapUrl().length() - 1).replace(" ", "").replace("\"", "").split(",");
+                for (String s : objectName)
+                    minioUtils.deleteFile(s);
+            }
+        }
         return bizStepMapper.deleteBizStepByIds(ids);
     }
 
     /**
      * 删除工步信息信息
-     * 
+     *
      * @param id 工步信息主键
      * @return 结果
      */
     @Override
-    public int deleteBizStepById(Long id)
-    {
+    public int deleteBizStepById(Long id) {
         return bizStepMapper.deleteBizStepById(id);
     }
 
@@ -139,5 +142,19 @@ public class BizStepServiceImpl implements IBizStepService
     public String getObjectNameById(Long id) {
         BizStep step = bizStepMapper.selectBizStepById(id);
         return step.getGuideMapUrl();
+    }
+
+    @Override
+    public List<BizStep> selectBizStepListOri(BizStep bizStep) {
+        return bizStepMapper.selectBizStepList(bizStep);
+    }
+
+    @Override
+    public BizStep selectBizStepOriById(Long id) {
+        BizStep step = bizStepMapper.getStepById(id);
+        if (step.getGuideMapUrl() != null) {
+            step.setGuideMapUrl(step.getGuideMapUrl().substring(1, step.getGuideMapUrl().length() - 1).replace("\"", "").split(",")[0]);
+        }
+        return step;
     }
 }

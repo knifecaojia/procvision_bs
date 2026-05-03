@@ -52,7 +52,7 @@ public interface IBizStepService
      * @param ids 需要删除的工步信息主键集合
      * @return 结果
      */
-    public int deleteBizStepByIds(Long[] ids);
+    public int deleteBizStepByIds(Long[] ids) throws Exception;
 
     /**
      * 删除工步信息信息
@@ -67,4 +67,8 @@ public interface IBizStepService
     int deleteStepByCodeAndProcessId(String code, Long processId);
 
     String getObjectNameById(Long id);
+
+    List<BizStep> selectBizStepListOri(BizStep bizStep);
+
+    BizStep selectBizStepOriById(Long id);
 }

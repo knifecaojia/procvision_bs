@@ -100,7 +100,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach>
     </delete>
 
-    <select id="checkData" resultType="Integer">
-        select count(0) from biz_data_collection where data = #{data}
+    <select id="checkData" resultMap="BizDataCollectionResult">
+        <include refid="selectBizDataCollectionVo"/>
+        where data = #{data}
     </select>
 </mapper>

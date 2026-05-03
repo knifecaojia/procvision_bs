@@ -60,5 +60,5 @@ public interface IBizDataCollectionService
      */
     public int deleteBizDataCollectionById(Long id);
 
-    int checkProduction(String productionInfo);
+    BizDataCollection checkProduction(String productionInfo);
 }

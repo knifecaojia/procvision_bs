@@ -28,6 +28,26 @@
         <el-table-column type="selection" width="55" align="center"/>
         <el-table-column label="工序号" align="center" prop="code"/>
         <el-table-column label="工序名称" align="center" prop="name"/>
+        <el-table-column label="是否异物检测" align="center" key="exceptionCheck">
+          <template #default="scope">
+            <el-switch
+                v-model="scope.row.exceptionCheck"
+                active-value="0"
+                inactive-value="1"
+                @change="handleExceptionCheckChange(scope.row)"
+            ></el-switch>
+          </template>
+        </el-table-column>
+<!--        <el-table-column label="是否终检" align="center" key="finalCheck">-->
+<!--          <template #default="scope">-->
+<!--            <el-switch-->
+<!--                v-model="scope.row.finalCheck"-->
+<!--                active-value="0"-->
+<!--                inactive-value="1"-->
+<!--                @change="handleFinalCheckChange(scope.row)"-->
+<!--            ></el-switch>-->
+<!--          </template>-->
+<!--        </el-table-column>-->
         <el-table-column label="算法" align="center" :show-overflow-tooltip="true">
           <template #default="scope">
             <el-tag type="danger" v-if="scope.row.algorithmId == null">未绑定</el-tag>
@@ -141,6 +161,9 @@
       </div>
     </el-dialog>
 
+    <LabelDialog v-model="labelVisible" :visible="labelVisible" :stepIds="targetStepIds"
+                 :tempCraftType="props.tempCraftType"/>
+
   </div>
 </template>
 
@@ -148,7 +171,7 @@
 import { ref, reactive, toRefs, watch, onMounted, getCurrentInstance } from 'vue'
 import {
   addProcess,
-  bindProcessAlgorithm,
+  bindProcessAlgorithm, changeExceptionCheck, changeFinalCheckCheck,
   delProcess,
   getProcess,
   listProcess,
@@ -157,6 +180,7 @@ import {
 import StepDialog from "@/views/craft/info_craft/StepDialog.vue";
 import {listAlgorithm} from "@/api/algorithm/algorithm.js";
 import {changeStatus} from "@/api/craft/craft.js";
+import LabelDialog from "@/views/craft/info_craft/LabelDialog.vue";
 
 const {proxy} = getCurrentInstance()
 
@@ -172,6 +196,10 @@ const single = ref(true)
 const tempProcessId = ref(null)
 const bindAlgShow = ref(false)
 const selectedAlgId = ref(null)
+const labelVisible = ref(false)
+
+// 新增：用于传递给标注组件的实际操作 ID 数组
+const targetStepIds = ref([])
 
 // 新增：物料列表的数据源
 const materialList = ref([])
@@ -374,6 +402,28 @@ function cancel() {
   open.value = false
   reset()
 }
+
+function handleExceptionCheckChange(row) {
+  let text = row.exceptionCheck === "0" ? "启用" : "取消"
+  proxy.$modal.confirm('确认要' + text + '异物检测吗?').then(function () {
+    return changeExceptionCheck(row.id, row.exceptionCheck)
+  }).then(() => {
+    proxy.$modal.msgSuccess(text + "成功")
+  }).catch(function () {
+    row.exceptionCheck = row.exceptionCheck === "0" ? "1" : "0"
+  })
+}
+
+// function handleFinalCheckChange(row){
+//   let text = row.finalCheck === "0" ? "启用" : "取消"
+//   proxy.$modal.confirm('确认要' + text + '终检?').then(function () {
+//     return changeFinalCheckCheck(row.id, row.finalCheck)
+//   }).then(() => {
+//     proxy.$modal.msgSuccess(text + "成功")
+//   }).catch(function () {
+//     row.finalCheck = row.finalCheck === "0" ? "1" : "0"
+//   })
+// }
 
 watch(() => props.processOpen, (val) => {
   if (val) {

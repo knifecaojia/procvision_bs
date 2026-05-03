@@ -34,9 +34,9 @@ public class Process extends BaseEntity
     @Excel(name = "说明")
     private String desc;
 
-    /** 指导粒度(1为工序，2为工步) */
-    @Excel(name = "指导粒度(1为工序，2为工步)")
-    private Long guideGranularity;
+    /** 异物检测 */
+    @Excel(name = "异物检测")
+    private String exceptionCheck;
 
     /** 工艺id */
     @Excel(name = "工艺id")
@@ -46,13 +46,29 @@ public class Process extends BaseEntity
     @Excel(name = "所属工艺编码")
     private String craftCode;
 
-    /** 指导图url */
-    @Excel(name = "指导图url")
-    private String guideMapUrl;
+    /** 终检 */
+    @Excel(name = "终检")
+    private String finalCheck;
 
     /** 工序材料信息(JSON形式) */
     @Excel(name = "工序材料信息(JSON形式)")
     private String processMaterialInfo;
+
+    public String getExceptionCheck() {
+        return exceptionCheck;
+    }
+
+    public void setExceptionCheck(String exceptionCheck) {
+        this.exceptionCheck = exceptionCheck;
+    }
+
+    public String getFinalCheck() {
+        return finalCheck;
+    }
+
+    public void setFinalCheck(String finalCheck) {
+        this.finalCheck = finalCheck;
+    }
 
     public Long getAlgorithmId() {
         return algorithmId;
@@ -102,16 +118,6 @@ public class Process extends BaseEntity
         return desc;
     }
 
-    public void setGuideGranularity(Long guideGranularity)
-    {
-        this.guideGranularity = guideGranularity;
-    }
-
-    public Long getGuideGranularity()
-    {
-        return guideGranularity;
-    }
-
     public void setCraftId(Long craftId)
     {
         this.craftId = craftId;
@@ -132,16 +138,6 @@ public class Process extends BaseEntity
         return craftCode;
     }
 
-    public void setGuideMapUrl(String guideMapUrl)
-    {
-        this.guideMapUrl = guideMapUrl;
-    }
-
-    public String getGuideMapUrl()
-    {
-        return guideMapUrl;
-    }
-
     public void setProcessMaterialInfo(String processMaterialInfo)
     {
         this.processMaterialInfo = processMaterialInfo;
@@ -160,10 +156,10 @@ public class Process extends BaseEntity
             .append("name", getName())
             .append("desc", getDesc())
             .append("algorithmId", getAlgorithmId())
-            .append("guideGranularity", getGuideGranularity())
+            .append("exceptionCheck", getExceptionCheck())
             .append("craftId", getCraftId())
             .append("craftCode", getCraftCode())
-            .append("guideMapUrl", getGuideMapUrl())
+            .append("finalCheck", getFinalCheck())
             .append("processMaterialInfo", getProcessMaterialInfo())
             .toString();
     }

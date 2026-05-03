@@ -37,6 +37,9 @@ public class MinioUtils {
     @Value("${minio.endpoint}")
     private String endpoint;
 
+    @Value("${minio.external_endpoint}")
+    private String externalEndpoint;
+
     public MinioUtils(MinioClient minioClient) {
         this.minioClient = minioClient;
     }
@@ -324,7 +327,14 @@ public class MinioUtils {
      * @throws Exception 异常
      */
     public String getPresignedUrl(String objectName) throws Exception {
-        return getPresignedUrl(bucketName, objectName, presignedUrlExpire);
+        try {
+            String url = getPresignedUrl(bucketName, objectName, presignedUrlExpire);
+            if (url != null && url.startsWith(endpoint))
+                return url.replaceFirst(endpoint, externalEndpoint);
+            return url;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

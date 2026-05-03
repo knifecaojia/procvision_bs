@@ -72,8 +72,8 @@ public class BizDataCollectionServiceImpl implements IBizDataCollectionService {
      */
     @Override
     public int insertBizDataCollection(BizDataCollection bizDataCollection) {
-        int i = bizDataCollectionMapper.checkData(bizDataCollection.getData());
-        if (i < 0) throw new RuntimeException("产品信息已存在");
+        BizDataCollection data = bizDataCollectionMapper.checkData(bizDataCollection.getData());
+        if (data != null) throw new RuntimeException("产品信息已存在");
         return bizDataCollectionMapper.insertBizDataCollection(bizDataCollection);
     }
 
@@ -111,7 +111,7 @@ public class BizDataCollectionServiceImpl implements IBizDataCollectionService {
     }
 
     @Override
-    public int checkProduction(String productionInfo) {
+    public BizDataCollection checkProduction(String productionInfo) {
         return bizDataCollectionMapper.checkData(productionInfo);
     }
 }

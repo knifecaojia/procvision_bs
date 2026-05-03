@@ -47,6 +47,7 @@ import com.imustsz.order.mapper.BizWorkOrderMapper;
 import com.imustsz.order.domain.BizWorkOrder;
 import com.imustsz.order.service.IBizWorkOrderService;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * 工单Service业务层处理
@@ -354,9 +355,6 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
 
     @Override
     public int uploadToMOM(FinishedOrderDTO finishedOrderDTO) {
-//        BizWorkOrder workOrder = bizWorkOrderMapper.selectBizWorkOrderByCodeAndProcessCode(finishedOrderDTO.getWorkOrderCode(), finishedOrderDTO.getProcessCode());
-//        BizProcessRecord record = bizProcessRecordMapper.selectBizProcessRecordByOrderAndProcessCodeAndStepNo(workOrder.getWorkOrderCode(), workOrder.getProcessCode(), finishedOrderDTO.getStepNo());
-
         //构建内层JSON
         JSONObject innerJson = new JSONObject();
 

@@ -1,57 +1,42 @@
 <template>
   <div>
     <el-dialog title="工步信息" v-model="stepOpen" width="900px" @close="onClose">
-      <el-row :gutter="10" class="mb8" style="display: flex; justify-content: space-between">
-        <div style="display: flex">
-          <el-col :span="1.5">
-            <el-button
-                type="primary"
-                plain
-                icon="Plus"
-                size="small"
-                @click="handleAdd"
-            >新增
-            </el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button
-                type="danger"
-                plain
-                icon="Delete"
-                size="small"
-                :disabled="multiple"
-                @click="handleDelete"
-            >删除
-            </el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button
-                type="success"
-                plain
-                icon="Picture"
-                size="small"
-                :disabled="multiple"
-                @click="handleBatchBind"
-            >批量绑定引导图
-            </el-button>
-          </el-col>
-        </div>
-<!--        <div style="display:flex;">-->
-<!--          <el-col :span="1.5">-->
-<!--            <el-checkbox-->
-<!--                v-model="isException"-->
-<!--                label="是否检测异常"-->
-<!--            >-->
-<!--            </el-checkbox>-->
-<!--          </el-col>-->
-<!--          <el-col :span="1.5">-->
-<!--            <el-checkbox-->
-<!--                v-model="isFinalCheck"-->
-<!--                label="是否终检"-->
-<!--            >-->
-<!--            </el-checkbox>-->
-<!--          </el-col>-->
-<!--        </div>-->
+      <el-row :gutter="10" class="mb8">
+        <el-col :span="1.5">
+          <el-button
+              type="primary"
+              plain
+              icon="Plus"
+              size="small"
+              @click="handleAdd"
+          >新增
+          </el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button
+              type="danger"
+              plain
+              icon="Delete"
+              size="small"
+              :disabled="multiple"
+              @click="handleDelete"
+          >删除
+          </el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button
+              type="success"
+              plain
+              icon="Picture"
+              size="small"
+              :disabled="multiple"
+              @click="handleBatchBind"
+          >批量绑定引导图
+          </el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button type="warning" plain icon="Finished" size="small" @click="handleGenerateFinalStep">生成终检</el-button>
+        </el-col>
       </el-row>
 
       <el-table v-loading="loading" :data="stepList" height="600px" @selection-change="handleSelectionChange">
@@ -60,7 +45,8 @@
         <el-table-column label="名称" align="center" prop="name"/>
         <el-table-column label="引导图" align="center">
           <template #default="scope">
-            <el-tag type="danger" v-if="scope.row.guideMapUrl === '' || scope.row.guideMapUrl === null">未绑定</el-tag>
+            <el-tag v-if="scope.row.code === '-1'" type="info">异物检测</el-tag>
+            <el-tag type="danger" v-else-if="scope.row.guideMapUrl === '' || scope.row.guideMapUrl === null">未绑定</el-tag>
             <el-tag v-else type="success">已绑定</el-tag>
           </template>
         </el-table-column>
@@ -88,20 +74,21 @@
         </el-table-column>
         <el-table-column label="操作" align="center" width="300px" class-name="small-padding fixed-width">
           <template #default="scope">
-            <el-button link type="primary" icon="Top" :disabled="scope.$index === 0 || scope.row.code === '00' || scope.row.code === '99'"
+            <el-button link type="primary" icon="Top"
+                       :disabled="scope.$index === 0 || scope.row.code === '-1' || scope.row.code === '99'"
                        @click="handleMoveUp(scope.$index, scope.row)">上移
             </el-button>
             <el-button link type="primary" icon="Bottom"
-                       :disabled="scope.$index === stepList.length - 1 || scope.row.code === '00' || scope.row.code === '99'"
+                       :disabled="scope.$index === stepList.length - 1 || scope.row.code === '-1' || scope.row.code === '99'"
                        @click="handleMoveDown(scope.$index, scope.row)">下移
             </el-button>
-            <el-button link type="primary" icon="Picture" :disabled="scope.row.code === '00' || scope.row.code === '99'"
+            <el-button link type="primary" icon="Picture" :disabled="scope.row.code === '-1'"
                        @click="handleBind(scope.row)">修改引导图
             </el-button>
-            <el-button link type="primary" icon="Edit" :disabled="scope.row.code === '00' || scope.row.code === '99'"
+            <el-button link type="primary" icon="Edit" :disabled="scope.row.code === '-1'"
                        @click="handleUpdate(scope.row)">修改
             </el-button>
-            <el-button link type="primary" icon="Delete" :disabled="scope.row.code === '00' || scope.row.code === '99'"
+            <el-button link type="primary" icon="Delete" :disabled="scope.row.code === '-1'"
                        @click="handleDelete(scope.row)">删除
             </el-button>
           </template>
@@ -139,12 +126,20 @@
 
     <LabelDialog v-model="labelVisible" :visible="labelVisible" :stepIds="targetStepIds"
                  :tempCraftType="props.tempCraftType"
+                 :borrowImageUrl="borrowImageUrl"
                  @change-status="changeStepStatus"/>
   </div>
 </template>
 
 <script setup name="Step">
-import {listStep, getStep, delStep, addStep, updateStep, deleteStepByCodeAndProcessId} from "@/api/craft/step"
+import {
+  listStep,
+  getStep,
+  delStep,
+  addStep,
+  updateStep,
+  getStepOri
+} from "@/api/craft/step"
 import LabelDialog from "@/views/craft/info_craft/LabelDialog.vue";
 import {changeStatus} from "@/api/craft/craft.js";
 import {ref, reactive, toRefs, getCurrentInstance, watch} from "vue";
@@ -162,40 +157,7 @@ const total = ref(0)
 const title = ref("")
 const stepOpen = defineModel()
 const labelVisible = ref(false)
-const isException = ref(false)
-const isFinalCheck = ref(false)
-
-watch(isException, async (value) => {
-  if (value) {
-    await addStep({
-      code: '00',
-      name: '异常处理',
-      content: '异常处理',
-      guideMapUrl: null,
-      processId: props.processId,
-    })
-    getList()
-  } else {
-    await deleteStepByCodeAndProcessId('00', props.processId)
-    getList()
-  }
-})
-
-watch(isFinalCheck, async (value) => {
-  if (value) {
-    await addStep({
-      code: '99',
-      name: '终审',
-      content: '终审',
-      guideMapUrl: null,
-      processId: props.processId,
-    })
-    getList()
-  } else {
-    await deleteStepByCodeAndProcessId('99', props.processId)
-    getList()
-  }
-})
+const borrowImageUrl = ref('')
 
 // 新增：用于传递给标注组件的实际操作 ID 数组
 const targetStepIds = ref([])
@@ -276,8 +238,6 @@ async function swapOrder(row1, row2) {
   loading.value = true;
 
   // 2. 将修改后的两条数据发送给后端保存
-  // 提示：如果后端支持批量修改，建议写一个批量修改的接口 batchUpdateStep([row1, row2])
-  // 这里演示连续发两次单个修改请求 (Promise.all)
   Promise.all([
     await updateStep(row1),
     await updateStep(row2)
@@ -346,6 +306,124 @@ function handleDelete(row) {
     proxy.$modal.msgSuccess("删除成功")
   }).catch(() => {
   })
+}
+
+// ================= 新增：生成终检工步核心逻辑 =================
+async function handleGenerateFinalStep() {
+  // 1. 获取除终检(99)及异物检测(-1)之外的所有正常工步
+  const normalSteps = stepList.value.filter(s => s.code !== '99' && s.code !== '-1');
+  if (normalSteps.length === 0) {
+    return proxy.$modal.msgWarning("当前没有任何工步，无法生成终检！");
+  }
+
+  // 2. 找到最后一个带有引导图的工步
+  const lastStepWithImage = [...normalSteps].reverse().find(s => s.guideMapUrl);
+  if (!lastStepWithImage) {
+    return proxy.$modal.msgWarning("前面的工步均未绑定引导图，无法提取背景图！");
+  }
+
+  proxy.$modal.loading("正在聚合数据并生成终检工步...");
+
+  try {
+    const result = await getStep(lastStepWithImage.id);
+    let fullImageUrl = '';
+    try {
+      const urls = JSON.parse(result.data.guideMapUrl);
+      fullImageUrl = urls[0];
+    } catch (e) {
+      fullImageUrl = result.data.guideMapUrl;
+    }
+
+    if (!fullImageUrl) {
+      proxy.$modal.closeLoading();
+      return proxy.$modal.msgError("无法获取最后一个工步的背景图");
+    }
+
+    // 3. 遍历所有正常工步，把 coordsInfo 中的坐标按 label 进行聚合
+    const mergedCoordsMap = new Map();
+    normalSteps.forEach(step => {
+      if (step.coordsInfo) {
+        try {
+          const coords = JSON.parse(step.coordsInfo);
+          coords.forEach(group => {
+            if (!mergedCoordsMap.has(group.label)) {
+              mergedCoordsMap.set(group.label, []);
+            }
+            // 将相同 label 的框合并到一起
+            mergedCoordsMap.get(group.label).push(...group.posList);
+          });
+        } catch (e) {
+          console.error(`解析工步 [${step.name}] 坐标失败`);
+        }
+      }
+    });
+
+    // 组装成后端需要的 JSON 数组结构
+    const finalCoordsInfo = [];
+    mergedCoordsMap.forEach((posList, label) => {
+      finalCoordsInfo.push({ label, posList });
+    });
+
+    // 4. 准备终检工步(99)的数据
+    const existingStep99 = stepList.value.find(s => s.code === '99');
+
+    const finalStepData = {
+      code: '99',
+      name: '终检',
+      content: '终检',
+      processId: props.processId,
+      coordsInfo: JSON.stringify(finalCoordsInfo),
+      guideMapUrl: null
+    };
+
+    // 5. 保存数据到数据库
+    if (existingStep99) {
+      finalStepData.id = existingStep99.id;
+      await updateStep(finalStepData);
+      console.log("终检工步已更新")
+    } else {
+      await addStep(finalStepData);
+      console.log("终检工步已添加")
+      await changeStatus(props.craftId);
+    }
+
+    proxy.$modal.msgSuccess("终检工步生成成功！");
+
+    // 重新获取列表，以获取最新的数据和生成的ID
+    await getListPromise();
+
+    // 6. 自动唤起标注弹窗
+    proxy.$modal.confirm('数据已聚合。是否立即打开标注面板，预览并保存最终的组合标注图？', '提示', {
+      confirmButtonText: '去预览并保存',
+      cancelButtonText: '稍后处理'
+    }).then(() => {
+      const step99 = stepList.value.find(s => s.code === '99');
+      if (step99) {
+        borrowImageUrl.value = fullImageUrl;
+        handleBind(step99);
+      }
+    }).catch(() => {});
+
+  } catch (error) {
+    console.error(error);
+    proxy.$modal.msgError("生成终检工步失败，请检查网络或后端接口");
+  } finally {
+    proxy.$modal.closeLoading();
+  }
+}
+
+// 封装一个 Promise 版本的 getList 确保同步执行完毕后再打开弹窗
+function getListPromise() {
+  return new Promise((resolve) => {
+    loading.value = true;
+    queryParams.value.processId = props.processId;
+    listStep(queryParams.value).then(response => {
+      stepList.value = response.rows;
+      total.value = response.total;
+      loading.value = false;
+      resolve();
+    });
+  });
 }
 
 function onClose() {

@@ -305,4 +305,18 @@
         <include refid="selectBizProcessRecordVo"/>
         where work_order_code =#{workOrderCode} and process_code = #{processCode} and step_code = #{stepNo}
     </select>
+
+    <select id="selectRecordByDate" resultMap="BizProcessRecordResult">
+        <include refid="selectBizProcessRecordVo"/>
+        <where>
+            <if test="startDate != null and startDate != ''">
+                and submit_time &gt;= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                and submit_time &lt;= #{endDate}
+            </if>
+        </where>
+        order by create_time desc
+        limit 10
+    </select>
 </mapper>

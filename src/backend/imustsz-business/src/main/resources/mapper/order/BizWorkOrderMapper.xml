@@ -265,4 +265,43 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectBizWorkOrderVo" />
         where work_order_code = #{workOrderNo}
     </select>
+
+    <select id="countOrders" resultType="GroupByStatus">
+        select status, count(0) count from biz_work_order group by status;
+    </select>
+
+    <select id="selectPlannedCountByDate" resultType="java.util.Map">
+        SELECT
+            DATE_FORMAT(start_time, '%Y-%m-%d') as dateStr,
+            COUNT(id) as totalCount
+        FROM biz_work_order
+        WHERE start_time &gt;= #{startDate} AND start_time &lt;= #{endDate}
+        GROUP BY DATE_FORMAT(start_time, '%Y-%m-%d')
+    </select>
+
+    <select id="selectCompletedCountByDate" resultType="java.util.Map">
+        SELECT
+            DATE_FORMAT(update_time, '%Y-%m-%d') as dateStr,
+            COUNT(id) as totalCount
+        FROM biz_work_order
+        WHERE status IN (3, 4)
+          AND update_time &gt;= #{startDate} AND update_time &lt;= #{endDate}
+        GROUP BY DATE_FORMAT(update_time, '%Y-%m-%d')
+    </select>
+
+    <select id="selectStatusDistribution" resultType="java.util.Map">
+        SELECT
+        status,
+        COUNT(id) as totalCount
+        FROM biz_work_order
+        <where>
+            <if test="startDate != null and startDate != ''">
+                AND start_time &gt;= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND start_time &lt;= #{endDate}
+            </if>
+        </where>
+        GROUP BY status
+    </select>
 </mapper>

@@ -19,7 +19,9 @@ services:
       - MINIO_HOST=192.168.80.132
       - MINIO_PORT=9000
       - WEBSERVICE_HOST=webservice
-      - WEBSERVICE_PORT=8083
+      - WEBSERVICE_PORT=8081
+      - TARGET_NAMESPACE=http://www.pgxxgc.com/IF_Service
+      - SERVICE_NAME=IFService
     restart: unless-stopped
     depends_on:
       mysql:
@@ -47,7 +49,6 @@ services:
     ports:
       - "3306:3306"
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-    # 健康检查：检测MySQL是否就绪
     healthcheck:
       test: ["CMD-SHELL", "mysql -uroot -proot_password -D procvision -e 'SELECT 1 FROM sys_user_role LIMIT 1;'"]
       interval: 10s    # 每5秒检查一次
@@ -102,10 +103,12 @@ services:
     container_name: procvision-nginx
     ports:
       - "80:80"
+      - "443:443"
     restart: unless-stopped
     volumes:
       - ./nginx/conf/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/logs:/var/log/nginx
+      - ./nginx/certs:/etc/nginx/ssl
     depends_on:
       - server
     networks:
@@ -113,17 +116,19 @@ services:
 
   # 6. MOM服务 (MOM)
   webservice:
-    build: ../MOM/demo
+    build: ../MOM
     container_name: procvision-webservice
     ports:
-      - "8083:8080"
+      - "8081:8081"
     restart: unless-stopped
     depends_on:
       - server
     environment:
-      SERVER_PORT: 8083
-      SERVER_IP: server
-      TARGET_SERVER_CRAFT: http://localhost:8080/craft/info/getCraftFromMMO
-      TARGET_SERVER_ORDER: http://localhost:8080/workOrder/getOrderFromMMO
+      SERVER_IP: webservice
+      SERVER_PORT: 8081
+      UNIQUE_FLAG_CRAFT: 1000001
+      UNIQUE_FLAG_ORDER: 1000003
+      TARGET_ADDRESS_CRAFT: http://server:8080/craft/info/getCraftFromMMO
+      TARGET_ADDRESS_ORDER: http://server:8080/workOrder/getOrderFromMMO
     networks:
       - procvision

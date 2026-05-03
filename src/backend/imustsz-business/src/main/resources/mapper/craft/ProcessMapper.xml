@@ -10,15 +10,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="name"    column="name"    />
         <result property="desc"    column="desc"    />
         <result property="algorithmId"    column="algorithm_id"    />
-        <result property="guideGranularity"    column="guide_granularity"    />
+        <result property="exceptionCheck"    column="exception_check"    />
         <result property="craftId"    column="craft_id"    />
         <result property="craftCode"    column="craft_code"    />
-        <result property="guideMapUrl"    column="guide_map_url"    />
+        <result property="finalCheck"    column="final_check"    />
         <result property="processMaterialInfo"    column="process_material_info"    />
     </resultMap>
 
     <sql id="selectProcessVo">
-        select id, code, name, algorithm_id, `desc`, guide_granularity, craft_id, craft_code, guide_map_url, process_material_info from biz_process
+        select id, code, name, algorithm_id, `desc`, exception_check, craft_id, craft_code, final_check, process_material_info from biz_process
     </sql>
 
     <select id="selectProcessList" parameterType="Process" resultMap="ProcessResult">
@@ -28,10 +28,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
             <if test="desc != null  and desc != ''"> and `desc` = #{desc}</if>
             <if test="algorithmId != null  and algorithmId != ''"> and algorithm_id = #{algorithmId}</if>
-            <if test="guideGranularity != null "> and guide_granularity = #{guideGranularity}</if>
+            <if test="finalCheck != null "> and final_check = #{finalCheck}</if>
             <if test="craftId != null "> and craft_id = #{craftId}</if>
             <if test="craftCode != null  and craftCode != ''"> and craft_code = #{craftCode}</if>
-            <if test="guideMapUrl != null  and guideMapUrl != ''"> and guide_map_url = #{guideMapUrl}</if>
+            <if test="exceptionCheck != null  and exceptionCheck != ''"> and exception_check = #{exceptionCheck}</if>
             <if test="processMaterialInfo != null  and processMaterialInfo != ''"> and process_material_info = #{processMaterialInfo}</if>
             <if test="createTime != null "> and create_time = #{createTime}</if>
             <if test="updateTime != null "> and update_time = #{updateTime}</if>
@@ -53,10 +53,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="name != null">name,</if>
             <if test="desc != null">`desc`,</if>
             <if test="algorithmId != null">algorithm_id,</if>
-            <if test="guideGranularity != null">guide_granularity,</if>
+            <if test="finalCheck != null">final_check,</if>
             <if test="craftId != null">craft_id,</if>
             <if test="craftCode != null">craft_code,</if>
-            <if test="guideMapUrl != null">guide_map_url,</if>
+            <if test="exceptionCheck != null">exception_check,</if>
             <if test="processMaterialInfo != null">process_material_info,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateTime != null">update_time,</if>
@@ -69,10 +69,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="name != null">#{name},</if>
             <if test="desc != null">#{desc},</if>
             <if test="algorithmId != null">#{algorithmId},</if>
-            <if test="guideGranularity != null">#{guideGranularity},</if>
+            <if test="finalCheck != null">#{finalCheck},</if>
             <if test="craftId != null">#{craftId},</if>
             <if test="craftCode != null">#{craftCode},</if>
-            <if test="guideMapUrl != null">#{guideMapUrl},</if>
+            <if test="exceptionCheck != null">#{exceptionCheck},</if>
             <if test="processMaterialInfo != null">#{processMaterialInfo},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
@@ -89,10 +89,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="name != null">name = #{name},</if>
             <if test="desc != null">`desc` = #{desc},</if>
             <if test="algorithmId != null">algorithmId = #{algorithmId},</if>
-            <if test="guideGranularity != null">guide_granularity = #{guideGranularity},</if>
+            <if test="finalCheck != null">final_check = #{finalCheck},</if>
             <if test="craftId != null">craft_id = #{craftId},</if>
             <if test="craftCode != null">craft_code = #{craftCode},</if>
-            <if test="guideMapUrl != null">guide_map_url = #{guideMapUrl},</if>
+            <if test="exceptionCheck != null">exception_check = #{exceptionCheck},</if>
             <if test="processMaterialInfo != null">process_material_info = #{processMaterialInfo},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>

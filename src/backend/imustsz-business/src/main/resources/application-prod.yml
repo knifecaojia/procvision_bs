@@ -82,6 +82,7 @@ spring:
 minio:
   # minio地址
   endpoint: http://${MINIO_HOST}:${MINIO_PORT}
+  external_endpoint: https://${MINIO_HOST}
   # minio用户名
   accessKey: admin
   # minio密码

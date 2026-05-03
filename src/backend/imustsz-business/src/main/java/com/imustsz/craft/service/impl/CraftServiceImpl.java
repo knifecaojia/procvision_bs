@@ -216,6 +216,8 @@ public class CraftServiceImpl implements ICraftService {
         if (isNotAlg) {
             craftMapper.changeCraftStatus(id, 3);
             for (BizWorkOrder bizWorkOrder : bizWorkOrders) {
+                if (bizWorkOrder.getStatus() == 3 || bizWorkOrder.getStatus() == 4)
+                    continue;
                 bizWorkOrder.setStatus(-2);
                 bizWorkOrderMapper.updateBizWorkOrderByCode(bizWorkOrder);
             }
@@ -223,6 +225,8 @@ public class CraftServiceImpl implements ICraftService {
         else if (isNotGuide) {
             craftMapper.changeCraftStatus(id, 2);
             for (BizWorkOrder bizWorkOrder : bizWorkOrders) {
+                if (bizWorkOrder.getStatus() == 3 || bizWorkOrder.getStatus() == 4)
+                    continue;
                 bizWorkOrder.setStatus(-1);
                 bizWorkOrderMapper.updateBizWorkOrderByCode(bizWorkOrder);
             }
@@ -230,6 +234,8 @@ public class CraftServiceImpl implements ICraftService {
         else {
             craftMapper.changeCraftStatus(id, 4);
             for (BizWorkOrder bizWorkOrder : bizWorkOrders) {
+                if (bizWorkOrder.getStatus() == 3 || bizWorkOrder.getStatus() == 4)
+                    continue;
                 bizWorkOrder.setStatus(1);
                 bizWorkOrderMapper.updateBizWorkOrderByCode(bizWorkOrder);
             }

@@ -49,3 +49,27 @@ export function bindProcessAlgorithm(id, algId){
         method: 'get'
     })
 }
+
+export function changeExceptionCheck(id, status){
+    const data = {
+        id: id,
+        exceptionCheck: status
+    }
+    return request({
+        url: '/craft/process/changeExceptionStatus',
+        method: 'post',
+        data: data
+    })
+}
+
+export function changeFinalCheckCheck(id, status){
+    const data = {
+        id: id,
+        finalCheck: status
+    }
+    return request({
+        url: '/craft/process/changeFinalStatus',
+        method: 'post',
+        data: data
+    })
+}

@@ -40,6 +40,13 @@ public class BizStepController extends BaseController
         return getDataTable(list);
     }
 
+    @GetMapping("/listOri")
+    public TableDataInfo listOri(BizStep bizStep) throws Exception {
+        startPage();
+        List<BizStep> list = bizStepService.selectBizStepListOri(bizStep);
+        return getDataTable(list);
+    }
+
     /**
      * 导出工步信息列表
      */
@@ -88,8 +95,7 @@ public class BizStepController extends BaseController
     @PreAuthorize("@ss.hasPermi('craft:step:remove')")
     @Log(title = "工步信息", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
-    public AjaxResult remove(@PathVariable Long[] ids)
-    {
+    public AjaxResult remove(@PathVariable Long[] ids) throws Exception {
         return toAjax(bizStepService.deleteBizStepByIds(ids));
     }
 
@@ -106,5 +112,10 @@ public class BizStepController extends BaseController
     @GetMapping("/getUrl")
     public AjaxResult getUrl(@RequestParam Long id) throws Exception {
         return success(bizStepService.getObjectNameById(id));
+    }
+
+    @GetMapping("/ori/{id}")
+    public AjaxResult getOriUrl(@PathVariable Long id) throws Exception {
+        return success(bizStepService.selectBizStepOriById(id));
     }
 }

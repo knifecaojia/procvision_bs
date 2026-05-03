@@ -62,5 +62,5 @@ public interface BizDataCollectionMapper
      */
     public int deleteBizDataCollectionByIds(Long[] ids);
 
-    int checkData(String data);
+    BizDataCollection checkData(String data);
 }

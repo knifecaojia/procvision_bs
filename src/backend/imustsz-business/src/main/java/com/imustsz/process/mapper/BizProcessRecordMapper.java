@@ -1,6 +1,7 @@
 package com.imustsz.process.mapper;
 
 import java.util.List;
+import java.util.Map;
 
 import com.imustsz.framework.aspectj.AutoFill;
 import com.imustsz.process.domain.BizProcessRecord;
@@ -78,4 +79,6 @@ public interface BizProcessRecordMapper
     List<BizProcessRecord> selectBizProcessRecordByOrderAndProcessCode(@Param("workOrderCode") String workOrderCode, @Param("processCode") String processCode, @Param("stepStatus") Integer stepStatus);
 
     BizProcessRecord selectBizProcessRecordByOrderAndProcessCodeAndStepNo(@Param("workOrderCode") String workOrderCode, @Param("processCode") String processCode, @Param("stepNo") String stepNo);
+
+    List<BizProcessRecord> selectRecordByDate(@Param("startDate") String startDate, @Param("endDate") String endDate);
 }

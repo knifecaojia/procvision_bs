@@ -17,6 +17,13 @@ export function getStep(id) {
   })
 }
 
+export function getStepOri(id) {
+    return request({
+        url: '/craft/step/ori/' + id,
+        method: 'get'
+    })
+}
+
 // 新增工步信息
 export function addStep(data) {
   return request({
@@ -47,5 +54,20 @@ export function deleteStepByCodeAndProcessId(code, processId){
     return request({
         url: '/craft/step/' + code + '/' + processId,
         method: 'delete',
+    })
+}
+
+export function listStepOri(query){
+    return request({
+        url: '/craft/step/listOri',
+        method: 'get',
+        params: query
+    })
+}
+
+export function getOriObjName(id){
+    return request({
+        url: '/craft/step/getOriObjName/' +  id,
+        method: 'get',
     })
 }

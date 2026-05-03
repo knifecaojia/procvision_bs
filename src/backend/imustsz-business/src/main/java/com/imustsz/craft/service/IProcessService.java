@@ -65,4 +65,8 @@ public interface IProcessService
     int bindAlg(Long id, Long algId);
 
     boolean safeDelCheck(Long[] ids);
+
+    int changeExceptionCheck(Process process);
+
+    int changeFinalStatus(Process process);
 }

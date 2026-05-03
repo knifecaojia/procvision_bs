@@ -109,4 +109,13 @@ public class ProcessController extends BaseController
             return success();
     }
 
+    @PostMapping("/changeExceptionStatus")
+    public AjaxResult changeExceptionCheck(@RequestBody Process process) {
+        return toAjax(processService.changeExceptionCheck(process));
+    }
+
+    @PostMapping("/changeFinalStatus")
+    public AjaxResult changeFinalStatus(@RequestBody Process process) {
+        return toAjax(processService.changeFinalStatus(process));
+    }
 }

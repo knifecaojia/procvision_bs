@@ -1,11 +1,13 @@
 package com.imustsz.order.mapper;
 
 import java.util.List;
+import java.util.Map;
 
 import com.imustsz.cilent.domain.dto.TaskSelectDTO;
 import com.imustsz.cilent.domain.vo.WorkOrderVO;
 import com.imustsz.framework.aspectj.AutoFill;
 import com.imustsz.order.domain.BizWorkOrder;
+import com.imustsz.order.domain.GroupByStatus;
 import org.apache.ibatis.annotations.Param;
 
 /**
@@ -85,4 +87,12 @@ public interface BizWorkOrderMapper
     BizWorkOrder selectBizWorkOrderByCodeAndProcessCode(@Param("workOrderCode") String workOrderCode, @Param("processCode") String processCode);
 
     BizWorkOrder checkWorkOrderExist(String workOrderNo);
+
+    List<GroupByStatus> countOrders();
+
+    List<Map<String, Object>> selectPlannedCountByDate(@Param("startDate") String startDate, @Param("endDate") String endDate);
+
+    List<Map<String, Object>> selectCompletedCountByDate(@Param("startDate") String startDate, @Param("endDate") String endDate);
+
+    List<Map<String, Object>> selectStatusDistribution(@Param("startDate") String startDate, @Param("endDate") String endDate);
 }

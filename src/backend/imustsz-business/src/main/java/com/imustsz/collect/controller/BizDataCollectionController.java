@@ -105,9 +105,7 @@ public class BizDataCollectionController extends BaseController
 
     @GetMapping("/check")
     public AjaxResult check(@RequestParam("productionInfo") String productionInfo) {
-        AjaxResult result = new AjaxResult();
-        result.put("isExist", bizDataCollectionService.checkProduction(productionInfo) > 0);
-        return result;
+        return success(bizDataCollectionService.checkProduction(productionInfo));
     }
 
     @PostMapping("/process")

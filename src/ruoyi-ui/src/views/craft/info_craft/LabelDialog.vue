@@ -186,6 +186,10 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  borrowImageUrl: {
+    type: String,
+    default: ''
+  }
 });
 
 const emit = defineEmits(['change-status'])
@@ -219,7 +223,12 @@ const loadCurrentStepData = async () => {
 
   try {
     const res = await getStep(currentStepId.value);
-    const urlsStr = res.data.guideMapUrl;
+    let urlsStr = res.data.guideMapUrl;
+
+    if (!urlsStr && res.data.code === '99' && props.borrowImageUrl) {
+      // 伪造成后端返回的格式喂给画板
+      urlsStr = JSON.stringify([props.borrowImageUrl]);
+    }
 
     let coordsInfo = [];
     if (res.data.coordsInfo) {
