@@ -88,7 +88,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null">code = #{code},</if>
             <if test="name != null">name = #{name},</if>
             <if test="desc != null">`desc` = #{desc},</if>
-            <if test="algorithmId != null">algorithmId = #{algorithmId},</if>
+            <if test="algorithmId != null">algorithm_id = #{algorithmId},</if>
             <if test="finalCheck != null">final_check = #{finalCheck},</if>
             <if test="craftId != null">craft_id = #{craftId},</if>
             <if test="craftCode != null">craft_code = #{craftCode},</if>

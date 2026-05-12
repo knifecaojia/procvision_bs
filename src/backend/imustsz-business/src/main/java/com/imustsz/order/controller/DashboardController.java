@@ -39,6 +39,10 @@ public class DashboardController extends BaseController {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         data.put("statusData", dashboardService.getStatusData(today.minusDays(7).format(formatter), DateUtils.getDate()));
 
+        data.put("algResultData", dashboardService.getAlgResultData());
+
+        data.put("ngStepStats", dashboardService.getNgStepStats());
+
         return AjaxResult.success(data);
     }
 

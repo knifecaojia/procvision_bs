@@ -587,7 +587,7 @@ const submitData = async () => {
 
     const isExist = await checkExist(postData.data)
 
-    if (!isExist) {
+    if (!isExist.data) {
       await addData(postData);
       proxy.$modal.msgSuccess('归档成功！');
       resetFlow(true);

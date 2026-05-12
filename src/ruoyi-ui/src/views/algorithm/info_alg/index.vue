@@ -97,7 +97,6 @@
     />
 
     <!-- 添加或修改算法对话框 -->
-    <!--    <AddAlgorithm v-model="open" :formData="form" :fileList="fileList"></AddAlgorithm>-->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body @close="onClose">
       <el-form ref="algorithmRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="算法名称" prop="name">
@@ -288,7 +287,7 @@ const handleFileChange = (file) => {
 
 const customUpload = async () => {
   if (!selectedFile.value) {
-    proxy.$modal.warning('请先选择文件')
+    proxy.$modal.msgWarning('请先选择文件')
     return
   }
 
@@ -304,7 +303,7 @@ const customUpload = async () => {
     tempObj.value = res.data.objectName
   } catch (e) {
     isUploading.value = false
-    proxy.$modal.error('获取上传URL失败')
+    proxy.$modal.msgError('获取上传URL失败')
     return
   }
 
@@ -364,7 +363,7 @@ const customUpload = async () => {
     uploadStatus.percentage = 100
     uploadStatus.text = '上传完成'
     upLoadFlag.value = true
-    proxy.$modal.success('文件上传成功')
+    proxy.$modal.msgSuccess('文件上传成功')
   } catch (error) {
     if (axios.isCancel(error)) {
       ElMessage.warning('操作已取消');
@@ -397,11 +396,11 @@ const customUpload = async () => {
         msg = '文件体积过大，服务器拒绝接收';
       }
 
-      proxy.$modal.error(msg);
+      proxy.$modal.msgError(msg);
     }
     // 4. 其他未知错误
     else {
-      proxy.$modal.error('发生未知错误: ' + (error.message || '请重试'));
+      proxy.$modal.msgError('发生未知错误: ' + (error.message || '请重试'));
     }
 
     // 5. 错误发生后的状态清理 (非常重要，否则界面会卡在进度条上)

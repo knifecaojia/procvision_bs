@@ -308,6 +308,20 @@ public class MinioUtils {
         );
     }
 
+    public String generatePresignedUploadUrlHTTPS(String objectName) throws MinioException, InvalidKeyException, NoSuchAlgorithmException, IOException {
+        // 生成预签名 URL
+        String url =  minioClient.getPresignedObjectUrl(
+                GetPresignedObjectUrlArgs.builder()
+                        .bucket(bucketName)
+                        .object(objectName)
+                        .method(Method.PUT)
+                        .expiry(presignedUrlExpire, TimeUnit.SECONDS)
+                        .build()
+        );
+
+        return url.replace(endpoint, externalEndpoint);
+    }
+
     public String generatePresignedUploadUrl(String bucketName, String objectName) throws MinioException, InvalidKeyException, NoSuchAlgorithmException, IOException {
         // 生成预签名 URL
         return minioClient.getPresignedObjectUrl(
@@ -335,6 +349,10 @@ public class MinioUtils {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public String getPresignedUrlHttp(String objectName) throws Exception {
+        return getPresignedUrl(bucketName, objectName, presignedUrlExpire);
     }
 
     /**

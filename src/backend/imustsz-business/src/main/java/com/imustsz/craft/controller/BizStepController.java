@@ -1,8 +1,13 @@
 package com.imustsz.craft.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import javax.servlet.http.HttpServletResponse;
 
+import com.imustsz.common.utils.DateUtils;
+import com.imustsz.common.utils.bean.MinioUtils;
 import com.imustsz.craft.domain.dto.GuideInfoDTO;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +33,9 @@ public class BizStepController extends BaseController
 {
     @Autowired
     private IBizStepService bizStepService;
+
+    @Autowired
+    private MinioUtils minioUtils;
 
     /**
      * 查询工步信息列表
@@ -110,8 +118,12 @@ public class BizStepController extends BaseController
     }
 
     @GetMapping("/getUrl")
-    public AjaxResult getUrl(@RequestParam Long id) throws Exception {
-        return success(bizStepService.getObjectNameById(id));
+    public AjaxResult getUrl() throws Exception {
+        String objectName = DateUtils.getDate() + UUID.randomUUID();
+        Map<String, Object> map = new HashMap<>();
+        map.put("url", minioUtils.generatePresignedUploadUrlHTTPS(objectName));
+        map.put("objectName", objectName);
+        return success(map);
     }
 
     @GetMapping("/ori/{id}")

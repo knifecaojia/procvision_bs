@@ -37,16 +37,18 @@
         <el-col :span="1.5">
           <el-button type="warning" plain icon="Finished" size="small" @click="handleGenerateFinalStep">生成终检</el-button>
         </el-col>
+        <el-col :span="1.5">
+          <el-button type="info" plain icon="HelpFilled" size="small" @click="handleExceptionCheckChange">异物检测</el-button>
+        </el-col>
       </el-row>
 
       <el-table v-loading="loading" :data="stepList" height="600px" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center"/>
-        <el-table-column label="顺序" align="center" prop="code"/>
+        <el-table-column label="序号" align="center" prop="code"/>
         <el-table-column label="名称" align="center" prop="name"/>
         <el-table-column label="引导图" align="center">
           <template #default="scope">
-            <el-tag v-if="scope.row.code === '-1'" type="info">异物检测</el-tag>
-            <el-tag type="danger" v-else-if="scope.row.guideMapUrl === '' || scope.row.guideMapUrl === null">未绑定</el-tag>
+            <el-tag type="danger" v-if="scope.row.guideMapUrl === '' || scope.row.guideMapUrl === null">未绑定</el-tag>
             <el-tag v-else type="success">已绑定</el-tag>
           </template>
         </el-table-column>
@@ -88,7 +90,7 @@
             <el-button link type="primary" icon="Edit" :disabled="scope.row.code === '-1'"
                        @click="handleUpdate(scope.row)">修改
             </el-button>
-            <el-button link type="primary" icon="Delete" :disabled="scope.row.code === '-1'"
+            <el-button link type="primary" icon="Delete"
                        @click="handleDelete(scope.row)">删除
             </el-button>
           </template>
@@ -137,13 +139,13 @@ import {
   getStep,
   delStep,
   addStep,
-  updateStep,
-  getStepOri
+  updateStep, getStepOri,
 } from "@/api/craft/step"
 import LabelDialog from "@/views/craft/info_craft/LabelDialog.vue";
 import {changeStatus} from "@/api/craft/craft.js";
 import {ref, reactive, toRefs, getCurrentInstance, watch} from "vue";
-import LabelDialog_ from "@/views/craft/info_craft/LabelDialog_.vue";
+import { ElMessageBox } from 'element-plus';
+import {changeExceptionCheck} from "@/api/craft/process.js";
 
 const {proxy} = getCurrentInstance()
 
@@ -448,9 +450,100 @@ function changeStepStatus() {
   getList()
 }
 
+function handleExceptionCheckChange() {
+  // 1. 检查终检工步是否已生成
+  const existingStep99 = stepList.value.find(s => s.code === '99');
+  if (!existingStep99) {
+    return proxy.$modal.msgWarning("必须先生成终检工步，才能生成异物检测工步！");
+  }
+
+  // 2. 获取某一个工步的原图（这里取最后一个绑定了引导图的正常工步）
+  const normalSteps = stepList.value.filter(s => s.code !== '99' && s.code !== '-1');
+  const lastStepWithImage = [...normalSteps].reverse().find(s => s.guideMapUrl);
+  if (!lastStepWithImage) {
+    return proxy.$modal.msgWarning("前面没有任何工步绑定引导图，无法提取原图作为异物检测图！");
+  }
+
+  // 3. 弹窗让用户选择工步顺序
+  ElMessageBox.confirm(
+      '请选择异物检测工步在流程中的顺序位置：',
+      '生成异物检测',
+      {
+        distinguishCancelAndClose: true,
+        confirmButtonText: '在终检后',
+        cancelButtonText: '在终检前',
+        type: 'info'
+      }
+  ).then(() => {
+    // 用户点击了“在终检后”
+    executeGenerateExceptionStep(lastStepWithImage.id, true, existingStep99);
+  }).catch((action) => {
+    if (action === 'cancel') {
+      // 用户点击了“在终检前”
+      executeGenerateExceptionStep(lastStepWithImage.id, false, existingStep99);
+    }
+    // 如果 action 是 'close'（点击右上角X或遮罩层）则什么都不做
+  });
+}
+
+// 提取实际生成/保存逻辑
+async function executeGenerateExceptionStep(stepId, position, finalCheckStep) {
+  proxy.$modal.loading("正在生成异物检测工步...");
+  try {
+    // 重新获取该工步信息以拿到完整的背景图 URL
+    const result = await getStepOri(stepId);
+    let fullImageUrl = '';
+    try {
+      const urls = JSON.parse(result.data.guideMapUrl);
+      fullImageUrl = urls[0];
+    } catch (e) {
+      fullImageUrl = result.data.guideMapUrl;
+    }
+
+    if (!fullImageUrl) {
+      proxy.$modal.closeLoading();
+      return proxy.$modal.msgError("无法获取工步的原图");
+    }
+
+    // 4. 构造异物检测数据
+    const existingExceptionStep = stepList.value.find(s => s.code === '-1');
+    const stepData = {
+      code: '-1',
+      name: '异物检测',
+      // 通过 content 记录位置标识，方便在表格中直观查看（若后端有其他专属字段可放在对应字段）
+      content: `异物检测`,
+      processId: props.processId,
+      sort: position ? finalCheckStep.sort + 1 : finalCheckStep.sort - 1,
+      guideMapUrl: JSON.stringify([fullImageUrl, fullImageUrl])
+    };
+
+    // 5. 保存或更新
+    if (existingExceptionStep) {
+      stepData.id = existingExceptionStep.id;
+      await updateStep(stepData);
+      console.log("异物检测工步已更新");
+    } else {
+      await addStep(stepData);
+      console.log("异物检测工步已添加");
+      await changeStatus(props.craftId);
+    }
+
+    proxy.$modal.msgSuccess("异物检测工步生成成功！");
+    await getListPromise(); // 刷新列表，获取最新状态
+
+  } catch (error) {
+    console.error(error);
+    proxy.$modal.msgError("生成异物检测工步失败，请检查网络或后端接口");
+  } finally {
+    proxy.$modal.closeLoading();
+  }
+}
+
 watch(() => stepOpen.value, (value) => {
   if (value) {
     getList()
+  }else {
+    changeStatus(props.craftId)
   }
 })
 

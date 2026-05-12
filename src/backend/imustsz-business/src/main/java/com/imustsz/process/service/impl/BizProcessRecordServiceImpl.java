@@ -206,7 +206,7 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
                 stepRecordVO.setStepName(record.getStepName());
                 stepRecordVO.setStepStatus(record.getStepStatus());
                 try {
-                    stepRecordVO.setImgUrl(minioUtils.getPresignedUrl(record.getImagePath()));
+                    stepRecordVO.setImgUrl(minioUtils.getPresignedUrlHttp(record.getImagePath()));
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

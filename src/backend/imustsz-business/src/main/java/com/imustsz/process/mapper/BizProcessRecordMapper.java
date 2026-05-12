@@ -81,4 +81,8 @@ public interface BizProcessRecordMapper
     BizProcessRecord selectBizProcessRecordByOrderAndProcessCodeAndStepNo(@Param("workOrderCode") String workOrderCode, @Param("processCode") String processCode, @Param("stepNo") String stepNo);
 
     List<BizProcessRecord> selectRecordByDate(@Param("startDate") String startDate, @Param("endDate") String endDate);
+
+    List<Map<String, Object>> selectAlgResultData(@Param("startDate") String startDate, @Param("endDate") String endDate);
+
+    List<Map<String, Object>> selectNgStepStats(@Param("startDate") String startDate, @Param("endDate") String endDate);
 }

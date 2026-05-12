@@ -71,6 +71,9 @@ public class BizStepServiceImpl implements IBizStepService {
      */
     @Override
     public int insertBizStep(BizStep bizStep) {
+        if (!"-1".equals(bizStep.getCode())){
+            bizStep.setSort(Integer.parseInt(bizStep.getCode()));
+        }
         return bizStepMapper.insertBizStep(bizStep);
     }
 
@@ -84,12 +87,14 @@ public class BizStepServiceImpl implements IBizStepService {
     @Transactional
     public int updateBizStep(BizStep bizStep) throws Exception {
         BizStep step = bizStepMapper.getStepById(bizStep.getId());
-        if (step.getGuideMapUrl() != null && bizStep.getGuideMapUrl() != null) {
-            String[] objectName = step.getGuideMapUrl().substring(1, step.getGuideMapUrl().length() - 1).replace(" ", "").replace("\"", "").split(",");
-            for (String s : objectName)
-                minioUtils.deleteFile(s);
-        } else if (step.getGuideMapUrl() != null && bizStep.getGuideMapUrl() == null)
-            bizStep.setGuideMapUrl(step.getGuideMapUrl());
+        if(!"-1".equals(step.getCode())) {
+            if (step.getGuideMapUrl() != null && bizStep.getGuideMapUrl() != null) {
+                String[] objectName = step.getGuideMapUrl().substring(1, step.getGuideMapUrl().length() - 1).replace(" ", "").replace("\"", "").split(",");
+                for (String s : objectName)
+                    minioUtils.deleteFile(s);
+            } else if (step.getGuideMapUrl() != null && bizStep.getGuideMapUrl() == null)
+                bizStep.setGuideMapUrl(step.getGuideMapUrl());
+        }
         return bizStepMapper.updateBizStep(bizStep);
     }
 
@@ -103,7 +108,7 @@ public class BizStepServiceImpl implements IBizStepService {
     public int deleteBizStepByIds(Long[] ids) throws Exception {
         for (Long id : ids) {
             BizStep step = bizStepMapper.getStepById(id);
-            if (step.getGuideMapUrl() != null) {
+            if (!"-1".equals(step.getCode()) && step.getGuideMapUrl() != null) {
                 String[] objectName = step.getGuideMapUrl().substring(1, step.getGuideMapUrl().length() - 1).replace(" ", "").replace("\"", "").split(",");
                 for (String s : objectName)
                     minioUtils.deleteFile(s);

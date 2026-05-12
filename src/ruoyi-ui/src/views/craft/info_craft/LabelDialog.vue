@@ -85,16 +85,13 @@
           :close-on-click-modal="false"
           @close="cancelAnnotation"
       >
-        <el-select v-model="labelText" placeholder="请选择标签" style="width: 100%; margin-bottom: 20px;">
-          <el-option v-if="props.tempCraftType === 'TX'" v-for="item in label_tianxian" :key="item.value" :label="item.label" :value="item.value"></el-option>
-          <el-option v-else v-for="item in label_banji" :key="item.label" :label="item.label" :value="item.value"></el-option>
-        </el-select>
-<!--        <el-input-->
-<!--            v-model="labelText"-->
-<!--            placeholder="请输入标签"-->
-<!--            @keyup.enter="confirmLabel"-->
-<!--            ref="inputRef"-->
-<!--        />-->
+<!--        <el-select v-model="labelText" allow-create filterable placeholder="请选择标签" style="width: 100%; margin-bottom: 20px;">-->
+<!--          <el-option v-if="props.tempCraftType === 'TX'" v-for="item in label_tianxian" :key="item.value" :label="item.label" :value="item.value"></el-option>-->
+<!--          <el-option v-else v-for="item in label_banji" :key="item.label" :label="item.label" :value="item.value"></el-option>-->
+<!--        </el-select>-->
+
+        <el-cascader v-model="labelText" :show-all-levels="false" :props="optionProps" :options="options" placeholder="请选择标签" style="width: 100%; margin-bottom: 20px;"></el-cascader>
+
         <el-input
             style="margin-top: 20px;"
             v-model="remark"
@@ -144,9 +141,10 @@ import {fabric} from 'fabric';
 import {getUploadUrl} from "@/api/algorithm/algorithm.js";
 import {updateStep, getStep} from "@/api/craft/step.js";
 import axios from "axios";
+import {Loading, VideoCamera} from "@element-plus/icons-vue";
 const {proxy} = getCurrentInstance()
 
-const {label_tianxian, label_banji} = proxy.useDict("label_tianxian", 'label_banji')
+const {label_tianxian, label_banji, label_mozu} = proxy.useDict("label_tianxian", 'label_banji', 'label_mozu')
 const labelVisible = defineModel()
 const canvas = ref(null);
 const isDrawingMode = ref(false);
@@ -192,6 +190,28 @@ const props = defineProps({
   }
 });
 
+const options = computed(() => [
+  {
+    value: 'tianxian',
+    label: '天线',
+    children: label_tianxian.value
+  },
+  {
+    value: 'banji',
+    label: '板级',
+    children: label_banji.value
+  },
+  {
+    value: 'mozu',
+    label: '模组',
+    children: label_mozu.value
+  }
+]);
+
+const optionProps = {
+  expandTrigger: 'hover'
+}
+
 const emit = defineEmits(['change-status'])
 
 const currentIndex = ref(0);
@@ -226,7 +246,6 @@ const loadCurrentStepData = async () => {
     let urlsStr = res.data.guideMapUrl;
 
     if (!urlsStr && res.data.code === '99' && props.borrowImageUrl) {
-      // 伪造成后端返回的格式喂给画板
       urlsStr = JSON.stringify([props.borrowImageUrl]);
     }
 
@@ -250,6 +269,12 @@ const loadCurrentStepData = async () => {
       if (originalUrl) {
         const fullUrl = originalUrl.startsWith('http') ? originalUrl : BASE_API + originalUrl;
         const response = await fetch(fullUrl, { cache: "no-cache" });
+
+        // 【新增】：检查网络请求是否成功（拦截 404、500 等 URL 失效情况）
+        if (!response.ok) {
+          throw new Error(`图片加载失败，状态码: ${response.status}`);
+        }
+
         const blob = await response.blob();
         const file = new File([blob], `history_${Date.now()}.jpg`, { type: blob.type });
 
@@ -263,7 +288,9 @@ const loadCurrentStepData = async () => {
     }
   } catch (err) {
     console.error("加载工步历史图片失败", err);
-    if (currentIndex.value === 0) uploadFile.value = null;
+    proxy.$modal.msgWarning('历史原图已失效或加载失败，请通过“本地上传”或“打开相机”提供新图片！');
+    if (canvas.value) canvas.value.clear();
+    uploadFile.value = null;
   } finally {
     canvasLoading.value = false;
   }
@@ -435,7 +462,10 @@ const loadFileToCanvas = (file, historyCoords = []) => {
       }
       proxy.$modal.closeLoading();
     };
-    imgObj.onerror = () => proxy.$modal.closeLoading();
+    imgObj.onerror = () => {
+      proxy.$modal.closeLoading();
+      proxy.$modal.msgWarning('图片解析失败，可能文件已损坏，请重新上传！');
+    };
   };
   reader.onerror = () => proxy.$modal.closeLoading();
   reader.readAsDataURL(file);
@@ -451,7 +481,7 @@ const openCameraDialog = async () => {
   cameraVisible.value = true;
   cameraConnected.value = false;
   await nextTick();
-  startLocalCamera();
+  await startLocalCamera();
 };
 
 const startLocalCamera = async () => {
@@ -548,6 +578,8 @@ const onMouseUp = () => {
 // 【核心改造】：不再添加文字和组合体，直接给矩形框赋予信息和交互能力
 const confirmLabel = () => {
   if (!labelText.value) return proxy.$modal.msgWarning('请输入标签');
+
+  labelText.value = labelText.value[labelText.value.length-1]
 
   if (!remark) remark.value = '';
 

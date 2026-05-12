@@ -176,6 +176,7 @@ public class CraftServiceImpl implements ICraftService {
                     BizStep bizStep = new BizStep();
                     bizStep.setProcessId(process.getId());
                     bizStep.setCode(step.getStepNo());
+                    bizStep.setSort(Integer.parseInt(step.getStepNo()));
                     bizStep.setName(step.getStepName());
                     bizStep.setContent(step.getStepContent());
                     bizStepMapper.insertBizStep(bizStep);

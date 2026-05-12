@@ -302,7 +302,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
 
     private String getLabeledUrl(String urls) throws Exception {
         String[] split = urls.substring(1, urls.length() - 1).replace("\"", "").split(",");
-        return minioUtils.getPresignedUrl(split[1]);
+        return minioUtils.getPresignedUrlHttp(split[1]);
     }
 
     @Override

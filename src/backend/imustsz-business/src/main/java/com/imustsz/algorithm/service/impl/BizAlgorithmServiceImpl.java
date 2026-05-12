@@ -115,7 +115,7 @@ public class BizAlgorithmServiceImpl implements IBizAlgorithmService
                 algorithm.setId(algorithmVO.getId());
                 algorithm.setName(algorithmVO.getName());
                 algorithm.setVersion(algorithmVO.getVersion());
-                algorithm.setUrl(minioUtils.getPresignedUrl(algorithmVO.getObjectName()));
+                algorithm.setUrl(minioUtils.getPresignedUrlHttp(algorithmVO.getObjectName()));
                 algorithm.setDesc(algorithmVO.getDesc());
                 algorithmVOS.add(algorithm);
             } catch (Exception e) {

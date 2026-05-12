@@ -40,8 +40,26 @@ public class BizStep extends BaseEntity
     @Excel(name = "工序id")
     private Long processId;
 
+    private Integer sort;
+
     @Excel(name = "坐标信息")
     private String guideInfo;
+
+    public String getGuideInfo() {
+        return guideInfo;
+    }
+
+    public void setGuideInfo(String guideInfo) {
+        this.guideInfo = guideInfo;
+    }
+
+    public Integer getSort() {
+        return sort;
+    }
+
+    public void setSort(Integer sort) {
+        this.sort = sort;
+    }
 
     public void setId(Long id)
     {

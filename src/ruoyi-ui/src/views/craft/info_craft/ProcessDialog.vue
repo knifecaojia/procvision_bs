@@ -28,26 +28,6 @@
         <el-table-column type="selection" width="55" align="center"/>
         <el-table-column label="工序号" align="center" prop="code"/>
         <el-table-column label="工序名称" align="center" prop="name"/>
-        <el-table-column label="是否异物检测" align="center" key="exceptionCheck">
-          <template #default="scope">
-            <el-switch
-                v-model="scope.row.exceptionCheck"
-                active-value="0"
-                inactive-value="1"
-                @change="handleExceptionCheckChange(scope.row)"
-            ></el-switch>
-          </template>
-        </el-table-column>
-<!--        <el-table-column label="是否终检" align="center" key="finalCheck">-->
-<!--          <template #default="scope">-->
-<!--            <el-switch-->
-<!--                v-model="scope.row.finalCheck"-->
-<!--                active-value="0"-->
-<!--                inactive-value="1"-->
-<!--                @change="handleFinalCheckChange(scope.row)"-->
-<!--            ></el-switch>-->
-<!--          </template>-->
-<!--        </el-table-column>-->
         <el-table-column label="算法" align="center" :show-overflow-tooltip="true">
           <template #default="scope">
             <el-tag type="danger" v-if="scope.row.algorithmId == null">未绑定</el-tag>
@@ -112,27 +92,27 @@
         <el-table :data="materialList" border size="small" style="width: 100%; margin-bottom: 20px;">
           <el-table-column label="物料号" align="center" width="140">
             <template #default="scope">
-              <el-input v-model="scope.row.material_no" placeholder="请输入物料号" />
+              <el-input v-model="scope.row.materialNo" placeholder="请输入物料号" />
             </template>
           </el-table-column>
           <el-table-column label="物料名称" align="center" width="160">
             <template #default="scope">
-              <el-input v-model="scope.row.material_name" placeholder="请输入物料名称" />
+              <el-input v-model="scope.row.materialName" placeholder="请输入物料名称" />
             </template>
           </el-table-column>
           <el-table-column label="数量" align="center" width="120">
             <template #default="scope">
-              <el-input-number v-model="scope.row.material_quantity" :min="0" :controls="false" style="width: 100%" placeholder="数量" />
+              <el-input-number v-model="scope.row.materialQuantity" :min="0" :controls="false" style="width: 100%" placeholder="数量" />
             </template>
           </el-table-column>
           <el-table-column label="单位" align="center" width="100">
             <template #default="scope">
-              <el-input v-model="scope.row.material_unit" placeholder="如: 件" />
+              <el-input v-model="scope.row.materialUnit" placeholder="如: 件" />
             </template>
           </el-table-column>
           <el-table-column label="防错标识" align="center">
             <template #default="scope">
-              <el-input v-model="scope.row.error_prevent_mark" placeholder="请输入防错标识" />
+              <el-input v-model="scope.row.errorPreventionMark" placeholder="请输入防错标识" />
             </template>
           </el-table-column>
           <el-table-column label="操作" align="center" width="80" fixed="right">
@@ -197,6 +177,8 @@ const tempProcessId = ref(null)
 const bindAlgShow = ref(false)
 const selectedAlgId = ref(null)
 const labelVisible = ref(false)
+const materialOpen = ref(false)
+const materialInfoList = ref([])
 
 // 新增：用于传递给标注组件的实际操作 ID 数组
 const targetStepIds = ref([])
@@ -249,7 +231,7 @@ function handleAddMaterial() {
     materialName: undefined,
     materialQuantity: undefined,
     materialUnit: undefined,
-    errorPreventMark: undefined
+    errorPreventionMark: undefined
   })
 }
 
@@ -300,6 +282,9 @@ function getProcessList() {
   processPageParms.value.craftId = props.craftId
   listProcess(processPageParms.value).then(response => {
     processList.value = response.rows
+    processList.value.forEach(item => {
+      item.processMaterialInfo = item.processMaterialInfo ? JSON.parse(item.processMaterialInfo) : []
+    })
     processTotal.value = response.total
     processLoading.value = false
   })
@@ -368,6 +353,10 @@ function handleProcessDelete(row) {
   })
 }
 
+function showMaterial(row){
+
+}
+
 function getAlgList() {
   listAlgorithm().then(response => {
     algList.value = response.rows
@@ -413,17 +402,6 @@ function handleExceptionCheckChange(row) {
     row.exceptionCheck = row.exceptionCheck === "0" ? "1" : "0"
   })
 }
-
-// function handleFinalCheckChange(row){
-//   let text = row.finalCheck === "0" ? "启用" : "取消"
-//   proxy.$modal.confirm('确认要' + text + '终检?').then(function () {
-//     return changeFinalCheckCheck(row.id, row.finalCheck)
-//   }).then(() => {
-//     proxy.$modal.msgSuccess(text + "成功")
-//   }).catch(function () {
-//     row.finalCheck = row.finalCheck === "0" ? "1" : "0"
-//   })
-// }
 
 watch(() => props.processOpen, (val) => {
   if (val) {

@@ -13,4 +13,8 @@ public interface IDashboardService {
     List<Map<String, Object>> getStatusData(String startDate, String endDate);
 
     List<Map<String, Object>> getRecentRecords(String startDate, String endDate) throws Exception;
+
+    List<Map<String, Object>> getAlgResultData();
+
+    Map<String, Object> getNgStepStats();
 }

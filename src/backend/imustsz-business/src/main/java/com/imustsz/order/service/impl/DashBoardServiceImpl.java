@@ -30,6 +30,9 @@ public class DashBoardServiceImpl implements IDashboardService {
     @Autowired
     private MinioUtils minioUtils;
 
+    @Autowired
+    private BizProcessRecordMapper bizProcessRecordMapper;
+
     @Override
     public StatisticsData getKpiStats() {
         StatisticsData stats = new StatisticsData();
@@ -160,5 +163,82 @@ public class DashBoardServiceImpl implements IDashboardService {
         }
 
         return statusData;
+    }
+
+    @Override
+    public List<Map<String, Object>> getAlgResultData() {
+
+        // 1. 计算时间范围 (近7天)
+        LocalDate today = LocalDate.now();
+        String startDate = today.minusDays(6).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + " 00:00:00";
+        String endDate = today.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + " 23:59:59";
+
+        // 2. 获取并处理【算法执行结果】数据
+        List<Map<String, Object>> algResultStats = bizProcessRecordMapper.selectAlgResultData(startDate, endDate);
+
+        List<Map<String, Object>> algResultData = new ArrayList<>();
+
+        // 预定义三个状态，确保即使某天某种状态数量为0，图表图例也能正常显示
+        long okCount = 0;
+        long ngCount = 0;
+        long failCount = 0;
+
+        // 遍历数据库返回的分组统计结果
+        for (Map<String, Object> row : algResultStats) {
+            Integer algResult = ((Number) row.get("algResult")).intValue();
+            Long count = ((Number) row.get("totalCount")).longValue();
+
+            if (algResult == 0) {
+                okCount = count;
+            } else if (algResult == 1) {
+                ngCount = count;
+            } else if (algResult == -1) {
+                failCount = count;
+            }
+        }
+
+        // 组装成 ECharts 饼图需要的格式：[{name: '...', value: ...}]
+        // 顺序建议固定：OK -> NG -> 失败，以对应前端 color: ['#67C23A', '#F56C6C', '#909399']
+        algResultData.add(createPieItem("OK (合格)", okCount));
+        algResultData.add(createPieItem("NG (不合格)", ngCount));
+        algResultData.add(createPieItem("算法执行失败", failCount));
+
+        return algResultData;
+    }
+
+    @Override
+    public Map<String, Object> getNgStepStats() {
+
+        LocalDate today = LocalDate.now();
+        String startDate = today.minusDays(6).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + " 00:00:00";
+        String endDate = today.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + " 23:59:59";
+
+        List<Map<String, Object>> ngStepStats = bizProcessRecordMapper.selectNgStepStats(startDate, endDate);
+
+        List<String> ngCategories = new ArrayList<>();
+        List<Long> ngCounts = new ArrayList<>();
+
+        for (Map<String, Object> row : ngStepStats) {
+            String stepName = (String) row.get("stepName");
+            Long count = ((Number) row.get("totalCount")).longValue();
+
+            // 如果工步名称为空，给个默认值防止前端图表显示异常
+            ngCategories.add(stepName != null ? stepName : "未知工步");
+            ngCounts.add(count);
+        }
+
+        Map<String, Object> ngStepData = new HashMap<>();
+        ngStepData.put("categories", ngCategories);
+        ngStepData.put("counts", ngCounts);
+
+        return ngStepData;
+    }
+
+    // 辅助方法：构建饼图数据项
+    private Map<String, Object> createPieItem(String name, long value) {
+        Map<String, Object> item = new HashMap<>();
+        item.put("name", name);
+        item.put("value", value);
+        return item;
     }
 }
