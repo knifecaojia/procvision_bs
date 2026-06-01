@@ -40,15 +40,21 @@
         <el-col :span="1.5">
           <el-button type="info" plain icon="HelpFilled" size="small" @click="handleExceptionCheckChange">异物检测</el-button>
         </el-col>
+        <el-col :span="1.5">
+          <el-button type="primary" plain icon="Box" size="small" @click="handlePackage">包装功能</el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button type="primary" plain icon="Box" size="small" @click="handleScratch">划痕检测</el-button>
+        </el-col>
       </el-row>
 
       <el-table v-loading="loading" :data="stepList" height="600px" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center"/>
-        <el-table-column label="序号" align="center" prop="code"/>
+        <el-table-column label="编号" align="center" prop="code"/>
         <el-table-column label="名称" align="center" prop="name"/>
         <el-table-column label="引导图" align="center">
           <template #default="scope">
-            <el-tag type="danger" v-if="scope.row.guideMapUrl === '' || scope.row.guideMapUrl === null">未绑定</el-tag>
+            <el-tag type="danger" v-if="scope.row.code !== '78' && (scope.row.guideMapUrl === '' || scope.row.guideMapUrl === null) ">未绑定</el-tag>
             <el-tag v-else type="success">已绑定</el-tag>
           </template>
         </el-table-column>
@@ -84,7 +90,7 @@
                        :disabled="scope.$index === stepList.length - 1 || scope.row.code === '-1' || scope.row.code === '99'"
                        @click="handleMoveDown(scope.$index, scope.row)">下移
             </el-button>
-            <el-button link type="primary" icon="Picture" :disabled="scope.row.code === '-1'"
+            <el-button link type="primary" icon="Picture" :disabled="scope.row.code === '-1' || scope.row.code === '78'"
                        @click="handleBind(scope.row)">修改引导图
             </el-button>
             <el-button link type="primary" icon="Edit" :disabled="scope.row.code === '-1'"
@@ -128,6 +134,8 @@
 
     <LabelDialog v-model="labelVisible" :visible="labelVisible" :stepIds="targetStepIds"
                  :tempCraftType="props.tempCraftType"
+                 :tempAlgType="props.tempAlgType"
+                 :packageFlag="packageFlag"
                  :borrowImageUrl="borrowImageUrl"
                  @change-status="changeStepStatus"/>
   </div>
@@ -145,7 +153,6 @@ import LabelDialog from "@/views/craft/info_craft/LabelDialog.vue";
 import {changeStatus} from "@/api/craft/craft.js";
 import {ref, reactive, toRefs, getCurrentInstance, watch} from "vue";
 import { ElMessageBox } from 'element-plus';
-import {changeExceptionCheck} from "@/api/craft/process.js";
 
 const {proxy} = getCurrentInstance()
 
@@ -160,8 +167,8 @@ const title = ref("")
 const stepOpen = defineModel()
 const labelVisible = ref(false)
 const borrowImageUrl = ref('')
+const packageFlag = ref(false)
 
-// 新增：用于传递给标注组件的实际操作 ID 数组
 const targetStepIds = ref([])
 
 const data = reactive({
@@ -181,29 +188,28 @@ const props = defineProps({
   stepOpen: Boolean,
   processId: Number,
   craftId: Number,
-  tempCraftType: String
+  tempCraftType: String,
+  tempAlgType: Number
 })
 
 const {queryParams, form, rules} = toRefs(data)
 
-/** 查询工步信息列表 */
 function getList() {
   loading.value = true
   queryParams.value.processId = props.processId
   listStep(queryParams.value).then(response => {
     stepList.value = response.rows
+    console.log(stepList.value)
     total.value = response.total
     loading.value = false
   })
 }
 
-// 取消按钮
 function cancel() {
   open.value = false
   reset()
 }
 
-// 表单重置
 function reset() {
   form.value = {
     id: null,
@@ -215,41 +221,37 @@ function reset() {
   proxy.resetForm("stepRef")
 }
 
-// 上移
 function handleMoveUp(index, row) {
   const prevRow = stepList.value[index - 1];
   swapOrder(row, prevRow);
 }
 
-// 下移
 function handleMoveDown(index, row) {
   const nextRow = stepList.value[index + 1];
   swapOrder(row, nextRow);
 }
 
-// 交换排序核心逻辑
 async function swapOrder(row1, row2) {
-  // 1. 交换前端显示的 code (假设你们的顺序就是根据 code 排序的)
-  const tempCode = row1.code;
-  row1.code = row2.code;
-  row2.code = tempCode;
+  // 交换 sort 属性，而非 code，保证工步的业务属性不变
+  const tempSort = row1.sort;
+  row1.sort = row2.sort;
+  row2.sort = tempSort;
 
   row1.guideMapUrl = null
   row2.guideMapUrl = null
 
   loading.value = true;
 
-  // 2. 将修改后的两条数据发送给后端保存
   Promise.all([
-    await updateStep(row1),
-    await updateStep(row2)
+    updateStep(row1),
+    updateStep(row2)
   ]).then(() => {
     proxy.$modal.msgSuccess("顺序调整成功");
-    getList(); // 重新拉取列表，确保排序生效
+    getList();
   }).catch(() => {
     loading.value = false;
     proxy.$modal.msgError("顺序调整失败");
-    getList(); // 如果失败了，重置回原来的顺序
+    getList();
   });
 }
 
@@ -288,6 +290,10 @@ function submitForm() {
         })
       } else {
         form.value.processId = props.processId
+        const maxSort = stepList.value.length > 0
+            ? Math.max(...stepList.value.map(s => Number(s.sort) || 0))
+            : 0;
+        form.value.sort = maxSort + 1;
         addStep(form.value).then(response => {
           proxy.$modal.msgSuccess("新增成功")
           changeStatus(props.craftId)
@@ -297,6 +303,84 @@ function submitForm() {
       }
     }
   })
+}
+
+async function handlePackage() {
+  proxy.$modal.loading("正在生成包装工步...");
+  try {
+    let packageStepId;
+    const existingPackageStep = stepList.value.find(s => s.code === '88');
+
+    if (existingPackageStep) {
+      packageStepId = existingPackageStep.id;
+    } else {
+      // 动态计算当前最大的 sort，确保排序连续性
+      const maxSort = stepList.value.length > 0
+          ? Math.max(...stepList.value.map(s => Number(s.sort) || 0))
+          : 0;
+
+      const stepData = {
+        code: '88',
+        name: '包装',
+        content: '包装检测',
+        processId: props.processId,
+        sort: maxSort + 1 // 显式传递计算好的 sort
+      };
+
+      await addStep(stepData);
+      await changeStatus(props.craftId);
+      await getListPromise();
+      const newStep = stepList.value.find(s => s.code === '88');
+      packageStepId = newStep.id;
+    }
+
+    proxy.$modal.closeLoading();
+    proxy.$modal.msgSuccess("包装工步生成成功！");
+
+    // 唤起标注弹窗并开启包装模式
+    packageFlag.value = true;
+    targetStepIds.value = [packageStepId];
+    labelVisible.value = true;
+
+  } catch (error) {
+    proxy.$modal.closeLoading();
+    proxy.$modal.msgError("生成包装工步失败，请检查网络或后端接口");
+  }
+}
+
+async function handleScratch() {
+  proxy.$modal.loading("正在生成划痕检测工步...");
+
+  try {
+    const existingScratchStep = stepList.value.find(s => s.code === '78');
+
+    if (existingScratchStep) {
+      proxy.$modal.msgWarning("已存在划痕检测工步！");
+    } else {
+      // 动态计算当前最大的 sort，确保排序连续性
+      const maxSort = stepList.value.length > 0
+          ? Math.max(...stepList.value.map(s => Number(s.sort) || 0))
+          : 0;
+
+      const stepData = {
+        code: '78',
+        name: '划痕检测',
+        content: '划痕检测',
+        guideMapUrl: null,
+        processId: props.processId,
+        sort: maxSort + 1 // 显式传递计算好的 sort
+      };
+
+      await addStep(stepData);
+      await changeStatus(props.craftId);
+      await getListPromise();
+      proxy.$modal.closeLoading();
+      proxy.$modal.msgSuccess("划痕检测工步生成成功！");
+    }
+  } catch (error) {
+    proxy.$modal.closeLoading();
+    proxy.$modal.msgError("生成划痕检测工步失败，请检查网络或后端接口");
+  }
 }
 
 function handleDelete(row) {
@@ -310,15 +394,12 @@ function handleDelete(row) {
   })
 }
 
-// ================= 新增：生成终检工步核心逻辑 =================
 async function handleGenerateFinalStep() {
-  // 1. 获取除终检(99)及异物检测(-1)之外的所有正常工步
-  const normalSteps = stepList.value.filter(s => s.code !== '99' && s.code !== '-1');
+  const normalSteps = stepList.value.filter(s => s.code !== '99' && s.code !== '-1' && s.code !== '88');
   if (normalSteps.length === 0) {
     return proxy.$modal.msgWarning("当前没有任何工步，无法生成终检！");
   }
 
-  // 2. 找到最后一个带有引导图的工步
   const lastStepWithImage = [...normalSteps].reverse().find(s => s.guideMapUrl);
   if (!lastStepWithImage) {
     return proxy.$modal.msgWarning("前面的工步均未绑定引导图，无法提取背景图！");
@@ -341,7 +422,6 @@ async function handleGenerateFinalStep() {
       return proxy.$modal.msgError("无法获取最后一个工步的背景图");
     }
 
-    // 3. 遍历所有正常工步，把 coordsInfo 中的坐标按 label 进行聚合
     const mergedCoordsMap = new Map();
     normalSteps.forEach(step => {
       if (step.coordsInfo) {
@@ -351,7 +431,6 @@ async function handleGenerateFinalStep() {
             if (!mergedCoordsMap.has(group.label)) {
               mergedCoordsMap.set(group.label, []);
             }
-            // 将相同 label 的框合并到一起
             mergedCoordsMap.get(group.label).push(...group.posList);
           });
         } catch (e) {
@@ -360,13 +439,11 @@ async function handleGenerateFinalStep() {
       }
     });
 
-    // 组装成后端需要的 JSON 数组结构
     const finalCoordsInfo = [];
     mergedCoordsMap.forEach((posList, label) => {
       finalCoordsInfo.push({ label, posList });
     });
 
-    // 4. 准备终检工步(99)的数据
     const existingStep99 = stepList.value.find(s => s.code === '99');
 
     const finalStepData = {
@@ -378,7 +455,6 @@ async function handleGenerateFinalStep() {
       guideMapUrl: null
     };
 
-    // 5. 保存数据到数据库
     if (existingStep99) {
       finalStepData.id = existingStep99.id;
       await updateStep(finalStepData);
@@ -391,10 +467,8 @@ async function handleGenerateFinalStep() {
 
     proxy.$modal.msgSuccess("终检工步生成成功！");
 
-    // 重新获取列表，以获取最新的数据和生成的ID
     await getListPromise();
 
-    // 6. 自动唤起标注弹窗
     proxy.$modal.confirm('数据已聚合。是否立即打开标注面板，预览并保存最终的组合标注图？', '提示', {
       confirmButtonText: '去预览并保存',
       cancelButtonText: '稍后处理'
@@ -402,6 +476,7 @@ async function handleGenerateFinalStep() {
       const step99 = stepList.value.find(s => s.code === '99');
       if (step99) {
         borrowImageUrl.value = fullImageUrl;
+        packageFlag.value = false; // 关闭包装模式
         handleBind(step99);
       }
     }).catch(() => {});
@@ -414,7 +489,6 @@ async function handleGenerateFinalStep() {
   }
 }
 
-// 封装一个 Promise 版本的 getList 确保同步执行完毕后再打开弹窗
 function getListPromise() {
   return new Promise((resolve) => {
     loading.value = true;
@@ -432,16 +506,17 @@ function onClose() {
   stepOpen.value = false
 }
 
-// 单个修改引导图
 function handleBind(row) {
-  targetStepIds.value = [row.id] // 包装成数组
+  packageFlag.value = false; // 普通绑定关闭包装模式
+  targetStepIds.value = [row.id]
+  packageFlag.value = row.code === '88'
   labelVisible.value = true
 }
 
-// 批量连续绑定引导图
 function handleBatchBind() {
   if (ids.value.length === 0) return;
-  targetStepIds.value = [...ids.value] // 传入勾选的所有ID
+  packageFlag.value = false; // 批量绑定关闭包装模式
+  targetStepIds.value = [...ids.value]
   labelVisible.value = true
 }
 
@@ -451,20 +526,17 @@ function changeStepStatus() {
 }
 
 function handleExceptionCheckChange() {
-  // 1. 检查终检工步是否已生成
   const existingStep99 = stepList.value.find(s => s.code === '99');
   if (!existingStep99) {
     return proxy.$modal.msgWarning("必须先生成终检工步，才能生成异物检测工步！");
   }
 
-  // 2. 获取某一个工步的原图（这里取最后一个绑定了引导图的正常工步）
-  const normalSteps = stepList.value.filter(s => s.code !== '99' && s.code !== '-1');
+  const normalSteps = stepList.value.filter(s => s.code !== '99' && s.code !== '-1' && s.code !== '88');
   const lastStepWithImage = [...normalSteps].reverse().find(s => s.guideMapUrl);
   if (!lastStepWithImage) {
     return proxy.$modal.msgWarning("前面没有任何工步绑定引导图，无法提取原图作为异物检测图！");
   }
 
-  // 3. 弹窗让用户选择工步顺序
   ElMessageBox.confirm(
       '请选择异物检测工步在流程中的顺序位置：',
       '生成异物检测',
@@ -475,22 +547,17 @@ function handleExceptionCheckChange() {
         type: 'info'
       }
   ).then(() => {
-    // 用户点击了“在终检后”
     executeGenerateExceptionStep(lastStepWithImage.id, true, existingStep99);
   }).catch((action) => {
     if (action === 'cancel') {
-      // 用户点击了“在终检前”
       executeGenerateExceptionStep(lastStepWithImage.id, false, existingStep99);
     }
-    // 如果 action 是 'close'（点击右上角X或遮罩层）则什么都不做
   });
 }
 
-// 提取实际生成/保存逻辑
 async function executeGenerateExceptionStep(stepId, position, finalCheckStep) {
   proxy.$modal.loading("正在生成异物检测工步...");
   try {
-    // 重新获取该工步信息以拿到完整的背景图 URL
     const result = await getStepOri(stepId);
     let fullImageUrl = '';
     try {
@@ -505,19 +572,16 @@ async function executeGenerateExceptionStep(stepId, position, finalCheckStep) {
       return proxy.$modal.msgError("无法获取工步的原图");
     }
 
-    // 4. 构造异物检测数据
     const existingExceptionStep = stepList.value.find(s => s.code === '-1');
     const stepData = {
       code: '-1',
       name: '异物检测',
-      // 通过 content 记录位置标识，方便在表格中直观查看（若后端有其他专属字段可放在对应字段）
       content: `异物检测`,
       processId: props.processId,
       sort: position ? finalCheckStep.sort + 1 : finalCheckStep.sort - 1,
       guideMapUrl: JSON.stringify([fullImageUrl, fullImageUrl])
     };
 
-    // 5. 保存或更新
     if (existingExceptionStep) {
       stepData.id = existingExceptionStep.id;
       await updateStep(stepData);
@@ -529,7 +593,7 @@ async function executeGenerateExceptionStep(stepId, position, finalCheckStep) {
     }
 
     proxy.$modal.msgSuccess("异物检测工步生成成功！");
-    await getListPromise(); // 刷新列表，获取最新状态
+    await getListPromise();
 
   } catch (error) {
     console.error(error);
@@ -555,12 +619,12 @@ getList()
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 60px; /* 强制和你的图片一样宽 */
-  height: 60px; /* 强制和你的图片一样高 */
-  background-color: #f5f7fa; /* 浅灰背景色 */
-  color: #a8abb2; /* 浅灰文字色 */
+  width: 60px;
+  height: 60px;
+  background-color: #f5f7fa;
+  color: #a8abb2;
   font-size: 13px;
   border-radius: 4px;
-  margin: 0 auto; /* 保证在表格单元格里居中 */
+  margin: 0 auto;
 }
 </style>

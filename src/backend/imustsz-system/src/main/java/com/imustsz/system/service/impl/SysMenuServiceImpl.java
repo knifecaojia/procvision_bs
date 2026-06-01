@@ -65,6 +65,10 @@ public class SysMenuServiceImpl implements ISysMenuService
     @Override
     public List<SysMenu> selectMenuList(SysMenu menu, Long userId)
     {
+
+        boolean isAuthAdmin = SecurityUtils.getLoginUser().getUser().getRoles().stream()
+                .anyMatch(r -> "auth_admin".equals(r.getRoleKey()));
+
         List<SysMenu> menuList = null;
         //返回所有没被隐藏的菜单
         menu.setVisible("0");
@@ -73,8 +77,38 @@ public class SysMenuServiceImpl implements ISysMenuService
         if (SysUser.isAdmin(userId))
         {
             menuList = menuMapper.selectMenuList(menu);
-        }
-        else
+        } else if (isAuthAdmin) {
+            // 先查出全量菜单
+            menuList = menuMapper.selectMenuList(menu);
+
+            // 存放需要屏蔽的菜单 ID 集合
+            Set<Long> excludeMenuIds = new HashSet<>();
+
+            // a. 第一轮遍历：找到我们要屏蔽的“树根” (基于菜单名称匹配最灵活)
+            for (SysMenu m : menuList) {
+                if ("系统管理".equals(m.getMenuName()) || "系统监控".equals(m.getMenuName())) {
+                    excludeMenuIds.add(m.getMenuId());
+                }
+            }
+
+            // b. 内存递归：通过树根，向下找出所有的子菜单、孙菜单...
+            boolean hasNewChild;
+            do {
+                hasNewChild = false;
+                for (SysMenu m : menuList) {
+                    // 如果当前菜单的父亲在“黑名单”里，且自己还没进“黑名单”
+                    if (excludeMenuIds.contains(m.getParentId()) && !excludeMenuIds.contains(m.getMenuId())) {
+                        excludeMenuIds.add(m.getMenuId());
+                        hasNewChild = true; // 发现新节点，可能还有下一级，继续循环
+                    }
+                }
+            } while (hasNewChild);
+
+            // c. 执行过滤：只保留不在黑名单里的菜单
+            menuList = menuList.stream()
+                    .filter(m -> !excludeMenuIds.contains(m.getMenuId()))
+                    .collect(Collectors.toList());
+        } else
         {
             menu.getParams().put("userId", userId);
             menuList = menuMapper.selectMenuListByUserId(menu);

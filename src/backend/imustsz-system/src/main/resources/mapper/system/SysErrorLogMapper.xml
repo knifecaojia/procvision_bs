@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.imustsz.system.mapper.SysErrorLogMapper">
+    
+    <resultMap type="SysErrorLog" id="SysErrorLogResult">
+        <result property="id"    column="id"    />
+        <result property="requestUri"    column="request_uri"    />
+        <result property="requestMethod"    column="request_method"    />
+        <result property="exceptionName"    column="exception_name"    />
+        <result property="exceptionMessage"    column="exception_message"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+    </resultMap>
+
+    <sql id="selectSysErrorLogVo">
+        select id, request_uri, request_method, exception_name, exception_message, create_by, create_time from sys_error_log
+    </sql>
+
+    <select id="selectSysErrorLogList" parameterType="SysErrorLog" resultMap="SysErrorLogResult">
+        <include refid="selectSysErrorLogVo"/>
+        <where>  
+            <if test="requestUri != null  and requestUri != ''"> and request_uri = #{requestUri}</if>
+            <if test="requestMethod != null  and requestMethod != ''"> and request_method = #{requestMethod}</if>
+            <if test="exceptionName != null  and exceptionName != ''"> and exception_name like concat('%', #{exceptionName}, '%')</if>
+            <if test="exceptionMessage != null  and exceptionMessage != ''"> and exception_message = #{exceptionMessage}</if>
+        </where>
+    </select>
+    
+    <select id="selectSysErrorLogById" parameterType="Long" resultMap="SysErrorLogResult">
+        <include refid="selectSysErrorLogVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertSysErrorLog" parameterType="SysErrorLog" useGeneratedKeys="true" keyProperty="id">
+        insert into sys_error_log
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="requestUri != null">request_uri,</if>
+            <if test="requestMethod != null">request_method,</if>
+            <if test="exceptionName != null">exception_name,</if>
+            <if test="exceptionMessage != null">exception_message,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="requestUri != null">#{requestUri},</if>
+            <if test="requestMethod != null">#{requestMethod},</if>
+            <if test="exceptionName != null">#{exceptionName},</if>
+            <if test="exceptionMessage != null">#{exceptionMessage},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateSysErrorLog" parameterType="SysErrorLog">
+        update sys_error_log
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="requestUri != null">request_uri = #{requestUri},</if>
+            <if test="requestMethod != null">request_method = #{requestMethod},</if>
+            <if test="exceptionName != null">exception_name = #{exceptionName},</if>
+            <if test="exceptionMessage != null">exception_message = #{exceptionMessage},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteSysErrorLogById" parameterType="Long">
+        delete from sys_error_log where id = #{id}
+    </delete>
+
+    <delete id="deleteSysErrorLogByIds" parameterType="String">
+        delete from sys_error_log where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <update id="deleteAll">
+        truncate table sys_error_log
+    </update>
+</mapper>

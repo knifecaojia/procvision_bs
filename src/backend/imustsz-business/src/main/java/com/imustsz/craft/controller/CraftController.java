@@ -42,7 +42,7 @@ public class CraftController extends BaseController
     /**
      * 查询工艺信息列表
      */
-    @PreAuthorize("@ss.hasPermi('craft:craft:list')")
+//    @PreAuthorize("@ss.hasPermi('craft:craft:list')")
     @GetMapping("/list")
     public TableDataInfo list(Craft craft)
     {
@@ -54,7 +54,7 @@ public class CraftController extends BaseController
     /**
      * 导出工艺信息列表
      */
-    @PreAuthorize("@ss.hasPermi('craft:craft:export')")
+//    @PreAuthorize("@ss.hasPermi('craft:craft:export')")
     @Log(title = "工艺信息", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, Craft craft)
@@ -67,7 +67,7 @@ public class CraftController extends BaseController
     /**
      * 获取工艺信息详细信息
      */
-    @PreAuthorize("@ss.hasPermi('craft:craft:query')")
+//    @PreAuthorize("@ss.hasPermi('craft:craft:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -77,7 +77,7 @@ public class CraftController extends BaseController
     /**
      * 新增工艺信息
      */
-    @PreAuthorize("@ss.hasPermi('craft:craft:add')")
+//    @PreAuthorize("@ss.hasPermi('craft:craft:add')")
     @Log(title = "工艺信息", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody Craft craft)
@@ -85,7 +85,7 @@ public class CraftController extends BaseController
         return toAjax(craftService.insertCraft(craft));
     }
 
-    @PreAuthorize("@ss.hasPermi('craft:craft:add')")
+//    @PreAuthorize("@ss.hasPermi('craft:craft:add')")
     @Log(title = "工艺信息", businessType = BusinessType.INSERT)
     @PostMapping("/hand")
     public AjaxResult addByHand(@RequestBody Craft craft)
@@ -96,7 +96,7 @@ public class CraftController extends BaseController
     /**
      * 修改工艺信息
      */
-    @PreAuthorize("@ss.hasPermi('craft:craft:edit')")
+//    @PreAuthorize("@ss.hasPermi('craft:craft:edit')")
     @Log(title = "工艺信息", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody Craft craft)
@@ -107,7 +107,7 @@ public class CraftController extends BaseController
     /**
      * 删除工艺信息
      */
-    @PreAuthorize("@ss.hasPermi('craft:craft:remove')")
+//    @PreAuthorize("@ss.hasPermi('craft:craft:remove')")
     @Log(title = "工艺信息", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)
@@ -136,7 +136,7 @@ public class CraftController extends BaseController
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         OrderProcessData CrackProcess =objectMapper.readValue(file.getInputStream(), OrderProcessData.class);
-        craftService.importCraftFromMMo(CrackProcess);
+        craftService.importCraftFromMOM(CrackProcess);
         return success();
     }
 
@@ -213,7 +213,7 @@ public class CraftController extends BaseController
                     return step;
                 });
             }else
-                throw new RuntimeException("步骤号不能为空");
+                throw new RuntimeException("工步序不能为空");
 
             if (StringUtils.isNotBlank(row.getMaterialNo())) {
                 materialGroupMap.get(opNo).computeIfAbsent(row.getMaterialNo(), k -> {
@@ -240,7 +240,7 @@ public class CraftController extends BaseController
 
         orderProcessData.setOperationList(new ArrayList<>(operationMap.values()));
 
-        craftService.importCraftFromMMo(orderProcessData);
+        craftService.importCraftFromMOM(orderProcessData);
 
         return success(orderProcessData);
     }

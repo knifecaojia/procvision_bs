@@ -31,7 +31,7 @@ public class ProcessController extends BaseController
     /**
      * 查询工序信息列表
      */
-    @PreAuthorize("@ss.hasPermi('process:process:list')")
+//    @PreAuthorize("@ss.hasPermi('process:process:list')")
     @GetMapping("/list")
     public TableDataInfo list(Process process)
     {
@@ -43,7 +43,7 @@ public class ProcessController extends BaseController
     /**
      * 导出工序信息列表
      */
-    @PreAuthorize("@ss.hasPermi('process:process:export')")
+//    @PreAuthorize("@ss.hasPermi('process:process:export')")
     @Log(title = "工序信息", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, Process process)
@@ -56,7 +56,7 @@ public class ProcessController extends BaseController
     /**
      * 获取工序信息详细信息
      */
-    @PreAuthorize("@ss.hasPermi('process:process:query')")
+//    @PreAuthorize("@ss.hasPermi('process:process:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -66,7 +66,7 @@ public class ProcessController extends BaseController
     /**
      * 新增工序信息
      */
-    @PreAuthorize("@ss.hasPermi('process:process:add')")
+//    @PreAuthorize("@ss.hasPermi('process:process:add')")
     @Log(title = "工序信息", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody Process process)
@@ -77,7 +77,7 @@ public class ProcessController extends BaseController
     /**
      * 修改工序信息
      */
-    @PreAuthorize("@ss.hasPermi('process:process:edit')")
+//    @PreAuthorize("@ss.hasPermi('process:process:edit')")
     @Log(title = "工序信息", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody Process process)
@@ -88,7 +88,7 @@ public class ProcessController extends BaseController
     /**
      * 删除工序信息
      */
-    @PreAuthorize("@ss.hasPermi('process:process:remove')")
+//    @PreAuthorize("@ss.hasPermi('process:process:remove')")
     @Log(title = "工序信息", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)

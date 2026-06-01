@@ -1,10 +1,14 @@
 package com.imustsz.process.service;
 
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import com.imustsz.cilent.domain.dto.ProcessDTO;
 import com.imustsz.cilent.domain.vo.ProcessRecordVO;
 import com.imustsz.process.domain.BizProcessRecord;
+import io.minio.errors.*;
 
 /**
  * 过程记录Service接口
@@ -62,7 +66,7 @@ public interface IBizProcessRecordService
      */
     public int deleteBizProcessRecordById(Long id);
 
-    int insertBizProcessRecordByUpload(ProcessDTO processDTO);
+    int insertBizProcessRecordByUpload(ProcessDTO processDTO) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
 
     List<ProcessRecordVO> getProcessRecordList(Integer status, String taskNo, Integer recordStatus);
 

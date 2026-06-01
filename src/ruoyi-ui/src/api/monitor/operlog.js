@@ -24,3 +24,11 @@ export function cleanOperlog() {
     method: 'delete'
   })
 }
+
+export function auditOperlog(data) {
+    return request({
+        url: '/monitor/operlog/audit',
+        method: 'put',
+        data: data
+    })
+}

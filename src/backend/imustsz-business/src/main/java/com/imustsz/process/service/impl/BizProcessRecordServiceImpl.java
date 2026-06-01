@@ -1,15 +1,21 @@
 package com.imustsz.process.service.impl;
 
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.imustsz.cilent.domain.dto.ProcessDTO;
 import com.imustsz.cilent.domain.vo.ProcessRecordVO;
 import com.imustsz.cilent.domain.vo.StepRecordVO;
+import com.imustsz.common.core.redis.RedisCache;
 import com.imustsz.common.utils.DateUtils;
 import com.imustsz.common.utils.bean.MinioUtils;
+import com.imustsz.common.utils.spring.SpringUtils;
 import com.imustsz.craft.domain.BizStep;
 import com.imustsz.craft.domain.Craft;
 import com.imustsz.craft.domain.Process;
@@ -23,6 +29,8 @@ import com.imustsz.order.mapper.BizWorkOrderMapper;
 import com.imustsz.order.service.impl.BizWorkOrderServiceImpl;
 import com.imustsz.process.domain.AlgResultJson;
 import com.imustsz.process.domain.UniqueRecordParams;
+import io.minio.errors.*;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
  * @author imustsz
  * @date 2025-12-22
  */
+@Slf4j
 @Service
 public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
     @Autowired
@@ -59,6 +68,9 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
 
     @Autowired
     private BizWorkOrderServiceImpl bizWorkOrderService;
+
+    @Autowired
+    private RedisCache redisCache;
 
     /**
      * 查询过程记录
@@ -144,7 +156,7 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
 
     @Override
     @Transactional
-    public int insertBizProcessRecordByUpload(ProcessDTO processDTO) {
+    public int insertBizProcessRecordByUpload(ProcessDTO processDTO) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
 
 //        BizProcessRecord record = bizProcessRecordMapper.selectRecordByTaskNoAndProcessCodeAndStepCode(processDTO.getTask_no(), processDTO.getProcess_code(), processDTO.getStep_code());
 
@@ -160,6 +172,18 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
 
         AlgResultJson algResultJson = JSONObject.parseObject(processDTO.getAlgo_result(), AlgResultJson.class);
 
+        Integer maxStepNo;
+
+        Integer LastStepCache = redisCache.getCacheObject("maxStepNo-" + processDTO.getTask_no() + "-" + processDTO.getProcess_code());
+
+        if (LastStepCache != null) {
+            maxStepNo = LastStepCache;
+            log.info("从redis中获取maxStepNo:{}，当前stepNo:{}", maxStepNo, bizProcessRecord.getStepCode());
+        }else {
+            maxStepNo = bizStepMapper.selectLastStepByProcessId(process.getId());
+            log.info("从数据库中获取maxStepNo:{}，当前stepNo:{}", maxStepNo, bizProcessRecord.getStepCode());
+            redisCache.setCacheObject("maxStepNo-" + processDTO.getTask_no() + "-" + processDTO.getProcess_code(), maxStepNo, 5, TimeUnit.MINUTES);
+        }
         if ("OK".equals(algResultJson.getStatus())) {
             if ("OK".equals(algResultJson.getData().getResult_status())) {
                 bizProcessRecord.setAlgResult(0);
@@ -172,8 +196,11 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
                 finishedOrderDTO.setStepNo(processDTO.getStep_code());
                 finishedOrderDTO.setStepName(bizProcessRecord.getStepName());
                 finishedOrderDTO.setObjectName(processDTO.getObject_name());
+                int status = 1;
+                if (maxStepNo == Integer.parseInt(finishedOrderDTO.getStepNo()))
+                    status = bizWorkOrderService.uploadToMOM(finishedOrderDTO);
+                bizProcessRecord.setUploaded(status == 1 ? 0 : 1);
                 bizProcessRecordMapper.insertBizProcessRecord(bizProcessRecord);
-                bizWorkOrderService.uploadToMOM(finishedOrderDTO);
             }else {
                 bizProcessRecord.setAlgResult(1);
                 bizProcessRecord.setNgReason(algResultJson.getData().getNg_reason());

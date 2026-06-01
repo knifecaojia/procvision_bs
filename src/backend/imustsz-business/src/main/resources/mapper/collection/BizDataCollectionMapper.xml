@@ -9,6 +9,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="imagePath"    column="image_path"    />
         <result property="data"    column="data"    />
         <result property="datasetId"    column="dataset_id"    />
+        <result property="uploaded"    column="uploaded"    />
+        <result property="type"    column="type"    />
         <result property="coordsInfo"   column="coords_info" />
         <result property="labelImage"   column="label_image" />
         <result property="createTime"    column="create_time"    />
@@ -19,7 +21,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizDataCollectionVo">
-        select id, image_path, data, dataset_id, label_image, coords_info, create_time, remark from biz_data_collection
+        select id, image_path, data, dataset_id, label_image, coords_info, uploaded, type, create_time, remark from biz_data_collection
     </sql>
 
     <select id="selectBizDataCollectionList" parameterType="BizDataCollection" resultMap="BizDataCollectionResult">
@@ -28,6 +30,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="imagePath != null  and imagePath != ''"> and image_path = #{imagePath}</if>
             <if test="data != null  and data != ''"> and data like concat('%',#{data},'%')</if>
             <if test="datasetId != null">and dataset_id = #{datasetId}</if>
+            <if test="uploaded != null">and uploaded = #{uploaded}</if>
+            <if test="type != null">and type = #{type}</if>
             <if test="coordsInfo != null and coordsInfo != ''">and coords_info = #{coordsInfo}</if>
             <if test="labelImage != null and labelImage != ''">and label_image = #{labelImage}</if>
             <if test="createTime != null"> and create_time = #{createTime}</if>
@@ -49,6 +53,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="imagePath != null">image_path,</if>
             <if test="data != null">data,</if>
+            <if test="uploaded != null">uploaded,</if>
+            <if test="type != null">type,</if>
             <if test="datasetId != null">dataset_id,</if>
             <if test="coordsInfo != null">coords_info,</if>
             <if test="labelImage != null">label_image,</if>
@@ -57,11 +63,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createBy != null and createBy != ''">create_by,</if>
             <if test="updateBy != null and updateBy != ''">update_by,</if>
             <if test="remark != null">remark,</if>
-         </trim>
+        </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="imagePath != null">#{imagePath},</if>
             <if test="data != null">#{data},</if>
             <if test="datasetId != null">#{datasetId},</if>
+            <if test="uploaded != null">#{uploaded},</if>
+            <if test="type != null">#{type},</if>
             <if test="coordsInfo != null and coordsInfo != ''">#{coordsInfo},</if>
             <if test="labelImage != null and labelImage != ''">#{labelImage},</if>
             <if test="createTime != null">#{createTime},</if>
@@ -78,6 +86,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="imagePath != null">image_path = #{imagePath},</if>
             <if test="data != null">data = #{data},</if>
             <if test="datasetId != null">dataset_id = #{datasetId},</if>
+            <if test="uploaded != null">uploaded = #{uploaded},</if>
+            <if test="type != null">type = #{type},</if>
             <if test="coordsInfo != null and coordsInfo != ''">coords_info = #{coordsInfo},</if>
             <if test="labelImage != null and labelImage != ''">label_image = #{labelImage},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
@@ -102,6 +112,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="checkData" resultMap="BizDataCollectionResult">
         <include refid="selectBizDataCollectionVo"/>
-        where data = #{data}
+        where data = #{data} and `type` = 1
     </select>
+
+    <select id="selectUploadData" resultMap="BizDataCollectionResult">
+        <include refid="selectBizDataCollectionVo" />
+        where uploaded = 1 and `type` = 0 limit 5
+    </select>
+
+    <select id="selectDeleteData" resultMap="BizDataCollectionResult">
+        <include refid="selectBizDataCollectionVo" />
+        where uploaded = 0 and `type` = 0 limit #{limit}
+    </select>
+
+    <delete id="deleteData">
+        delete from biz_data_collection where uploaded = 0 and `type` = 0 limit 50
+    </delete>
 </mapper>

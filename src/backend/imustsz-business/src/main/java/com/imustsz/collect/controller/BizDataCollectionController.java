@@ -36,7 +36,7 @@ public class BizDataCollectionController extends BaseController
     /**
      * 查询数据采集列表
      */
-    @PreAuthorize("@ss.hasPermi('collection:data:list')")
+//    @PreAuthorize("@ss.hasPermi('collection:data:list')")
     @GetMapping("/list")
     public TableDataInfo list(BizDataCollection bizDataCollection)
     {
@@ -48,7 +48,7 @@ public class BizDataCollectionController extends BaseController
     /**
      * 导出数据采集列表
      */
-    @PreAuthorize("@ss.hasPermi('collection:data:export')")
+//    @PreAuthorize("@ss.hasPermi('collection:data:export')")
     @Log(title = "数据采集", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, BizDataCollection bizDataCollection)
@@ -61,7 +61,7 @@ public class BizDataCollectionController extends BaseController
     /**
      * 获取数据采集详细信息
      */
-    @PreAuthorize("@ss.hasPermi('collection:data:query')")
+//    @PreAuthorize("@ss.hasPermi('collection:data:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -71,18 +71,17 @@ public class BizDataCollectionController extends BaseController
     /**
      * 新增数据采集
      */
-    @PreAuthorize("@ss.hasPermi('collection:data:add')")
+//    @PreAuthorize("@ss.hasPermi('collection:data:add')")
     @Log(title = "数据采集", businessType = BusinessType.INSERT)
     @PostMapping
-    public AjaxResult add(@RequestBody BizDataCollection bizDataCollection)
-    {
+    public AjaxResult add(@RequestBody BizDataCollection bizDataCollection) throws Exception {
         return toAjax(bizDataCollectionService.insertBizDataCollection(bizDataCollection));
     }
 
     /**
      * 修改数据采集
      */
-    @PreAuthorize("@ss.hasPermi('collection:data:edit')")
+//    @PreAuthorize("@ss.hasPermi('collection:data:edit')")
     @Log(title = "数据采集", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody BizDataCollection bizDataCollection)
@@ -95,7 +94,7 @@ public class BizDataCollectionController extends BaseController
     /**
      * 删除数据采集
      */
-    @PreAuthorize("@ss.hasPermi('collection:data:remove')")
+//    @PreAuthorize("@ss.hasPermi('collection:data:remove')")
     @Log(title = "数据采集", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)

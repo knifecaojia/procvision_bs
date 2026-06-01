@@ -1,5 +1,5 @@
 <template>
-  <el-dialog title="图片标注" v-model="labelVisible" width="1200px" :close-on-click-modal="false">
+  <el-dialog title="图片标注/包装信息录入" v-model="labelVisible" width="1200px" @close="handleLabelDialogClose" :close-on-click-modal="false">
     <div class="annotator-container">
 
       <div v-if="stepIds.length > 1" class="step-navigator">
@@ -25,22 +25,58 @@
 
           <el-divider direction="vertical"/>
 
+          <template v-if="!props.packageFlag">
+            <el-button
+                type="warning"
+                @click="toggleDrawMode"
+                :plain="!isDrawingMode"
+                icon="Edit"
+            >
+              {{ isDrawingMode ? '结束标注' : '开始标注' }}
+            </el-button>
+            <el-button type="danger" @click="clearCanvasAnnotations" icon="Delete">清空标注</el-button>
+          </template>
+
           <el-button
-              type="warning"
-              @click="toggleDrawMode"
-              :plain="!isDrawingMode"
-              icon="Edit"
+              v-if="props.packageFlag"
+              type="success"
+              icon="Box"
+              @click="packageDialogVisible = true"
           >
-            {{ isDrawingMode ? '结束标注' : '开始标注' }}
+            添加包装信息
           </el-button>
 
-          <el-button type="danger" @click="clearCanvasAnnotations" icon="Delete">清空标注</el-button>
-          <el-button type="primary" @click="uploadToMinio" icon="Check">保存标注结果</el-button>
+          <el-button type="primary" @click="uploadToMinio" icon="Check">
+            {{ props.packageFlag ? '保存包装及图片' : '保存标注结果' }}
+          </el-button>
         </el-space>
 
-        <div class="status-text" v-if="isDrawingMode">
-          当前状态：<span style="color: red">绘制中...</span>
-          <span style="margin-left: 15px;">Tips：开启绘制后按住ALT+鼠标左键可以拖拽图片，选中框后按 Delete 键可删除</span>
+        <div class="status-panel" v-if="isDrawingMode && !props.packageFlag">
+          <el-alert
+              type="warning"
+              show-icon
+              :closable="false"
+              class="drawing-alert"
+          >
+            <template #title>
+              <span class="alert-title">当前状态：<span class="highlight-text">绘制中...</span></span>
+            </template>
+            <template #default>
+              <div class="alert-tips">
+                <strong>Tips：</strong>
+                开启绘制后按住 <el-tag size="small" type="info" effect="plain">ALT + 鼠标左键</el-tag> 可以拖拽图片，
+                选中框后按 <el-tag size="small" type="danger" effect="plain">Delete</el-tag> 键可删除
+              </div>
+            </template>
+          </el-alert>
+
+          <div class="step-content-box" v-if="currentStepContent">
+            <div class="step-header">
+              <el-icon color="#409EFF"><Document /></el-icon>
+              <span>工步内容</span>
+            </div>
+            <div class="step-text">{{ currentStepContent }}</div>
+          </div>
         </div>
       </el-card>
 
@@ -50,7 +86,31 @@
         </div>
 
         <div class="annotation-list-wrapper">
-          <el-card shadow="never" class="annotation-card">
+          <el-card shadow="never" class="annotation-card" v-if="props.packageFlag">
+            <template #header>
+              <div class="card-header">
+                <span>包装信息面板</span>
+                <el-tag type="success" size="small">共 {{ packageList.length }} 条</el-tag>
+              </div>
+            </template>
+            <el-scrollbar height="500px">
+              <el-empty v-if="packageList.length === 0" description="暂无包装信息，请点击上方按钮添加" :image-size="80" />
+              <div v-for="(item, index) in packageList" :key="item._id" class="annotation-item">
+                <div class="item-info">
+                  <div class="item-label">
+                    <el-tag type="success" size="small">产品信息</el-tag>
+                    <span style="margin-left: 8px; font-weight: bold;">{{ item.productInfo }}</span>
+                  </div>
+                  <div class="item-remark" style="margin-top: 8px; font-size: 14px;">
+                    待检测数量：<strong style="color: #E6A23C;">{{ item.quantity }}</strong>
+                  </div>
+                </div>
+                <el-button type="danger" icon="Delete" circle plain size="small" @click="removePackageInfo(index)"></el-button>
+              </div>
+            </el-scrollbar>
+          </el-card>
+
+          <el-card shadow="never" class="annotation-card" v-else>
             <template #header>
               <div class="card-header">
                 <span>标注信息面板</span>
@@ -85,12 +145,11 @@
           :close-on-click-modal="false"
           @close="cancelAnnotation"
       >
-<!--        <el-select v-model="labelText" allow-create filterable placeholder="请选择标签" style="width: 100%; margin-bottom: 20px;">-->
-<!--          <el-option v-if="props.tempCraftType === 'TX'" v-for="item in label_tianxian" :key="item.value" :label="item.label" :value="item.value"></el-option>-->
-<!--          <el-option v-else v-for="item in label_banji" :key="item.label" :label="item.label" :value="item.value"></el-option>-->
-<!--        </el-select>-->
-
-        <el-cascader v-model="labelText" :show-all-levels="false" :props="optionProps" :options="options" placeholder="请选择标签" style="width: 100%; margin-bottom: 20px;"></el-cascader>
+        <el-select v-model="labelText" filterable placeholder="请选择标签" style="width: 100%; margin-bottom: 20px;">
+          <el-option v-if="props.tempAlgType === 0" v-for="item in label_tianxian" :key="item.value" :label="item.label" :value="item.value"></el-option>
+          <el-option v-else-if="props.tempAlgType === 1" v-for="item in label_banji" :key="item.label" :label="item.label" :value="item.value"></el-option>
+          <el-option v-else v-for="(index, item) in label_mozu" :key="index" :label="item.label" :value="item.value"></el-option>
+        </el-select>
 
         <el-input
             style="margin-top: 20px;"
@@ -106,6 +165,30 @@
         </span>
         </template>
       </el-dialog>
+
+      <el-dialog
+          v-model="packageDialogVisible"
+          title="填写包装信息"
+          width="400px"
+          append-to-body
+          :close-on-click-modal="false"
+      >
+        <el-form label-width="110px">
+          <el-form-item label="产品信息" required>
+            <el-input v-model="packageData.productInfo" placeholder="请输入产品信息" />
+          </el-form-item>
+          <el-form-item label="待检测数量" required>
+            <el-input-number v-model="packageData.quantity" :min="1" placeholder="待检测数量" style="width: 100%;" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="packageDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="confirmPackageInfo">确定</el-button>
+          </span>
+        </template>
+      </el-dialog>
+
     </div>
 
     <el-dialog
@@ -127,7 +210,7 @@
            <el-icon><VideoCamera/></el-icon> 本地相机模式
          </span>
         <el-button type="primary" size="large" icon="CameraFilled" :loading="isCapturing" @click="handleCapture">
-          立即抓拍并去标注
+          立即抓拍并去配置
         </el-button>
       </div>
     </el-dialog>
@@ -152,11 +235,17 @@ const dialogVisible = ref(false);
 const labelText = ref('');
 const inputRef = ref(null);
 const stepCount = ref(0);
+const currentStepContent = ref('');
 
-// 新增：右侧标注列表状态管理
+// 标注模式状态管理
 const annotationList = ref([]);
 
-// 用于保存最原始、未被任何压缩的物理图片文件，上传给后端必用它
+// 包装模式状态管理（现改为数组支持多条录入）
+const packageDialogVisible = ref(false);
+const packageData = ref({ productInfo: '', quantity: 1 });
+const packageList = ref([]);
+
+// 保存最原始、未被任何压缩的物理图片文件
 const uploadFile = ref(null);
 
 const remark = ref('')
@@ -187,6 +276,13 @@ const props = defineProps({
   borrowImageUrl: {
     type: String,
     default: ''
+  },
+  tempAlgType: {
+    type: Number
+  },
+  packageFlag: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -208,10 +304,6 @@ const options = computed(() => [
   }
 ]);
 
-const optionProps = {
-  expandTrigger: 'hover'
-}
-
 const emit = defineEmits(['change-status'])
 
 const currentIndex = ref(0);
@@ -229,10 +321,12 @@ watch(() => props.visible, (visible) => {
     if (canvas.value) canvas.value.clear();
     stopLocalCamera();
     annotationList.value = [];
+    packageList.value = [];
+    packageData.value = { productInfo: '', quantity: 1 };
   }
 })
 
-// 加载当前进度对应工步的历史原图
+// 加载当前进度对应工步的历史原图和历史数据
 const loadCurrentStepData = async () => {
   if (!currentStepId.value) return;
 
@@ -240,20 +334,42 @@ const loadCurrentStepData = async () => {
   stepCount.value = 1;
 
   clearCanvasAnnotations();
+  packageList.value = [];
 
   try {
     const res = await getStep(currentStepId.value);
     let urlsStr = res.data.guideMapUrl;
+    currentStepContent.value = res.data.content;
 
     if (!urlsStr && res.data.code === '99' && props.borrowImageUrl) {
       urlsStr = JSON.stringify([props.borrowImageUrl]);
     }
 
-    let coordsInfo = [];
+    let coordsInfo = null;
     if (res.data.coordsInfo) {
       try {
         coordsInfo = JSON.parse(res.data.coordsInfo);
       } catch (e) {
+      }
+    }
+
+    // 【核心新增】：包装模式下的多条数据回显
+    if (props.packageFlag && coordsInfo) {
+      if (Array.isArray(coordsInfo)) {
+        if (coordsInfo.length === 0 || !coordsInfo[0].posList) {
+          // 从后端拿到纯净数据后，动态映射加上 _id 供前端 v-for 使用
+          packageList.value = coordsInfo.map(item => ({
+            ...item,
+            _id: `pkg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
+          }));
+        }
+      } else {
+        // 兼容单对象
+        packageList.value = [{
+          _id: `pkg_${Date.now()}`,
+          productInfo: coordsInfo.productInfo,
+          quantity: coordsInfo.quantity
+        }];
       }
     }
 
@@ -270,7 +386,6 @@ const loadCurrentStepData = async () => {
         const fullUrl = originalUrl.startsWith('http') ? originalUrl : BASE_API + originalUrl;
         const response = await fetch(fullUrl, { cache: "no-cache" });
 
-        // 【新增】：检查网络请求是否成功（拦截 404、500 等 URL 失效情况）
         if (!response.ok) {
           throw new Error(`图片加载失败，状态码: ${response.status}`);
         }
@@ -278,7 +393,7 @@ const loadCurrentStepData = async () => {
         const blob = await response.blob();
         const file = new File([blob], `history_${Date.now()}.jpg`, { type: blob.type });
 
-        loadFileToCanvas(file, coordsInfo);
+        loadFileToCanvas(file, props.packageFlag ? null : coordsInfo);
       }
     } else {
       if (currentIndex.value === 0) {
@@ -287,7 +402,6 @@ const loadCurrentStepData = async () => {
       }
     }
   } catch (err) {
-    console.error("加载工步历史图片失败", err);
     proxy.$modal.msgWarning('历史原图已失效或加载失败，请通过“本地上传”或“打开相机”提供新图片！');
     if (canvas.value) canvas.value.clear();
     uploadFile.value = null;
@@ -326,15 +440,14 @@ const initCanvas = () => {
   window.addEventListener('keydown', handleKeydown);
 };
 
-// 键盘 Delete 键删除联动（同步删除右侧列表）
 const handleKeydown = (e) => {
+  if (props.packageFlag) return; // 包装模式禁用键盘删除框
   if (e.key === 'Delete' || e.key === 'Backspace') {
     if (!canvas.value) return;
     const activeObjects = canvas.value.getActiveObjects();
     if (activeObjects.length) {
       canvas.value.discardActiveObject();
       activeObjects.forEach((obj) => {
-        // 同步从右侧列表中删除
         if (obj.id) {
           annotationList.value = annotationList.value.filter(item => item.id !== obj.id);
         }
@@ -399,7 +512,7 @@ const loadFileToCanvas = (file, historyCoords = []) => {
     imgObj.src = e.target.result;
     imgObj.onload = () => {
       canvas.value.clear();
-      annotationList.value = []; // 清空右侧列表准备接收新数据
+      annotationList.value = [];
       stepCount.value = 1;
 
       const fImg = new fabric.Image(imgObj);
@@ -415,18 +528,15 @@ const loadFileToCanvas = (file, historyCoords = []) => {
       });
       canvas.value.setViewportTransform([1, 0, 0, 1, 0, 0]);
 
-      if (historyCoords && historyCoords.length > 0) {
-        // 计算图片在画布上的实际渲染起点（左上角）
+      // 普通模式下的标注框回显
+      if (historyCoords && Array.isArray(historyCoords) && historyCoords.length > 0) {
         const bgLogicalLeft = (canvasWidth / 2) - (fImg.width * scale) / 2;
         const bgLogicalTop = (canvasHeight / 2) - (fImg.height * scale) / 2;
 
         historyCoords.forEach(group => {
           if (group.posList && group.posList.length > 0) {
             group.posList.forEach(pos => {
-              // 重新生成该框的专属 ID
               const uniqueId = `rect_load_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-
-              // 物理坐标 -> 画布坐标 逆推算
               const rectLeft = pos.x * scale + bgLogicalLeft;
               const rectTop = pos.y * scale + bgLogicalTop;
               const rectWidth = pos.width * scale;
@@ -439,7 +549,7 @@ const loadFileToCanvas = (file, historyCoords = []) => {
                 height: rectHeight,
                 fill: 'rgba(255, 0, 0, 0)',
                 stroke: 'red',
-                strokeWidth: 2,
+                strokeWidth: 1,
                 selectable: true,
                 evented: true,
                 id: uniqueId,
@@ -448,7 +558,6 @@ const loadFileToCanvas = (file, historyCoords = []) => {
 
               canvas.value.add(rect);
 
-              // 同步推送至右侧信息列表
               annotationList.value.push({
                 id: uniqueId,
                 label: group.label,
@@ -457,7 +566,6 @@ const loadFileToCanvas = (file, historyCoords = []) => {
             });
           }
         });
-        // 通知画布渲染新加进来的框
         canvas.value.requestRenderAll();
       }
       proxy.$modal.closeLoading();
@@ -533,6 +641,7 @@ const handleCapture = () => {
 };
 
 const toggleDrawMode = () => {
+  if (props.packageFlag) return proxy.$modal.msgWarning('包装模式下无需框选标注！');
   if (!canvas.value.backgroundImage) return proxy.$modal.msgWarning('请先上传图片或使用相机拍照！');
   isDrawingMode.value = !isDrawingMode.value;
   canvas.value.skipTargetFind = isDrawingMode.value;
@@ -540,7 +649,7 @@ const toggleDrawMode = () => {
 };
 
 const onMouseDown = (opt) => {
-  if (!isDrawingMode.value) return;
+  if (!isDrawingMode.value || props.packageFlag) return;
   isMouseDown = true;
   const pointer = canvas.value.getPointer(opt.e);
   startX = pointer.x; startY = pointer.y;
@@ -551,7 +660,7 @@ const onMouseDown = (opt) => {
     height: 0,
     fill: 'rgba(255, 0, 0, 0)',
     stroke: 'red',
-    strokeWidth: 2,
+    strokeWidth: 1,
     selectable: false,
     evented: false
   });
@@ -559,7 +668,7 @@ const onMouseDown = (opt) => {
 };
 
 const onMouseMove = (opt) => {
-  if (!isDrawingMode.value || !isMouseDown) return;
+  if (!isDrawingMode.value || !isMouseDown || props.packageFlag) return;
   const pointer = canvas.value.getPointer(opt.e);
   if (pointer.x < startX) activeRect.set({left: pointer.x});
   if (pointer.y < startY) activeRect.set({top: pointer.y});
@@ -568,24 +677,49 @@ const onMouseMove = (opt) => {
 };
 
 const onMouseUp = () => {
-  if (!isDrawingMode.value || !isMouseDown) return;
+  if (!isDrawingMode.value || !isMouseDown || props.packageFlag) return;
   isMouseDown = false;
   if (activeRect.width < 5 || activeRect.height < 5) { canvas.value.remove(activeRect); activeRect = null; return; }
   dialogVisible.value = true;
   nextTick(() => { inputRef.value?.focus(); });
 };
 
-// 【核心改造】：不再添加文字和组合体，直接给矩形框赋予信息和交互能力
+// 【核心新增】：向包装列表中追加数据
+const confirmPackageInfo = () => {
+  if (!packageData.value.productInfo) return proxy.$modal.msgWarning('请输入产品信息');
+  if (!uploadFile.value && (!canvas.value || !canvas.value.backgroundImage)) {
+    return proxy.$modal.msgWarning('请先上传引导图片！');
+  }
+
+  // 生成唯一ID并推入列表
+  packageList.value.push({
+    _id: `pkg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+    productInfo: packageData.value.productInfo,
+    quantity: packageData.value.quantity
+  });
+
+  // 添加完毕后自动清空表单，方便继续添加，然后关闭弹窗
+  packageData.value = { productInfo: '', quantity: 1 };
+  packageDialogVisible.value = false;
+  proxy.$modal.msgSuccess('添加成功，可继续添加或点击“保存包装及图片”');
+};
+
+// 从右侧面板中删除某条包装信息
+const removePackageInfo = (index) => {
+  packageList.value.splice(index, 1);
+};
+
 const confirmLabel = () => {
   if (!labelText.value) return proxy.$modal.msgWarning('请输入标签');
 
-  labelText.value = labelText.value[labelText.value.length-1]
+  // labelText.value = labelText.value[labelText.value.length-1]
 
   if (!remark) remark.value = '';
 
   const uniqueId = `rect_${Date.now()}`;
 
-  // 将 activeRect 变更为可交互、可选中状态，并绑定专属 ID 及数据
+  console.log(labelText.value)
+
   activeRect.set({
     id: uniqueId,
     selectable: true,
@@ -593,7 +727,6 @@ const confirmLabel = () => {
     customData: { label: labelText.value, remark: remark.value }
   });
 
-  // 同步推送至右侧信息列表
   annotationList.value.push({
     id: uniqueId,
     label: labelText.value,
@@ -604,10 +737,12 @@ const confirmLabel = () => {
   canvas.value.setActiveObject(activeRect);
   canvas.value.renderAll();
 
-  dialogVisible.value = false; labelText.value = ''; remark.value = ''; activeRect = null;
+  dialogVisible.value = false;
+  // labelText.value = '';
+  remark.value = '';
+  activeRect = null;
 };
 
-// 从右侧列表主动删除某项及画布上的框
 const removeAnnotation = (index, id) => {
   annotationList.value.splice(index, 1);
   const objects = canvas.value.getObjects();
@@ -618,11 +753,10 @@ const removeAnnotation = (index, id) => {
   }
 };
 
-// 右侧列表悬浮时高亮对应的框（可选的用户体验提升）
 const highlightAnnotation = (id, isHover) => {
   const obj = canvas.value.getObjects().find(o => o.id === id);
   if (obj) {
-    obj.set('strokeWidth', isHover ? 4 : 2);
+    obj.set('strokeWidth', isHover ? 2 : 1);
     obj.set('stroke', isHover ? '#409EFF' : 'red');
     canvas.value.requestRenderAll();
   }
@@ -630,23 +764,33 @@ const highlightAnnotation = (id, isHover) => {
 
 const cancelAnnotation = () => {
   if (activeRect) { canvas.value.remove(activeRect); canvas.value.renderAll(); }
-  dialogVisible.value = false; labelText.value = ''; remark.value = ''; activeRect = null;
+  dialogVisible.value = false;
+  // labelText.value = '';
+  remark.value = '';
+  activeRect = null;
 };
 
 const clearCanvasAnnotations = () => {
   if (!canvas.value) return;
   const objects = canvas.value.getObjects();
   objects.forEach(obj => canvas.value.remove(obj));
-  annotationList.value = []; // 同步清空右侧列表
+  annotationList.value = [];
   stepCount.value = 1;
   canvas.value.requestRenderAll();
 };
 
 const uploadToMinio = async () => {
-  if (!canvas.value || canvas.value.getObjects().length === 0) return proxy.$modal.msgWarning('请先完成标注！')
+  // 根据不同模式走不同的检验规则
+  if (props.packageFlag) {
+    if (packageList.value.length === 0) return proxy.$modal.msgWarning('请先录入包装信息！');
+    if (!uploadFile.value && (!canvas.value || !canvas.value.backgroundImage)) return proxy.$modal.msgWarning('请上传引导图！');
+  } else {
+    if (!canvas.value || canvas.value.getObjects().length === 0) return proxy.$modal.msgWarning('请先完成标注！');
+  }
+
   if (!uploadFile.value) return proxy.$modal.msgError('未找到原始图片文件');
 
-  proxy.$modal.loading('正在上传图片和标注数据...')
+  proxy.$modal.loading('正在保存数据...')
   try {
     const resOrig = await getUploadUrl();
     const resAnnot = await getUploadUrl();
@@ -662,10 +806,15 @@ const uploadToMinio = async () => {
 
     const urlList = [resOrig.data.objectName, resAnnot.data.objectName];
 
+    // 判断不同模式的数据结构 (包装模式将存为数组 [{productInfo, quantity}, ...])
+    const coordsInfoData = props.packageFlag
+        ? packageList.value.map(({ _id, ...rest }) => rest)
+        : getDataEasy();
+
     const data = {
       id: currentStepId.value,
       guideMapUrl: JSON.stringify(urlList),
-      coordsInfo: JSON.stringify(getDataEasy()),
+      coordsInfo: JSON.stringify(coordsInfoData),
     }
 
     await updateStep(data)
@@ -674,7 +823,7 @@ const uploadToMinio = async () => {
     proxy.$modal.msgSuccess('保存成功！');
 
     if (props.stepIds.length > 1) {
-      proxy.$modal.confirm('已保存当前结果。是否清空标注并开始下一个工步？', '连续标注提示', {
+      proxy.$modal.confirm('已保存当前结果。是否清空并开始下一个工步？', '连续处理提示', {
         confirmButtonText: '下一工步',
         cancelButtonText: '留在当前'
       }).then(() => {
@@ -694,9 +843,6 @@ const uploadToMinio = async () => {
   }
 };
 
-/**
- * 【核心改造】：因为已经没有 Group 包裹，需要直接针对 Rect 进行绝对坐标换算
- */
 const getDataEasy = () => {
   const bgImg = canvas.value.backgroundImage;
   if (!bgImg) return [];
@@ -704,7 +850,6 @@ const getDataEasy = () => {
   const scaleX = bgImg.scaleX;
   const scaleY = bgImg.scaleY;
 
-  // 计算图片左上角在画板上的真实起点坐标
   const bgLogicalLeft = bgImg.left - (bgImg.width * scaleX) / 2;
   const bgLogicalTop = bgImg.top - (bgImg.height * scaleY) / 2;
 
@@ -715,17 +860,14 @@ const getDataEasy = () => {
       .map(rectObj => {
         labelSet.add(rectObj.customData.label);
 
-        // 计算框在画板上的绝对宽高（包含用户缩放框的情况）
         const canvasRectWidth = rectObj.width * rectObj.scaleX;
         const canvasRectHeight = rectObj.height * rectObj.scaleY;
 
-        // 【修复核心】：直接减去背景起点，除以缩放比，获得基于上传原图的真实像素坐标
         let realX = Math.round((rectObj.left - bgLogicalLeft) / scaleX);
         let realY = Math.round((rectObj.top - bgLogicalTop) / scaleY);
         let realW = Math.round(canvasRectWidth / scaleX);
         let realH = Math.round(canvasRectHeight / scaleY);
 
-        // 防抖与越界保护
         realX = Math.max(0, realX);
         realY = Math.max(0, realY);
         realW = Math.min(realW, bgImg.width - realX);
@@ -749,47 +891,32 @@ const getDataEasy = () => {
   return coordsInfo;
 };
 
-// const getFile = () => {
-//   const bgImage = canvas.value.backgroundImage;
-//   const currentScale = bgImage ? bgImage.scaleX : 1;
-//   const multiplier = 1 / currentScale;
-//   const dataURL = canvas.value.toDataURL({ format: 'jpeg', quality: 1, multiplier: multiplier });
-//   const blob = dataURLtoBlob(dataURL);
-//   return new File([blob], `annotated_${Date.now()}.jpg`, {type: 'image/jpeg'});
-// }
-
 const getFile = () => {
   const bgImage = canvas.value.backgroundImage;
   if (!bgImage) {
     return null;
   }
 
-  // 1. 保存当前的视口变换矩阵（包含拖拽、缩放状态），并暂时重置视口
   const originalVpt = [...canvas.value.viewportTransform];
   canvas.value.setViewportTransform([1, 0, 0, 1, 0, 0]);
 
-  // 2. 获取当前的背景图缩放比例
   const currentScale = bgImage.scaleX;
 
-  // 3. 计算背景图在画板上的实际渲染起始坐标和宽高
-  // 因为 loadFileToCanvas 中设置了 originX/Y 为 'center'，所以必须基于中心点往回减去一半
   const bgLogicalLeft = bgImage.left - (bgImage.width * currentScale) / 2;
   const bgLogicalTop = bgImage.top - (bgImage.height * currentScale) / 2;
   const bgLogicalWidth = bgImage.width * currentScale;
   const bgLogicalHeight = bgImage.height * currentScale;
 
-  // 4. 精准导出图片
   const dataURL = canvas.value.toDataURL({
     format: 'jpeg',
-    quality: 1, // 设为 1 以保证标注后的图片质量最大化（无损压缩）
+    quality: 1,
     left: bgLogicalLeft,
     top: bgLogicalTop,
     width: bgLogicalWidth,
     height: bgLogicalHeight,
-    multiplier: 1 / currentScale // 利用倒数直接放大回原图的物理尺寸
+    multiplier: 1 / currentScale
   });
 
-  // 5. 恢复用户的拖拽和缩放视口状态（用户体验无缝衔接）
   canvas.value.setViewportTransform(originalVpt);
 
   const blob = dataURLtoBlob(dataURL);
@@ -805,6 +932,10 @@ const dataURLtoBlob = (dataurl) => {
   while (n--) u8arr[n] = bstr.charCodeAt(n);
   return new Blob([u8arr], {type: mime});
 };
+
+function handleLabelDialogClose(){
+  labelText.value = ''
+}
 </script>
 
 <style scoped>
@@ -871,9 +1002,65 @@ const dataURLtoBlob = (dataurl) => {
 .item-label { font-weight: bold; }
 .item-remark { font-size: 13px; color: #606266; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.status-text { margin-top: 10px; font-size: 14px; color: #666; }
 .camera-preview-box { width: 100%; height: 500px; background-color: #000; display: flex; justify-content: center; align-items: center; border-radius: 4px; overflow: hidden; margin-bottom: 20px; }
 .live-stream { width: 100%; height: 100%; object-fit: contain; }
 .camera-loading { color: #fff; text-align: center; }
 .camera-controls { display: flex; justify-content: flex-end; align-items: center; padding: 0 10px; }
+.status-panel {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.drawing-alert {
+  border: 1px solid #faecd8;
+  border-radius: 6px;
+}
+
+.alert-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #e6a23c;
+}
+
+.highlight-text {
+  color: #f56c6c;
+  margin-left: 5px;
+}
+
+.alert-tips {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.step-content-box {
+  background-color: #f4f4f5;
+  border-left: 4px solid #409eff;
+  padding: 12px 16px;
+  border-radius: 4px;
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 8px;
+}
+
+.step-text {
+  font-size: 14px;
+  color: #606266;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
 </style>

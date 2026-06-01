@@ -85,12 +85,6 @@
             <artifactId>imustsz-framework</artifactId>
         </dependency>
 
-        <!-- 定时任务-->
-        <dependency>
-            <groupId>com.imust</groupId>
-            <artifactId>imustsz-quartz</artifactId>
-        </dependency>
-
         <!-- 代码生成-->
         <dependency>
             <groupId>com.imust</groupId>

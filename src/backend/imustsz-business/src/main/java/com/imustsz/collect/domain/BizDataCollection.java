@@ -32,6 +32,26 @@ public class BizDataCollection extends BaseEntity
 
     private String coordsInfo;
 
+    private Integer uploaded;
+
+    private Integer type;
+
+    public Integer getType() {
+        return type;
+    }
+
+    public void setType(Integer type) {
+        this.type = type;
+    }
+
+    public Integer getUploaded() {
+        return uploaded;
+    }
+
+    public void setUploaded(Integer uploaded) {
+        this.uploaded = uploaded;
+    }
+
     public String getCoordsInfo() {
         return coordsInfo;
     }

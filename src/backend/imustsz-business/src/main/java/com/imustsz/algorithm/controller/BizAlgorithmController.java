@@ -5,11 +5,8 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import javax.servlet.http.HttpServletResponse;
 
-import com.imustsz.common.utils.DateUtils;
 import com.imustsz.common.utils.bean.MinioUtils;
 import io.minio.errors.*;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,7 +20,6 @@ import com.imustsz.algorithm.domain.BizAlgorithm;
 import com.imustsz.algorithm.service.IBizAlgorithmService;
 import com.imustsz.common.utils.poi.ExcelUtil;
 import com.imustsz.common.core.page.TableDataInfo;
-import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 算法Controller
@@ -33,7 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @RestController
 @RequestMapping("/algorithm")
-public class BizAlgorithmController extends BaseController {
+public class  BizAlgorithmController extends BaseController {
     @Autowired
     private IBizAlgorithmService bizAlgorithmService;
 
@@ -43,7 +39,7 @@ public class BizAlgorithmController extends BaseController {
     /**
      * 查询算法列表
      */
-    @PreAuthorize("@ss.hasPermi('algorithm:algorithm:list')")
+//    @PreAuthorize("@ss.hasPermi('algorithm:algorithm:list')")
     @GetMapping("/list")
     public TableDataInfo list(BizAlgorithm bizAlgorithm) throws Exception {
         startPage();
@@ -54,7 +50,7 @@ public class BizAlgorithmController extends BaseController {
     /**
      * 导出算法列表
      */
-    @PreAuthorize("@ss.hasPermi('algorithm:algorithm:export')")
+//    @PreAuthorize("@ss.hasPermi('algorithm:algorithm:export')")
     @Log(title = "算法", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, BizAlgorithm bizAlgorithm) throws Exception {
@@ -66,7 +62,7 @@ public class BizAlgorithmController extends BaseController {
     /**
      * 获取算法详细信息
      */
-    @PreAuthorize("@ss.hasPermi('algorithm:algorithm:query')")
+//    @PreAuthorize("@ss.hasPermi('algorithm:algorithm:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id) {
         return success(bizAlgorithmService.selectBizAlgorithmById(id));
@@ -83,7 +79,7 @@ public class BizAlgorithmController extends BaseController {
     /**
      * 修改算法
      */
-    @PreAuthorize("@ss.hasPermi('algorithm:algorithm:edit')")
+//    @PreAuthorize("@ss.hasPermi('algorithm:algorithm:edit')")
     @Log(title = "算法", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody BizAlgorithm bizAlgorithm) throws Exception {
@@ -99,7 +95,7 @@ public class BizAlgorithmController extends BaseController {
     /**
      * 删除算法
      */
-    @PreAuthorize("@ss.hasPermi('algorithm:algorithm:remove')")
+//    @PreAuthorize("@ss.hasPermi('algorithm:algorithm:remove')")
     @Log(title = "算法", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids) throws Exception {

@@ -27,7 +27,7 @@ public class BizDataSetController extends BaseController {
     /**
      * 查询数据集列表
      */
-    @PreAuthorize("@ss.hasPermi('collection:dataset:list')")
+//    @PreAuthorize("@ss.hasPermi('collection:dataset:list')")
     @GetMapping("/list")
     public TableDataInfo list(BizDataset BizDataset) {
         startPage();
@@ -38,7 +38,7 @@ public class BizDataSetController extends BaseController {
     /**
      * 导出数据集列表
      */
-    @PreAuthorize("@ss.hasPermi('collection:dataset:export')")
+//    @PreAuthorize("@ss.hasPermi('collection:dataset:export')")
     @Log(title = "导出数据集", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, BizDataset BizDataset) {
@@ -50,7 +50,7 @@ public class BizDataSetController extends BaseController {
     /**
      * 获取数据集详细信息
      */
-    @PreAuthorize("@ss.hasPermi('collection:dataset:query')")
+//    @PreAuthorize("@ss.hasPermi('collection:dataset:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id) {
         return success(BizDatasetService.selectBizDatasetById(id));
@@ -59,7 +59,7 @@ public class BizDataSetController extends BaseController {
     /**
      * 新增数据集
      */
-    @PreAuthorize("@ss.hasPermi('collection:dataset:add')")
+//    @PreAuthorize("@ss.hasPermi('collection:dataset:add')")
     @Log(title = "数据集", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody BizDataset BizDataset) {
@@ -69,7 +69,7 @@ public class BizDataSetController extends BaseController {
     /**
      * 修改数据集
      */
-    @PreAuthorize("@ss.hasPermi('collection:dataset:edit')")
+//    @PreAuthorize("@ss.hasPermi('collection:dataset:edit')")
     @Log(title = "数据集", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody BizDataset BizDataset) {
@@ -79,7 +79,7 @@ public class BizDataSetController extends BaseController {
     /**
      * 删除数据集
      */
-    @PreAuthorize("@ss.hasPermi('collection:dataset:remove')")
+//    @PreAuthorize("@ss.hasPermi('collection:dataset:remove')")
     @Log(title = "数据集", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids) {

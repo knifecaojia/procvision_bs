@@ -34,7 +34,7 @@ public interface IBizDataCollectionService
      * @param bizDataCollection 数据采集
      * @return 结果
      */
-    public int insertBizDataCollection(BizDataCollection bizDataCollection);
+    public int insertBizDataCollection(BizDataCollection bizDataCollection) throws Exception;
 
     /**
      * 修改数据采集

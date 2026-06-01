@@ -1,6 +1,11 @@
 package com.imustsz.framework.web.exception;
 
 import javax.servlet.http.HttpServletRequest;
+
+import com.imustsz.common.exception.user.CaptchaException;
+import com.imustsz.common.exception.user.UserPasswordNotMatchException;
+import com.imustsz.framework.manager.AsyncManager;
+import com.imustsz.framework.manager.factory.AsyncFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
@@ -98,6 +103,11 @@ public class GlobalExceptionHandler
     {
         String requestURI = request.getRequestURI();
         log.error("请求地址'{}',发生未知异常.", requestURI, e);
+
+        if (!isIgnoredException(e, requestURI)) {
+            AsyncManager.me().execute(AsyncFactory.recordErrorLog(e));
+        }
+
         return AjaxResult.error(e.getMessage());
     }
 
@@ -109,7 +119,21 @@ public class GlobalExceptionHandler
     {
         String requestURI = request.getRequestURI();
         log.error("请求地址'{}',发生系统异常.", requestURI, e);
+
+        if (!isIgnoredException(e, requestURI)) {
+            AsyncManager.me().execute(AsyncFactory.recordErrorLog(e));
+        }
+
         return AjaxResult.error(e.getMessage());
+    }
+
+    private boolean isIgnoredException(Exception e, String requestURI) {
+        if (requestURI.contains("/login") || requestURI.contains("/captchaImage")) {
+            return true;
+        }
+
+        // 2. 按异常类型过滤（例如若依内置的密码不匹配、验证码错误等业务异常）
+        return e instanceof UserPasswordNotMatchException || e instanceof CaptchaException;
     }
 
     /**

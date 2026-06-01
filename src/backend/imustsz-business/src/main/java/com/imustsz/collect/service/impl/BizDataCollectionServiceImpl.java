@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.imustsz.common.utils.bean.MinioUtils;
+import com.imustsz.order.domain.dto.FinishedOrderDTO;
+import com.imustsz.order.service.IBizWorkOrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.imustsz.collect.mapper.BizDataCollectionMapper;
@@ -19,8 +21,12 @@ import com.imustsz.collect.service.IBizDataCollectionService;
  */
 @Service
 public class BizDataCollectionServiceImpl implements IBizDataCollectionService {
+
     @Autowired
     private BizDataCollectionMapper bizDataCollectionMapper;
+
+    @Autowired
+    private IBizWorkOrderService bizWorkOrderService;
 
     @Autowired
     private MinioUtils minioUtils;
@@ -44,6 +50,7 @@ public class BizDataCollectionServiceImpl implements IBizDataCollectionService {
      */
     @Override
     public List<BizDataCollection> selectBizDataCollectionList(BizDataCollection bizDataCollection) {
+        bizDataCollection.setType(1);
         List<BizDataCollection> bizDataCollections = bizDataCollectionMapper.selectBizDataCollectionList(bizDataCollection);
         return bizDataCollections.stream().peek(data -> {
             try {

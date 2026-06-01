@@ -65,7 +65,7 @@
       />
     </el-dialog>
 
-    <StepDialog v-model="stepOpen" :stepOpen="stepOpen" :processId="tempProcessId" :craftId="props.craftId" :tempCraftType="props.tempCraftType"></StepDialog>
+    <StepDialog v-model="stepOpen" :stepOpen="stepOpen" :tempAlgType="selectedAlgType" :processId="tempProcessId" :craftId="props.craftId" :tempCraftType="props.tempCraftType"></StepDialog>
 
     <el-dialog :title="title" v-model="open" width="850px" append-to-body>
       <el-form ref="processRef" :model="form" :rules="rules" label-width="80px">
@@ -179,6 +179,7 @@ const selectedAlgId = ref(null)
 const labelVisible = ref(false)
 const materialOpen = ref(false)
 const materialInfoList = ref([])
+const selectedAlgType = ref(null)
 
 // 新增：用于传递给标注组件的实际操作 ID 数组
 const targetStepIds = ref([])
@@ -353,10 +354,6 @@ function handleProcessDelete(row) {
   })
 }
 
-function showMaterial(row){
-
-}
-
 function getAlgList() {
   listAlgorithm().then(response => {
     algList.value = response.rows
@@ -385,6 +382,7 @@ async function handleBind() {
 function showStep(row) {
   stepOpen.value = true
   tempProcessId.value = row.id
+  selectedAlgType.value = algList.value.find(item => item.id === row?.algorithmId).type
 }
 
 function cancel() {

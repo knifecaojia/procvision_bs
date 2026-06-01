@@ -1,6 +1,9 @@
 package com.imustsz.order.service.impl;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
@@ -8,6 +11,7 @@ import java.util.stream.Collectors;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.XmlUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
@@ -31,11 +35,17 @@ import com.imustsz.craft.mapper.BizStepMapper;
 import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
 import com.imustsz.framework.aspectj.AutoFill;
+import com.imustsz.order.domain.OriginInfo;
+import com.imustsz.order.domain.TargetInfo;
 import com.imustsz.order.domain.dto.FinishedOrderDTO;
 import com.imustsz.order.domain.json.*;
 import com.imustsz.order.domain.vo.PageVO;
 import com.imustsz.process.domain.BizProcessRecord;
 import com.imustsz.process.mapper.BizProcessRecordMapper;
+import com.imustsz.utils.WebServiceProperties;
+import io.minio.StatObjectArgs;
+import io.minio.StatObjectResponse;
+import io.minio.errors.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,16 +58,17 @@ import com.imustsz.order.domain.BizWorkOrder;
 import com.imustsz.order.service.IBizWorkOrderService;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 
 /**
  * 工单Service业务层处理
- * 
+ *
  * @author imustsz
  * @date 2025-12-22
  */
 @Service
-public class BizWorkOrderServiceImpl implements IBizWorkOrderService
-{
+public class BizWorkOrderServiceImpl implements IBizWorkOrderService {
     @Autowired
     private BizWorkOrderMapper bizWorkOrderMapper;
 
@@ -74,6 +85,9 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
     private MinioUtils minioUtils;
 
     @Autowired
+    private WebServiceProperties webServiceProperties;
+
+    @Autowired
     private BizProcessRecordMapper bizProcessRecordMapper;
 
     @Value("${minio.bucketName}")
@@ -88,30 +102,29 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
     @Value("${webservice.serviceName}")
     private String serviceName;
 
-    private final Logger log =  LoggerFactory.getLogger(BizWorkOrderServiceImpl.class.getName());
+    private final Logger log = LoggerFactory.getLogger(BizWorkOrderServiceImpl.class.getName());
 
     /**
      * 查询工单
-     * 
+     *
      * @param id 工单主键
      * @return 工单
      */
     @Override
-    public BizWorkOrder selectBizWorkOrderById(Long id)
-    {
+    public BizWorkOrder selectBizWorkOrderById(Long id) {
         return bizWorkOrderMapper.selectBizWorkOrderById(id);
     }
 
     /**
      * 查询工单列表
-     * 
+     *
      * @param bizWorkOrder 工单
      * @return 工单
      */
     @Override
     public List<BizWorkOrder> selectBizWorkOrderList(BizWorkOrder bizWorkOrder) throws Exception {
         List<BizWorkOrder> bizWorkOrders = bizWorkOrderMapper.selectBizWorkOrderList(bizWorkOrder);
-        for (BizWorkOrder order : bizWorkOrders){
+        for (BizWorkOrder order : bizWorkOrders) {
             if (order.getGuideMapUrl() != null)
                 order.setGuideMapUrl(minioUtils.getPresignedUrl(order.getGuideMapUrl()));
         }
@@ -120,20 +133,19 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
 
     /**
      * 新增工单
-     * 
+     *
      * @param bizWorkOrder 工单
      * @return 结果
      */
     @Override
-    public int insertBizWorkOrder(BizWorkOrder bizWorkOrder)
-    {
+    public int insertBizWorkOrder(BizWorkOrder bizWorkOrder) {
         Craft craft = craftMapper.selectCraftByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
         if (craft == null)
             return -1;
         Process process = processMapper.selectProcessByCodeAndNameAndCraftId(bizWorkOrder.getProcessCode(), bizWorkOrder.getProcessName(), craft.getId());
         if (process == null)
             return -2;
-        if(craft.getStatus() == 1 || craft.getStatus() == 2)
+        if (craft.getStatus() == 1 || craft.getStatus() == 2)
             bizWorkOrder.setStatus(-2);
         else if (craft.getStatus() == 3)
             bizWorkOrder.setStatus(-1);
@@ -145,26 +157,24 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
 
     /**
      * 修改工单
-     * 
+     *
      * @param bizWorkOrder 工单
      * @return 结果
      */
     @Override
-    public int updateBizWorkOrder(BizWorkOrder bizWorkOrder)
-    {
+    public int updateBizWorkOrder(BizWorkOrder bizWorkOrder) {
         return bizWorkOrderMapper.updateBizWorkOrder(bizWorkOrder);
     }
 
     /**
      * 批量删除工单
-     * 
+     *
      * @param ids 需要删除的工单主键
      * @return 结果
      */
     @Override
-    public int deleteBizWorkOrderByIds(Long[] ids)
-    {
-        for (Long id : ids){
+    public int deleteBizWorkOrderByIds(Long[] ids) {
+        for (Long id : ids) {
             BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderById(id);
             bizProcessRecordMapper.deleteBizProcessRecordByTaskNo(bizWorkOrder.getWorkOrderCode());
         }
@@ -173,13 +183,12 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
 
     /**
      * 删除工单信息
-     * 
+     *
      * @param id 工单主键
      * @return 结果
      */
     @Override
-    public int deleteBizWorkOrderById(Long id)
-    {
+    public int deleteBizWorkOrderById(Long id) {
         return bizWorkOrderMapper.deleteBizWorkOrderById(id);
     }
 
@@ -216,42 +225,69 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
                     bizWorkOrder.setCraftCode(craft.getCode());
                     bizWorkOrder.setCraftVersion(craft.getVersion());
 
-                    BizWorkOrder existFlag = bizWorkOrderMapper.checkWorkOrderExist(order.getWorkOrderNo());
-                    if (existFlag != null)
-                        throw new RuntimeException(String.format("工单：%s已存在", order.getWorkOrderNo()));
+                    BizWorkOrder bizOrder = bizWorkOrderMapper.checkWorkOrderExist(order.getWorkOrderNo());
+                    if (bizOrder != null) {
+                        log.info("工单：{} 已存在，将进行更新", order.getWorkOrderNo());
 
-                    if (craft.getStatus() == 1 || craft.getStatus() == 2)
-                        bizWorkOrder.setStatus(-2);
-                    else if (craft.getStatus() == 3)
-                        bizWorkOrder.setStatus(-1);
-                    else
-                        bizWorkOrder.setStatus(1);
+                        if (craft.getStatus() == 1 || craft.getStatus() == 2)
+                            bizOrder.setStatus(-2);
+                        else if (craft.getStatus() == 3)
+                            bizOrder.setStatus(-1);
+                        else
+                            bizOrder.setStatus(1);
 
-                    Process process = processMapper.selectProcessByCodeAndNameAndCraftId(task.getOperationNo(), task.getOperationName(), craft.getId());
-                    if (process == null)
-                        throw new RuntimeException("工序信息有误，请核对工序信息");
+                        Process process = processMapper.selectProcessByCodeAndNameAndCraftId(task.getOperationNo(), task.getOperationName(), craft.getId());
+                        if (process == null)
+                            throw new RuntimeException("工序信息有误，请核对工序信息");
 
-                    bizWorkOrder.setProcessCode(task.getOperationNo());
-                    bizWorkOrder.setProcessName(task.getOperationName());
+                        bizOrder.setProcessCode(task.getOperationNo());
+                        bizOrder.setProcessName(task.getOperationName());
 
-                    Date date1 = Date.from(task.getPlannedStartTime().atZone(ZoneId.systemDefault()).toInstant());
-                    Date date2 = Date.from(task.getPlannedEndTime().atZone(ZoneId.systemDefault()).toInstant());
-                    bizWorkOrder.setStartTime(date1);
-                    bizWorkOrder.setEndTime(date2);
+                        Date date1 = Date.from(task.getPlannedStartTime().atZone(ZoneId.systemDefault()).toInstant());
+                        Date date2 = Date.from(task.getPlannedEndTime().atZone(ZoneId.systemDefault()).toInstant());
+                        bizOrder.setStartTime(date1);
+                        bizOrder.setEndTime(date2);
 
-                    bizWorkOrder.setWorkerCode(task.getWorkerCode());
-                    bizWorkOrder.setWorkerName(task.getWorkerName());
+                        bizOrder.setWorkerCode(task.getWorkerCode());
+                        bizOrder.setWorkerName(task.getWorkerName());
 
-                    flag += bizWorkOrderMapper.insertBizWorkOrder(bizWorkOrder);
+                        flag += bizWorkOrderMapper.updateBizWorkOrder(bizOrder);
+                    } else {
+
+                        if (craft.getStatus() == 1 || craft.getStatus() == 2)
+                            bizWorkOrder.setStatus(-2);
+                        else if (craft.getStatus() == 3)
+                            bizWorkOrder.setStatus(-1);
+                        else
+                            bizWorkOrder.setStatus(1);
+
+                        Process process = processMapper.selectProcessByCodeAndNameAndCraftId(task.getOperationNo(), task.getOperationName(), craft.getId());
+                        if (process == null)
+                            throw new RuntimeException("工序信息有误，请核对工序信息");
+
+                        bizWorkOrder.setProcessCode(task.getOperationNo());
+                        bizWorkOrder.setProcessName(task.getOperationName());
+
+                        Date date1 = Date.from(task.getPlannedStartTime().atZone(ZoneId.systemDefault()).toInstant());
+                        Date date2 = Date.from(task.getPlannedEndTime().atZone(ZoneId.systemDefault()).toInstant());
+                        bizWorkOrder.setStartTime(date1);
+                        bizWorkOrder.setEndTime(date2);
+
+                        bizWorkOrder.setWorkerCode(task.getWorkerCode());
+                        bizWorkOrder.setWorkerName(task.getWorkerName());
+
+                        flag += bizWorkOrderMapper.insertBizWorkOrder(bizWorkOrder);
+                    }
                 }
 
             }
-        }finally {
+        } finally {
             SecurityContextHolder.clearContext();
         }
 
         return flag;
     }
+
     public PageVO workOrderVOList(WorkOrderProperties workOrderProperties) {
         BizWorkOrder bizWorkOrder = new BizWorkOrder();
         bizWorkOrder.setStatus(workOrderProperties.getStatus());
@@ -354,78 +390,77 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
     }
 
     @Override
-    public int uploadToMOM(FinishedOrderDTO finishedOrderDTO) {
-        //构建内层JSON
-        JSONObject innerJson = new JSONObject();
-
-        JSONObject batchInfo = new JSONObject();
-        batchInfo.put("work_order_no", finishedOrderDTO.getWorkOrderCode());
-        batchInfo.put("operation_no", finishedOrderDTO.getProcessCode());
-        batchInfo.put("total_count", 1);
-        batchInfo.put("upload_time", DateUtil.now().replace(" ", "T"));
-        batchInfo.put("worker_name", finishedOrderDTO.getWorkerName());
-        batchInfo.put("worker_code", finishedOrderDTO.getWorkerCode());
-        batchInfo.put("system_Id", "VGS");
-
-        innerJson.put("batch_info", batchInfo);
-
+    public int uploadToMOM(FinishedOrderDTO finishedOrderDTO) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
         JSONArray imageList = new JSONArray();
-        for (int i = 0; i < 1; i++) {
-            String base64Image = "";
 
-            try (InputStream stream = minioUtils.getFileInputStream(bucketName, finishedOrderDTO.getObjectName())){
-                base64Image = Base64.encode(IoUtil.readBytes(stream));
-            } catch (Exception e) {
-                log.error("从 MinIO 读取图片失败", e);
-                throw new RuntimeException(e);
-            }
+        String base64Image = "";
+        String extension = getExtension(finishedOrderDTO.getObjectName());
 
-            String fileName = finishedOrderDTO.getWorkOrderCode() + "_" + finishedOrderDTO.getProcessCode() + "_" + finishedOrderDTO.getStepNo() + String.format("%03d", i+1) + ".png";
-
-            JSONObject imageObj = new JSONObject();
-
-            imageObj.put("image_no", fileName);
-            imageObj.put("image_base64", base64Image);
-            imageObj.put("image_format", "png");
-            imageObj.put("image_desc", "工序:" + finishedOrderDTO.getProcessCode() + "-" + finishedOrderDTO.getProcessName() + "，步骤:" + finishedOrderDTO.getStepNo() + "-" + finishedOrderDTO.getStepName());
-
-            imageList.add(imageObj);
+        try (InputStream stream = minioUtils.getFileInputStream(bucketName, finishedOrderDTO.getObjectName())) {
+            base64Image = Base64.encode(IoUtil.readBytes(stream));
+        } catch (Exception e) {
+            log.error("从 MinIO 读取图片失败", e);
+            throw new RuntimeException(e);
         }
-        innerJson.put("work_order_image_list", imageList);
 
-        String innerJsonString = innerJson.toJSONString();
+        String fileName = finishedOrderDTO.getWorkOrderCode() + ":" + finishedOrderDTO.getProcessCode() + ":" + finishedOrderDTO.getStepNo() + extension;
 
-        // 构建外层 JSON 并塞入内层 JSON 字符串
-        JSONObject rootJson = new JSONObject();
-        rootJson.put("oriSysName", "视觉引导系统");
-        rootJson.put("oriSysNum", "VGS");
-        rootJson.put("uniqueFlag", "1000002");
-        rootJson.put("timestamp", String.valueOf(System.currentTimeMillis()));
+        JSONObject imageObj = new JSONObject();
+        imageObj.put("fileName", fileName);
+        imageObj.put("fileInfo", base64Image);
 
-        JSONArray outerFileDataArray = new JSONArray();
-        JSONObject outerFileDataObj = new JSONObject();
-        outerFileDataObj.put("fileName", "records.json");
-        outerFileDataObj.put("fileData", innerJsonString);
+        imageList.add(imageObj);
 
-        outerFileDataArray.add(outerFileDataObj);
-        rootJson.put("fileData", outerFileDataArray);
+        long timestamp = System.currentTimeMillis();
 
-        String finalJsonString = rootJson.toJSONString();
-        log.info("构建完成的外层 JSON: {}", finalJsonString);
+        String soapXml =
+                "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ser=\"" + targetNamespace + "\">\n" +
+                        "   <soapenv:Header/>\n" +
+                        "   <soapenv:Body>\n" +
+                        "      <ser:" + serviceName + ">\n" +
+                        "         <arg0>\n" +
+                        "            <oriDept></oriDept>\n" +
+                        "            <oriUser></oriUser>\n" +
+                        "            <oriWorkCode></oriWorkCode>\n" +
+                        "            <oriSysName>" + webServiceProperties.getOriSysName() + "</oriSysName>\n" +
+                        "            <oriSysNum>" + webServiceProperties.getOriSysNum() + "</oriSysNum>\n" +
+                        "         </arg0>\n" +
+                        "         <arg1>\n" +
+                        "            <tarDept></tarDept>\n" +
+                        "            <tarUser></tarUser>\n" +
+                        "            <tarWorkCode></tarWorkCode>\n" +
+                        "            <tarSysName>" + webServiceProperties.getTargetSysName() + "</tarSysName>\n" +
+                        "            <tarSysNum>" + webServiceProperties.getTargetSysNum() + "</tarSysNum>\n" +
+                        "         </arg1>\n" +
+                        "         <arg2>" + imageList + "</arg2>\n" +
+                        "         <arg3>1000002</arg3>\n" +
+                        "         <arg4>" + webServiceProperties.getSecLevel() + "</arg4>\n" +
+                        "         <arg5>" + timestamp + "</arg5>\n" +
+                        "      </ser:" + serviceName + ">\n" +
+                        "   </soapenv:Body>\n" +
+                        "</soapenv:Envelope>";
 
-        //构建 SOAP XML 并发送
-        String soapXml = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:if=\"" + targetNamespace + "\">\n" +
-                "   <soapenv:Header/>\n" +
-                "   <soapenv:Body>\n" +
-                "      <if:" + serviceName +">\n" +
-                "         <if:sContent><![CDATA[" + finalJsonString + "]]></if:sContent>\n" +
-                "      </if:"+ serviceName +">\n" +
-                "   </soapenv:Body>\n" +
-                "</soapenv:Envelope>";
+//        String logXml = soapXml;
+//
+//        if (soapXml.contains("\"fileInfo\"")) {
+//
+//            logXml = soapXml.replaceAll(
+//                    "(\"fileInfo\"\\s*:\\s*\")[^\"]+(\")",
+//                    "$1[Base64内容已缩略, 长度:" + base64Image.length() + "]$2"
+//            );
+//        }
+//
+//        log.info("构建完成的 SOAP XML 请求报文: \n{}", logXml);
 
+        String resStatus = "";
+        String resMsg = "";
+
+        // 发送请求
         try {
             String resultXml = HttpRequest.post(webserviceUrl)
                     .header("Content-Type", "text/xml;charset=UTF-8")
+                    .header("SOAPAction", "")
+                    .header("Connection", "close")
                     .body(soapXml)
                     .timeout(60000)
                     .execute()
@@ -433,11 +468,50 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService
 
             log.info("WebService 响应结果: {}", resultXml);
 
+            Document doc = XmlUtil.parseXml(resultXml);
+
+            NodeList returnList = doc.getElementsByTagName("return");
+
+            if (returnList.getLength() > 0) {
+                String returnJsonStr = returnList.item(0).getTextContent();
+                log.info("提取到的 return 内容: {}", returnJsonStr);
+
+                if (returnJsonStr != null && !returnJsonStr.trim().isEmpty()) {
+                    try {
+                        JSONObject returnObj = JSONObject.parseObject(returnJsonStr);
+                        resStatus = returnObj.getString("status") == null ? "" : returnObj.getString("status");
+                        resMsg = returnObj.getString("msg") == null ? "" : returnObj.getString("msg");
+                    } catch (Exception e) {
+                        log.error("解析响应报文失败, 报文内容: {}", returnJsonStr, e);
+                    }
+                }
+            }
+
+            log.info("照片回传结果: status:{}, msg:{}", resStatus, resMsg);
+
         } catch (Exception e) {
             log.error("发送 WebService 请求失败", e);
         }
 
-        return 1;
+        return "".equals(resStatus) ? -1 : Integer.parseInt(resStatus);
+    }
+
+    private String getExtension(String objectName) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+        StatObjectResponse stat = minioUtils.getObjectStat(objectName);
+
+        String contentType = stat.contentType();
+        String extName = ".png";
+
+        if (contentType != null) {
+            if (contentType.contains("jpeg") || contentType.contains("jpg")) {
+                extName = ".jpg";
+            } else if (contentType.contains("gif")) {
+                extName = ".gif";
+            } else if (contentType.contains("bmp")) {
+                extName = ".bmp";
+            }
+        }
+        return extName;
     }
 
     @Override

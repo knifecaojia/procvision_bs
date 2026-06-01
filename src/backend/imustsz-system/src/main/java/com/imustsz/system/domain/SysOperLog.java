@@ -87,6 +87,56 @@ public class SysOperLog extends BaseEntity
     @Excel(name = "消耗时间", suffix = "毫秒")
     private Long costTime;
 
+    /** 审核状态（0待审核 1已通过 2已拒绝） */
+    @Excel(name = "审核状态", readConverterExp = "0=待审核,1=已通过,2=已拒绝")
+    private String auditStatus;
+
+    /** 审核意见 */
+    @Excel(name = "审核意见")
+    private String auditMsg;
+
+    /** 审核人 */
+    @Excel(name = "审核人")
+    private String auditBy;
+
+    /** 审核时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "审核时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
+    private Date auditTime;
+
+    // --- 下面是 Getter 和 Setter 方法 ---
+    public String getAuditStatus() {
+        return auditStatus;
+    }
+
+    public void setAuditStatus(String auditStatus) {
+        this.auditStatus = auditStatus;
+    }
+
+    public String getAuditMsg() {
+        return auditMsg;
+    }
+
+    public void setAuditMsg(String auditMsg) {
+        this.auditMsg = auditMsg;
+    }
+
+    public String getAuditBy() {
+        return auditBy;
+    }
+
+    public void setAuditBy(String auditBy) {
+        this.auditBy = auditBy;
+    }
+
+    public Date getAuditTime() {
+        return auditTime;
+    }
+
+    public void setAuditTime(Date auditTime) {
+        this.auditTime = auditTime;
+    }
+
     public Long getOperId()
     {
         return operId;

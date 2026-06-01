@@ -7,22 +7,28 @@ import com.imustsz.cilent.domain.vo.ProcessRecordVO;
 import com.imustsz.cilent.domain.vo.TaskConditionVO;
 import com.imustsz.cilent.domain.vo.WorkOrderVO;
 import com.imustsz.cilent.service.IClientTaskService;
+import com.imustsz.common.annotation.Log;
 import com.imustsz.common.annotation.RateLimiter;
 import com.imustsz.common.constant.HttpStatus;
 import com.imustsz.common.core.controller.BaseController;
 import com.imustsz.common.core.domain.AjaxResult;
 import com.imustsz.common.core.page.TableDataInfo;
+import com.imustsz.common.enums.BusinessType;
 import com.imustsz.common.enums.LimitType;
 import com.imustsz.common.utils.DateUtils;
 import com.imustsz.common.utils.bean.MinioUtils;
 import com.imustsz.order.domain.vo.PageVO;
 import com.imustsz.order.service.IBizWorkOrderService;
 import com.imustsz.process.service.IBizProcessRecordService;
+import io.minio.errors.*;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 @Api("客户端接口")
@@ -92,14 +98,16 @@ public class ClientController extends BaseController {
     }
 
     @GetMapping("/task/status/{taskNo}/{statusCode}")
+    @Log(title = "C端修改任务状态", businessType = BusinessType.UPDATE)
     @ApiOperation("修改任务状态")
     public AjaxResult changeWorkOrderStatus(@PathVariable String taskNo,@PathVariable String statusCode) {
         return toAjax(bizWorkOrderService.changeWorkOrderStatusByCode(taskNo, statusCode));
     }
 
     @PostMapping("/process")
+    @Log(title = "C端步骤上传", businessType = BusinessType.INSERT)
     @ApiOperation("步骤上传")
-    public AjaxResult upLoadProcess(@RequestBody ProcessDTO processDTO) {
+    public AjaxResult upLoadProcess(@RequestBody ProcessDTO processDTO) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
         return toAjax(bizProcessRecordService.insertBizProcessRecordByUpload(processDTO));
     }
 

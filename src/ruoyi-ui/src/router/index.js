@@ -60,8 +60,8 @@ export const constantRoutes = [
     {
         path: '',
         component: Layout,
-        // redirect: '/index',
-        redirect: '/craft/info_craft',
+        redirect: '/index',
+        // redirect: '/craft/info_craft',
         // children: [
         //     {
         //         // path: '/index',

@@ -4,7 +4,6 @@ import com.imustsz.common.core.domain.BaseEntity;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.imustsz.common.annotation.Excel;
-import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 算法对象 biz_algorithm
@@ -40,10 +39,20 @@ public class BizAlgorithm extends BaseEntity
     private String objectName;
 
     /** 算法url */
-    @Excel(name = "算法url")
-    private String url;
+    @Excel(name = "算法类型")
+    private Integer type;
 
     private String size;
+
+    private String url;
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
 
     public String getSize() {
         return size;
@@ -53,12 +62,12 @@ public class BizAlgorithm extends BaseEntity
         this.size = size;
     }
 
-    public String getUrl() {
-        return url;
+    public Integer getType() {
+        return type;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public void setType(Integer type) {
+        this.type = type;
     }
 
     public String getCode() {
@@ -128,7 +137,7 @@ public class BizAlgorithm extends BaseEntity
             .append("version", getVersion())
             .append("desc", getDesc())
             .append("objectName", getObjectName())
-            .append("url", getUrl())
+            .append("type", getType())
             .toString();
     }
 }

@@ -62,7 +62,7 @@ public interface ICraftService
      */
     public int deleteCraftById(Long id);
 
-    void importCraftFromMMo(OrderProcessData CrackProcess);
+    void importCraftFromMOM(OrderProcessData CrackProcess);
 
     void checkStatus(Long id);
 

@@ -74,4 +74,6 @@ public interface BizStepMapper
     BizStep getStepById(Long id);
 
     int deleteStepByCodeAndProcessId(@Param("code") String code, @Param("processId") Long processId);
+
+    Integer selectLastStepByProcessId(Long processId);
 }

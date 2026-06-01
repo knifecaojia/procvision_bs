@@ -3,19 +3,24 @@ package com.imustsz.demo.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.imustsz.demo.domain.FileItem;
 import com.imustsz.demo.domain.MesData;
-import com.imustsz.demo.service.ProductService;
+import com.imustsz.demo.service.IF_Service;
 import com.imustsz.demo.utils.ConfigUtil;
 import com.imustsz.demo.utils.HttpMultipartUtil;
 
 import javax.jws.WebService;
 import java.util.Base64;
 
-@WebService(endpointInterface = "com.imustsz.demo.service.ProductService")
-public class ProductServiceImpl implements ProductService {
+
+@WebService(
+        targetNamespace = "http://www.pgxxgc.com/IF_Service",
+        endpointInterface = "com.imustsz.demo.service.IF_Service"
+)
+public class IF_ServiceImpl implements IF_Service {
 
     @Override
-    public String uploadMesData(String sContent) {
+    public String IFService(String sContent) {
         System.out.println("WebService 收到 MES 数据，准备转发...");
+        System.out.println("MES 数据: " + sContent);
 
         // 获取 Spring Boot 接口地址
         String targetUrl;

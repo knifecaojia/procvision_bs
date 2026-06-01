@@ -3,7 +3,10 @@
     <el-row :gutter="10">
       <el-col :span="12" class="card-box">
         <el-card>
-          <template #header><Cpu style="width: 1em; height: 1em; vertical-align: middle;" /> <span style="vertical-align: middle;">CPU</span></template>
+          <template #header>
+                <Cpu style="width: 1em; height: 1em; vertical-align: middle;" />
+                <span style="vertical-align: middle;">CPU</span>
+          </template>
           <div class="el-table el-table--enable-row-hover el-table--medium">
             <table cellspacing="0" style="width: 100%;">
               <thead>
@@ -76,7 +79,22 @@
 
       <el-col :span="24" class="card-box">
         <el-card>
-          <template #header><Monitor style="width: 1em; height: 1em; vertical-align: middle;" /> <span style="vertical-align: middle;">服务器信息</span></template>
+          <template #header>
+            <div style="display: flex; justify-content: space-between">
+              <div>
+                <Monitor style="width: 1em; height: 1em; vertical-align: middle;" /> <span style="vertical-align: middle;">服务器信息</span>
+              </div>
+<!--              <div>-->
+<!--                <el-button-->
+<!--                    type="primary"-->
+<!--                    plain-->
+<!--                    icon="Download"-->
+<!--                    @click="handleBackup"-->
+<!--                    v-hasPermi="['monitor:server:backup']"-->
+<!--                >立即备份数据库</el-button>-->
+<!--              </div>-->
+            </div>
+            </template>
           <div class="el-table el-table--enable-row-hover el-table--medium">
             <table cellspacing="0" style="width: 100%;">
               <tbody>
@@ -170,10 +188,30 @@
 </template>
 
 <script setup>
-import { getServer } from '@/api/monitor/server'
+import { getServer, backupDatabase} from '@/api/monitor/server'
+import { ElMessage, ElMessageBox } from 'element-plus';
 
 const server = ref([])
 const { proxy } = getCurrentInstance()
+
+const handleBackup = () => {
+  ElMessageBox.confirm('确认要立即备份当前系统数据库吗？', '系统提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    // 可以在此处开启全局 loading
+    return backupDatabase();
+  }).then(response => {
+    if (response.code === 200) {
+      ElMessage.success(response.msg);
+    } else {
+      ElMessage.error(response.msg);
+    }
+  }).catch(() => {
+    // 取消操作不处理
+  });
+};
 
 function getList() {
   proxy.$modal.loading("正在加载服务监控数据，请稍候！")

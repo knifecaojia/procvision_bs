@@ -40,7 +40,7 @@ public class BizStepController extends BaseController
     /**
      * 查询工步信息列表
      */
-    @PreAuthorize("@ss.hasPermi('craft:step:list')")
+//    @PreAuthorize("@ss.hasPermi('craft:step:list')")
     @GetMapping("/list")
     public TableDataInfo list(BizStep bizStep) throws Exception {
         startPage();
@@ -58,7 +58,7 @@ public class BizStepController extends BaseController
     /**
      * 导出工步信息列表
      */
-    @PreAuthorize("@ss.hasPermi('craft:step:export')")
+//    @PreAuthorize("@ss.hasPermi('craft:step:export')")
     @Log(title = "工步信息", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, BizStep bizStep) throws Exception {
@@ -70,7 +70,7 @@ public class BizStepController extends BaseController
     /**
      * 获取工步信息详细信息
      */
-    @PreAuthorize("@ss.hasPermi('craft:step:query')")
+//    @PreAuthorize("@ss.hasPermi('craft:step:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id) throws Exception {
         return success(bizStepService.selectBizStepById(id));
@@ -79,7 +79,7 @@ public class BizStepController extends BaseController
     /**
      * 新增工步信息
      */
-    @PreAuthorize("@ss.hasPermi('craft:step:add')")
+//    @PreAuthorize("@ss.hasPermi('craft:step:add')")
     @Log(title = "工步信息", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody BizStep bizStep)
@@ -90,7 +90,7 @@ public class BizStepController extends BaseController
     /**
      * 修改工步信息
      */
-    @PreAuthorize("@ss.hasPermi('craft:step:edit')")
+//    @PreAuthorize("@ss.hasPermi('craft:step:edit')")
     @Log(title = "工步信息", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody BizStep bizStep) throws Exception {
@@ -100,7 +100,7 @@ public class BizStepController extends BaseController
     /**
      * 删除工步信息
      */
-    @PreAuthorize("@ss.hasPermi('craft:step:remove')")
+//    @PreAuthorize("@ss.hasPermi('craft:step:remove')")
     @Log(title = "工步信息", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids) throws Exception {

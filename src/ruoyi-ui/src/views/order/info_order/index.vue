@@ -9,10 +9,10 @@
 <!--            @keyup.enter="handleQuery"-->
 <!--        />-->
 <!--      </el-form-item>-->
-      <el-form-item label="订单编码" prop="workOrderCode">
+      <el-form-item label="工单编码" prop="workOrderCode">
         <el-input
             v-model="queryParams.workOrderCode"
-            placeholder="请输入订单编码"
+            placeholder="请输入工单编码"
             clearable
             @keyup.enter="handleQuery"
         />
@@ -56,7 +56,7 @@
 
     <el-table v-loading="loading" :data="workOrderList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center"/>
-      <el-table-column label="装配任务编码" align="center" prop="workOrderCode"/>
+      <el-table-column label="工单编码" align="center" prop="workOrderCode"/>
       <el-table-column label="工艺编码" align="center" prop="craftCode"/>
       <el-table-column label="工艺版本" align="center" prop="craftVersion"/>
       <el-table-column label="资源状态" align="center" prop="status">

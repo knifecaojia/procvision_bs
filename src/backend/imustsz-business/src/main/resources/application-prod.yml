@@ -82,7 +82,7 @@ spring:
 minio:
   # minio地址
   endpoint: http://${MINIO_HOST}:${MINIO_PORT}
-  external_endpoint: https://${MINIO_HOST}
+  external_endpoint: https://${MINIO_HOST}:${HTTPS_PORT}
   # minio用户名
   accessKey: admin
   # minio密码
@@ -93,6 +93,11 @@ minio:
   presigned-url-expire: 604800
 
 webservice:
-  url: http://${WEBSERVICE_HOST}:${WEBSERVICE_PORT}/ws/product
+  url: ${WEBSERVICE_HOST}
   targetNamespace: ${TARGET_NAMESPACE}
   serviceName: ${SERVICE_NAME}
+  targetSysName: ${TARGET_SYS_NAME}
+  targetSysNum: ${TARGET_SYS_NUM}
+  oriSysName: ${ORI_SYS_NAME}
+  oriSysNum: ${ORI_SYS_NUM}
+  secLevel: ${SEC_LEVEL}

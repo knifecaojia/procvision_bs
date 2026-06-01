@@ -1,6 +1,6 @@
 package com.imustsz.demo;
 
-import com.imustsz.demo.service.impl.ProductServiceImpl;
+import com.imustsz.demo.service.impl.IF_ServiceImpl;
 import com.imustsz.demo.utils.ConfigUtil;
 
 import javax.xml.ws.Endpoint;
@@ -17,12 +17,11 @@ public class ServicePublisher {
         if (ip == null || ip.trim().isEmpty())
             ip = ConfigUtil.get("server.ip");
 
-//        String url = "http://" + ip + ":" + port + "/ws/product";
         String url = "http://" + ip + ":" + port + "/service/IFService";
 
         System.out.println("正在发布服务，地址: " + url);
 
-        Endpoint.publish(url, new ProductServiceImpl());
+        Endpoint.publish(url, new IF_ServiceImpl());
         System.out.println("服务启动成功！");
     }
 }

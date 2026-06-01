@@ -45,4 +45,11 @@ public interface ISysOperLogService
      * 清空操作日志
      */
     public void cleanOperLog();
+
+    /**
+     * 修改/审核操作日志
+     * * @param operLog 操作日志
+     * @return 结果
+     */
+    public int auditOperlog(SysOperLog operLog);
 }

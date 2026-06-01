@@ -52,10 +52,20 @@ public class BizProcessRecord extends BaseEntity
 
     private String ngReason;
 
+    private Integer uploaded;
+
     /** 提交时间 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "提交时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date submitTime;
+
+    public Integer getUploaded() {
+        return uploaded;
+    }
+
+    public void setUploaded(Integer uploaded) {
+        this.uploaded = uploaded;
+    }
 
     public Integer getAlgResult() {
         return algResult;

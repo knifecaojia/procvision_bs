@@ -68,6 +68,14 @@
       <el-table-column type="selection" width="55" align="center"/>
       <el-table-column label="算法名称" align="center" prop="name"/>
       <el-table-column label="算法版本" align="center" prop="version"/>
+      <el-table-column label="算法类型" align="center">
+        <template #default="scope">
+          <el-tag type="success" v-if="scope.row.type === 0">天线</el-tag>
+          <el-tag type="success" v-if="scope.row.type === 1">板级</el-tag>
+          <el-tag type="success" v-if="scope.row.type === 2">模组</el-tag>
+          <el-tag type="success" v-if="scope.row.type === 3">包装</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="算法大小" align="center" prop="size">
         <template #default="scope">
           {{ scope.row.size }} MB
@@ -104,6 +112,14 @@
         </el-form-item>
         <el-form-item label="算法版本" prop="version">
           <el-input v-model="form.version" placeholder="请输入算法版本"/>
+        </el-form-item>
+        <el-form-item label="算法类型" prop="type">
+          <el-select v-model="form.type" placeholder="请选择算法类型">
+            <el-option label="天线" value="0"/>
+            <el-option label="板级" value="1"/>
+            <el-option label="模组" value="2"/>
+            <el-option label="包装" value="3"/>
+          </el-select>
         </el-form-item>
         <el-form-item label="算法描述" prop="desc">
           <el-input type="textarea" v-model="form.desc" placeholder="请输入算法描述"/>
@@ -232,6 +248,7 @@ const data = reactive({
     name: undefined,
     version: undefined,
     size: undefined,
+    type: undefined,
     desc: undefined,
     objectName: null
   },
@@ -250,6 +267,9 @@ const data = reactive({
     ],
     name: [
       {required: true, message: "算法名称不能为空", trigger: "blur"}
+    ],
+    type: [
+      {required: true, message: "算法类型不能为空", trigger: "blur"}
     ],
     version: [
       {required: true, message: "算法版本不能为空", trigger: "blur"}

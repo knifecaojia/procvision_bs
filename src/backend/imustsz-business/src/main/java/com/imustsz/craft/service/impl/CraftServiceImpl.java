@@ -128,7 +128,7 @@ public class CraftServiceImpl implements ICraftService {
      */
     @Override
     @Transactional
-    public void importCraftFromMMo(OrderProcessData CrackProcess) {
+    public void importCraftFromMOM(OrderProcessData CrackProcess) {
         try {
 
             LoginUser fakeUser = new LoginUser();
@@ -203,7 +203,7 @@ public class CraftServiceImpl implements ICraftService {
         for (Process process : processes) {
             List<StepVO> steps = bizStepMapper.selectStepByProcessId(process.getId());
             for (StepVO step : steps)
-                if (step.getGuide_url() == null) {
+                if (!"78".equals(step.getStep_code()) && step.getGuide_url() == null) {
                     isNotGuide = true;
                     break;
                 }

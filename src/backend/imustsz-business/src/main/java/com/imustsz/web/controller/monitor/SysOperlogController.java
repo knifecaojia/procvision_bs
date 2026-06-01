@@ -62,4 +62,15 @@ public class SysOperlogController extends BaseController
         operLogService.cleanOperLog();
         return success();
     }
+
+    /**
+     * 审核操作日志
+     */
+    @PreAuthorize("@ss.hasPermi('monitor:operlog:audit')")
+    @Log(title = "操作日志", businessType = BusinessType.UPDATE)
+    @PutMapping("/audit")
+    public AjaxResult audit(@RequestBody SysOperLog operLog)
+    {
+        return toAjax(operLogService.auditOperlog(operLog));
+    }
 }

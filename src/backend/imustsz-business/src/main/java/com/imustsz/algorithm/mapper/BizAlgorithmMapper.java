@@ -3,6 +3,7 @@ package com.imustsz.algorithm.mapper;
 import java.util.List;
 import com.imustsz.algorithm.domain.BizAlgorithm;
 import com.imustsz.cilent.domain.vo.AlgorithmVO;
+import com.imustsz.framework.aspectj.AutoFill;
 
 /**
  * 算法Mapper接口
@@ -34,6 +35,7 @@ public interface BizAlgorithmMapper
      * @param bizAlgorithm 算法
      * @return 结果
      */
+    @AutoFill("insert")
     public int insertBizAlgorithm(BizAlgorithm bizAlgorithm);
 
     /**
@@ -42,6 +44,7 @@ public interface BizAlgorithmMapper
      * @param bizAlgorithm 算法
      * @return 结果
      */
+    @AutoFill("update")
     public int updateBizAlgorithm(BizAlgorithm bizAlgorithm);
 
     /**

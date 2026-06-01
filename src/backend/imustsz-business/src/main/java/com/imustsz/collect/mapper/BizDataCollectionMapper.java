@@ -3,6 +3,7 @@ package com.imustsz.collect.mapper;
 import java.util.List;
 import com.imustsz.collect.domain.BizDataCollection;
 import com.imustsz.framework.aspectj.AutoFill;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 数据采集Mapper接口
@@ -63,4 +64,10 @@ public interface BizDataCollectionMapper
     public int deleteBizDataCollectionByIds(Long[] ids);
 
     BizDataCollection checkData(String data);
+
+    List<BizDataCollection> selectUploadData();
+
+    List<BizDataCollection> selectDeleteData(@Param("limit") Integer limit);
+
+    int deleteData();
 }

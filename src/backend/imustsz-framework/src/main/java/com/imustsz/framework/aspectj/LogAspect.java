@@ -1,6 +1,7 @@
 package com.imustsz.framework.aspectj;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -121,6 +122,26 @@ public class LogAspect
             getControllerMethodDescription(joinPoint, controllerLog, operLog, jsonResult);
             // 设置消耗时间
             operLog.setCostTime(System.currentTimeMillis() - TIME_THREADLOCAL.get());
+
+            try {
+                // 获取当前登录用户的角色标识（注意：异步线程中可能获取不到上下文，若依的LogAspect通常在主线程组装数据，所以可以获取）
+                boolean isAuthAdmin = SecurityUtils.getLoginUser().getUser().getRoles().stream()
+                        .anyMatch(r -> "auth_admin".equals(r.getRoleKey()));
+                boolean isAuditAdmin = SecurityUtils.getLoginUser().getUser().getRoles().stream()
+                        .anyMatch(r -> "audit_admin".equals(r.getRoleKey()));
+
+                if (isAuthAdmin || isAuditAdmin) {
+                    operLog.setAuditStatus("3"); // 3 代表：无需审核 / 免审
+                    operLog.setAuditMsg("安全/审计人员操作，系统自动免审");
+                    operLog.setAuditBy("SYSTEM");
+                    operLog.setAuditTime(new Date());
+                } else {
+                    operLog.setAuditStatus("0"); // 0 代表：待审核
+                }
+            } catch (Exception ex) {
+                // 降级处理，防止未登录接口报错
+                operLog.setAuditStatus("0");
+            }
             // 保存数据库
             AsyncManager.me().execute(AsyncFactory.recordOper(operLog));
         }

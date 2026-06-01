@@ -129,7 +129,12 @@ function handleLogin() {
           return acc
         }, {})
         // router.push({ path: redirect.value || "/", query: otherQueryParams })
-        router.push({path: '/craft/info_craft'})
+        // router.push({path: '/craft/info_craft'})
+        let targetPath = redirect.value;
+        if (!targetPath || targetPath === '/index') {
+          targetPath = "/"; // 交给 permission.js 里的逻辑去动态计算第一个菜单
+        }
+        router.push({ path: targetPath }).catch(()=>{});
       }).catch(() => {
         loading.value = false
         // 重新获取验证码

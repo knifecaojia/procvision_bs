@@ -12,12 +12,12 @@
       <el-row :gutter="40">
         <el-col :span="9">
           <div class="step-container">
-            <h3 class="step-header">1：扫码</h3>
+            <h3 class="step-header">1：输入图片名称</h3>
             <div class="step-content">
               <el-input
                   v-model="barcodeInput"
                   ref="barcodeInputRef"
-                  placeholder="鼠标此处后进行扫码"
+                  placeholder="请输入信息"
                   prefix-icon="Scissor"
                   clearable
                   size="large"
@@ -30,13 +30,13 @@
                   </el-button>
                 </template>
               </el-input>
-              <div class="tip-text" v-if="!currentBarcode">请先扫描码以激活采集功能</div>
+              <div class="tip-text" v-if="!currentBarcode">请先输入图片名称以激活上传功能</div>
             </div>
 
             <transition name="el-zoom-in-top">
               <div class="current-task" v-if="currentBarcode">
                 <div class="task-header">
-                  <span class="task-label">产品信息</span>
+                  <span class="task-label">图片信息</span>
                 </div>
 
                 <el-scrollbar max-height="120px" class="task-content-scroll">
@@ -77,39 +77,39 @@
         <el-col :span="15">
           <div class="step-container media-container">
             <div class="media-header">
-              <h3 class="step-header" style="margin:0; border:none">2：图像采集和处理</h3>
+              <h3 class="step-header" style="margin:0; border:none">2：图像上传</h3>
               <el-radio-group v-model="mode" size="small" @change="handleModeChange"
                               :disabled="!currentBarcode || processing">
-                <el-radio-button label="camera">摄像头拍照</el-radio-button>
+<!--                <el-radio-button label="camera">摄像头拍照</el-radio-button>-->
                 <el-radio-button label="upload">本地上传</el-radio-button>
               </el-radio-group>
             </div>
 
-            <div v-show="mode === 'camera'" class="camera-wrapper">
-              <div class="video-box" v-show="!previewImage">
-                <video ref="videoRef" autoplay playsinline muted class="video-stream"></video>
-                <div class="camera-mask" v-if="!isCameraOpen">
-                  <el-button type="primary" icon="VideoCamera" @click="startCamera" :disabled="!currentBarcode">
-                    打开摄像头
-                  </el-button>
-                  <p class="mask-tip" v-if="!currentBarcode">请先锁定条码</p>
-                </div>
-              </div>
+<!--            <div v-show="mode === 'camera'" class="camera-wrapper">-->
+<!--              <div class="video-box" v-show="!previewImage">-->
+<!--                <video ref="videoRef" autoplay playsinline muted class="video-stream"></video>-->
+<!--                <div class="camera-mask" v-if="!isCameraOpen">-->
+<!--                  <el-button type="primary" icon="VideoCamera" @click="startCamera" :disabled="!currentBarcode">-->
+<!--                    打开摄像头-->
+<!--                  </el-button>-->
+<!--                  <p class="mask-tip" v-if="!currentBarcode">请先锁定条码</p>-->
+<!--                </div>-->
+<!--              </div>-->
 
-              <div class="preview-box" v-if="previewImage">
-                <img :src="previewImage" class="captured-img"/>
-                <div class="re-capture-overlay">
-                  <el-button type="warning" icon="Refresh" round @click="clearCapture" :disabled="processing">重拍
-                  </el-button>
-                </div>
-              </div>
+<!--              <div class="preview-box" v-if="previewImage">-->
+<!--                <img :src="previewImage" class="captured-img"/>-->
+<!--                <div class="re-capture-overlay">-->
+<!--                  <el-button type="warning" icon="Refresh" round @click="clearCapture" :disabled="processing">重拍-->
+<!--                  </el-button>-->
+<!--                </div>-->
+<!--              </div>-->
 
-              <div class="camera-controls" v-if="isCameraOpen && !previewImage">
-                <el-button type="danger" circle size="large" class="shutter-btn" @click="takePhoto"
-                           icon="Camera"></el-button>
-                <div class="control-tip">点击拍照</div>
-              </div>
-            </div>
+<!--              <div class="camera-controls" v-if="isCameraOpen && !previewImage">-->
+<!--                <el-button type="danger" circle size="large" class="shutter-btn" @click="takePhoto"-->
+<!--                           icon="Camera"></el-button>-->
+<!--                <div class="control-tip">点击拍照</div>-->
+<!--              </div>-->
+<!--            </div>-->
 
             <div v-show="mode === 'upload'" class="upload-wrapper">
               <el-upload
@@ -207,6 +207,7 @@ import {getUploadUrl} from "@/api/algorithm/algorithm.js";
 import {addData, checkExist, updateData, uploadData} from "@/api/collection/data.js";
 import 'cropperjs/dist/cropper.css';
 import Cropper from 'cropperjs';
+import {MagicStick, Monitor, UploadFilled} from "@element-plus/icons-vue";
 
 const {proxy} = getCurrentInstance();
 
@@ -217,7 +218,7 @@ const barcodeInputRef = ref(null);
 const submitting = ref(false);
 
 // --- 状态管理 ---
-const mode = ref('camera');
+const mode = ref('upload');
 const rawCaptureFile = ref(null); // 🌟 新增：这是绝对的“相机底片”，永远不被污染
 const originalFile = ref(null);   // OpenCV 算法处理的基础图 (可能是裁剪后的)
 const resultFile = ref(null);     // 最终要上传的文件
@@ -834,14 +835,5 @@ const resetFlow = () => {
   margin-bottom: 10px;
   font-size: 13px;
   color: #606266;
-}
-.cropper-container {
-  width: 100%;
-  height: 500px;
-  /* 下面这两行是防止溢出的绝对核心 */
-  position: relative;
-  overflow: hidden;
-  background: #000;   /* 工业风建议用纯黑底色，更容易看清边缘 */
-  border-radius: 4px;
 }
 </style>

@@ -22,10 +22,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<result property="errorMsg"       column="error_msg"      />
 		<result property="operTime"       column="oper_time"      />
 		<result property="costTime"       column="cost_time"      />
+        <result property="auditStatus"    column="audit_status"    />
+        <result property="auditMsg"       column="audit_msg"       />
+        <result property="auditBy"        column="audit_by"        />
+        <result property="auditTime"      column="audit_time"      />
 	</resultMap>
 
-	<sql id="selectOperLogVo">
-        select oper_id, title, business_type, method, request_method, operator_type, oper_name, dept_name, oper_url, oper_ip, oper_location, oper_param, json_result, status, error_msg, oper_time, cost_time
+    <sql id="selectOperLogVo">
+        select oper_id, title, business_type, method, request_method, operator_type, oper_name, dept_name, oper_url, oper_ip, oper_location, oper_param, json_result, status, error_msg, oper_time, cost_time,
+               audit_status, audit_msg, audit_by, audit_time
         from sys_oper_log
     </sql>
     
@@ -55,6 +60,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			<if test="status != null">
 				AND status = #{status}
 			</if>
+            <if test="auditStatus != null and auditStatus != ''">
+                AND audit_status = #{auditStatus}
+            </if>
 			<if test="operName != null and operName != ''">
 				AND oper_name like concat('%', #{operName}, '%')
 			</if>
@@ -64,6 +72,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
 				AND oper_time &lt;= #{params.endTime}
 			</if>
+            <if test="params.excludeOperName != null and params.excludeOperName != ''">
+                AND oper_name &lt;&gt; #{params.excludeOperName}
+            </if>
 		</where>
 		order by oper_id desc
 	</select>
@@ -84,4 +95,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         truncate table sys_oper_log
     </update>
 
+    <update id="updateOperlog" parameterType="SysOperLog">
+        update sys_oper_log
+        <set>
+            <if test="auditStatus != null and auditStatus != ''">audit_status = #{auditStatus},</if>
+            <if test="auditMsg != null">audit_msg = #{auditMsg},</if>
+            <if test="auditBy != null and auditBy != ''">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+        </set>
+        where oper_id = #{operId}
+    </update>
 </mapper> 

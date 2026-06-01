@@ -7,3 +7,10 @@ export function getServer() {
     method: 'get'
   })
 }
+
+export function backupDatabase() {
+    return request({
+        url: '/monitor/server/backupDb',
+        method: 'post'
+    })
+}

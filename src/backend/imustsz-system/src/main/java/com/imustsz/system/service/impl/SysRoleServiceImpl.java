@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,7 +57,10 @@ public class SysRoleServiceImpl implements ISysRoleService
     @DataScope(deptAlias = "d")
     public List<SysRole> selectRoleList(SysRole role)
     {
-        return roleMapper.selectRoleList(role);
+        List<SysRole> sysRoles = roleMapper.selectRoleList(role);
+        if (!SecurityUtils.isAdmin(SecurityUtils.getLoginUser().getUserId()))
+            return sysRoles.stream().filter(sysRole -> sysRole.getRoleId() >= 200).collect(Collectors.toList());
+        return sysRoles;
     }
 
     /**

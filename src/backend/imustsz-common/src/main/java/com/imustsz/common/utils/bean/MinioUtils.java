@@ -21,6 +21,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -112,6 +113,30 @@ public class MinioUtils {
     public void uploadFile(String objectName, String filePath) throws Exception {
         File file = new File(filePath);
         uploadFile(objectName, Files.newInputStream(file.toPath()), file.length(), getFileContentType(objectName));
+    }
+
+
+    /**
+     * 获取文件元信息
+     * @param objectName 文件名
+     * @return 文件元信息
+     * @throws ServerException 服务端异常
+     * @throws InsufficientDataException 数据不足异常
+     * @throws ErrorResponseException 错误响应异常
+     * @throws IOException IO异常
+     * @throws NoSuchAlgorithmException 没有此算法异常
+     * @throws InvalidKeyException 无效密钥异常
+     * @throws InvalidResponseException 无效响应异常
+     * @throws XmlParserException XML解析异常
+     * @throws InternalException 内部异常
+     **/
+    public StatObjectResponse getObjectStat(String objectName) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+        return minioClient.statObject(
+                StatObjectArgs.builder()
+                        .bucket(bucketName)
+                        .object(objectName)
+                        .build()
+        );
     }
 
     /**
@@ -210,6 +235,36 @@ public class MinioUtils {
                         .object(objectName)
                         .build()
         );
+    }
+
+    /**
+     * 批量删除 MinIO 中的文件
+     * @param objectNames 文件路径/名称列表
+     * @return 删除失败的文件列表（如果为空，说明全部成功）
+     */
+    public List<String> deleteObjectsBatch(List<String> objectNames) {
+        List<DeleteObject> objects = objectNames.stream()
+                .map(DeleteObject::new)
+                .collect(Collectors.toList());
+
+        RemoveObjectsArgs args = RemoveObjectsArgs.builder()
+                .bucket(bucketName)
+                .objects(objects)
+                .build();
+
+        Iterable<Result<DeleteError>> results = minioClient.removeObjects(args);
+        List<String> failedObjects = new ArrayList<>();
+
+        for (Result<DeleteError> result : results) {
+            try {
+                DeleteError error = result.get();
+                failedObjects.add(error.objectName());
+            } catch (Exception e) {
+                // 记录异常日志
+                e.printStackTrace();
+            }
+        }
+        return failedObjects;
     }
 
     /**

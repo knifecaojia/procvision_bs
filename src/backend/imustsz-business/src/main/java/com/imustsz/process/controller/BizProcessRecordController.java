@@ -40,7 +40,7 @@ public class BizProcessRecordController extends BaseController
     /**
      * 查询过程记录列表
      */
-    @PreAuthorize("@ss.hasPermi('process:record:list')")
+//    @PreAuthorize("@ss.hasPermi('process:record:list')")
     @GetMapping("/list")
     public TableDataInfo list(BizProcessRecord bizProcessRecord, Integer pageNum1, Integer pageSize1) throws Exception {
         int pageNum = pageNum1 == null ? 1 : pageNum1;
@@ -57,7 +57,7 @@ public class BizProcessRecordController extends BaseController
     /**
      * 获取过程记录详细信息
      */
-    @PreAuthorize("@ss.hasPermi('process:record:query')")
+//    @PreAuthorize("@ss.hasPermi('process:record:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -67,7 +67,7 @@ public class BizProcessRecordController extends BaseController
     /**
      * 新增过程记录
      */
-    @PreAuthorize("@ss.hasPermi('process:record:add')")
+//    @PreAuthorize("@ss.hasPermi('process:record:add')")
     @Log(title = "过程记录", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody BizProcessRecord bizProcessRecord)
@@ -78,7 +78,7 @@ public class BizProcessRecordController extends BaseController
     /**
      * 修改过程记录
      */
-    @PreAuthorize("@ss.hasPermi('process:record:edit')")
+//    @PreAuthorize("@ss.hasPermi('process:record:edit')")
     @Log(title = "过程记录", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody BizProcessRecord bizProcessRecord)
@@ -89,7 +89,7 @@ public class BizProcessRecordController extends BaseController
     /**
      * 删除过程记录
      */
-    @PreAuthorize("@ss.hasPermi('process:record:remove')")
+//    @PreAuthorize("@ss.hasPermi('process:record:remove')")
     @Log(title = "过程记录", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)

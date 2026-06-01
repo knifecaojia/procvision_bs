@@ -46,7 +46,7 @@ public class BizWorkOrderController extends BaseController
     /**
      * 查询工单列表
      */
-    @PreAuthorize("@ss.hasPermi('wo:workOrder:list')")
+//    @PreAuthorize("@ss.hasPermi('wo:workOrder:list')")
     @GetMapping("/list")
     public TableDataInfo list(BizWorkOrder bizWorkOrder) throws Exception {
         startPage();
@@ -57,7 +57,7 @@ public class BizWorkOrderController extends BaseController
     /**
      * 导出工单列表
      */
-    @PreAuthorize("@ss.hasPermi('wo:workOrder:export')")
+//    @PreAuthorize("@ss.hasPermi('wo:workOrder:export')")
     @Log(title = "工单", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, BizWorkOrder bizWorkOrder) throws Exception {
@@ -69,7 +69,7 @@ public class BizWorkOrderController extends BaseController
     /**
      * 获取工单详细信息
      */
-    @PreAuthorize("@ss.hasPermi('wo:workOrder:query')")
+//    @PreAuthorize("@ss.hasPermi('wo:workOrder:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -79,7 +79,7 @@ public class BizWorkOrderController extends BaseController
     /**
      * 新增工单
      */
-    @PreAuthorize("@ss.hasPermi('wo:workOrder:add')")
+//    @PreAuthorize("@ss.hasPermi('wo:workOrder:add')")
     @Log(title = "工单", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody BizWorkOrder bizWorkOrder) {
@@ -94,7 +94,7 @@ public class BizWorkOrderController extends BaseController
     /**
      * 修改工单
      */
-    @PreAuthorize("@ss.hasPermi('wo:workOrder:edit')")
+//    @PreAuthorize("@ss.hasPermi('wo:workOrder:edit')")
     @Log(title = "工单", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody BizWorkOrder bizWorkOrder)
@@ -105,7 +105,7 @@ public class BizWorkOrderController extends BaseController
     /**
      * 删除工单
      */
-    @PreAuthorize("@ss.hasPermi('wo:workOrder:remove')")
+//    @PreAuthorize("@ss.hasPermi('wo:workOrder:remove')")
     @Log(title = "工单", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)
@@ -126,7 +126,6 @@ public class BizWorkOrderController extends BaseController
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         WorkOrderTaskData taskSync = objectMapper.readValue(file.getInputStream(), WorkOrderTaskData.class);
         return toAjax(bizWorkOrderService.importOrderFromMMo(taskSync));
-//        return success(taskSync);
     }
 
     @PostMapping("/importTemplate")
