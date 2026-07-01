@@ -2,14 +2,21 @@ package com.imustsz.utils;
 
 import com.imustsz.collect.domain.BizDataCollection;
 import com.imustsz.collect.mapper.BizDataCollectionMapper;
+import com.imustsz.common.core.domain.entity.SysErrorLog;
+import com.imustsz.common.enums.BusinessType;
+import com.imustsz.common.utils.StringUtils;
 import com.imustsz.common.utils.bean.MinioUtils;
 import com.imustsz.order.domain.dto.FinishedOrderDTO;
 import com.imustsz.order.service.IBizWorkOrderService;
+import com.imustsz.system.domain.SysOperLog;
+import com.imustsz.system.service.ISysErrorLogService;
+import com.imustsz.system.service.ISysOperLogService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,10 +29,14 @@ public class AutoUploadSchedule {
 
     @Autowired
     IBizWorkOrderService bizWorkOrderService;
+
+    @Autowired
+    private ISysErrorLogService sysErrorLogService;
+
     @Autowired
     private MinioUtils minioUtils;
 
-    @Scheduled(cron = "0 */1 * * * *")
+    @Scheduled(cron = "0 */5 * * * *")
     public void testTask(){
         log.info("准备上传图片给MOM...");
 
@@ -50,6 +61,7 @@ public class AutoUploadSchedule {
             try {
                 status = bizWorkOrderService.uploadToMOM(finishedOrderDTO);
             } catch (Exception e) {
+                recordErrorLog("上传图片给MOM", "AutoUploadSchedule.testTask", e);
                 throw new RuntimeException(e);
             }
 
@@ -66,7 +78,7 @@ public class AutoUploadSchedule {
     public void executeCleanup() {
         log.info("==== 开始执行 MinIO 大图片及 DB 记录清理任务 ====");
 
-        int batchSize = 200; // 由于每张图 50MB，批次不宜过大，200条=10GB的物理清理动作
+        int batchSize = 200;
         boolean hasMore = true;
         int totalDeleted = 0;
 
@@ -112,15 +124,36 @@ public class AutoUploadSchedule {
             } catch (InterruptedException e) {
                 log.error("清理任务被中断", e);
                 Thread.currentThread().interrupt();
+                recordErrorLog("图片及DB记录清理", "AutoUploadSchedule.executeCleanup", e);
                 break;
             } catch (Exception e) {
                 log.error("执行清理任务时发生异常", e);
+                recordErrorLog("图片及DB记录清理", "AutoUploadSchedule.executeCleanup", e);
                 // 发生未知异常退出循环，等待第二天再跑，防止死循环导致内存溢出
                 break;
             }
         }
 
         log.info("==== 图片清理任务执行完毕，本次共清理数据 {} 条 ====", totalDeleted);
+    }
+
+    private void recordErrorLog(String title, String method, Exception e) {
+        try {
+            SysErrorLog errorLog = new SysErrorLog();
+            errorLog.setRequestUri("定时任务：" + title);
+            errorLog.setRequestMethod("-");
+            errorLog.setExceptionName(e.getClass().getName());
+            String errorMsg = StringUtils.substring(e.getMessage() + "\n" + e.toString(), 0, 2000);
+            errorLog.setExceptionMessage(errorMsg);
+            errorLog.setCreateTime(new Date());
+            errorLog.setCreateBy("system");
+
+            // 直接存入数据库
+            sysErrorLogService.insertSysErrorLog(errorLog);
+        } catch (Exception logEx) {
+            // 防止写日志时发生异常导致业务崩溃
+            log.error("手动记录系统日志失败", logEx);
+        }
     }
 
 }

@@ -75,21 +75,26 @@
           <el-tag v-else size="small" type="danger">资源未就绪</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="计划开始时间" align="center" prop="startTime" width="180">
-        <template #default="scope">
-          <span>{{ parseTime(scope.row.startTime, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="计划结束时间" align="center" prop="endTime" width="180">
-        <template #default="scope">
-          <span>{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="任务详情" align="center">
-        <template #default="scope">
-          <el-button type="primary" link icon="Pointer" plain @click="handleDetail(scope.row)">查看</el-button>
-        </template>
-      </el-table-column>
+<!--      <el-table-column label="计划开始时间" align="center" prop="startTime" width="180">-->
+<!--        <template #default="scope">-->
+<!--          <span>{{ parseTime(scope.row.startTime, '{y}-{m}-{d}') }}</span>-->
+<!--        </template>-->
+<!--      </el-table-column>-->
+<!--      <el-table-column label="计划结束时间" align="center" prop="endTime" width="180">-->
+<!--        <template #default="scope">-->
+<!--          <span>{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>-->
+<!--        </template>-->
+<!--      </el-table-column>-->
+      <el-table-column label="工序号" align="center" prop="processCode" />
+      <el-table-column label="工序名称" align="center" prop="processName" />
+      <el-table-column label="工人编码" align="center" prop="workerCode" />
+      <el-table-column label="工人名称" align="center" prop="workerName" />
+
+<!--      <el-table-column label="任务详情" align="center">-->
+<!--        <template #default="scope">-->
+<!--          <el-button type="primary" link icon="Pointer" plain @click="handleDetail(scope.row)">查看</el-button>-->
+<!--        </template>-->
+<!--      </el-table-column>-->
       <el-table-column label="操作" align="center" width="250px" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-config-provider :message="config">

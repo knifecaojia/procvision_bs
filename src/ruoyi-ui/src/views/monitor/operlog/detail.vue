@@ -107,12 +107,6 @@
         </div>
       </div>
 
-      <div class="detail-card" v-if="form.status !== 0">
-        <div class="detail-card-title error-title"><el-icon><Warning /></el-icon> 异常信息</div>
-        <div class="error-body">
-          <div class="error-msg">{{ form.errorMsg }}</div>
-        </div>
-      </div>
 
       <div class="detail-card" v-if="form.auditStatus">
         <div class="detail-card-title"><el-icon><Stamp /></el-icon> 审核信息</div>

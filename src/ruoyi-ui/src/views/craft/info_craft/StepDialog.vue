@@ -54,7 +54,7 @@
         <el-table-column label="名称" align="center" prop="name"/>
         <el-table-column label="引导图" align="center">
           <template #default="scope">
-            <el-tag type="danger" v-if="scope.row.code !== '78' && (scope.row.guideMapUrl === '' || scope.row.guideMapUrl === null) ">未绑定</el-tag>
+            <el-tag type="danger" v-if="(scope.row.code !== '78' && scope.row.code !== '88') && (scope.row.guideMapUrl === '' || scope.row.guideMapUrl === null) ">未绑定</el-tag>
             <el-tag v-else type="success">已绑定</el-tag>
           </template>
         </el-table-column>

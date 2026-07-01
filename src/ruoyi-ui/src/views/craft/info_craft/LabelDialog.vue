@@ -47,7 +47,7 @@
           </el-button>
 
           <el-button type="primary" @click="uploadToMinio" icon="Check">
-            {{ props.packageFlag ? '保存包装及图片' : '保存标注结果' }}
+            {{ props.packageFlag ? '保存包装(及图片)' : '保存标注结果' }}
           </el-button>
         </el-space>
 
@@ -148,7 +148,7 @@
         <el-select v-model="labelText" filterable placeholder="请选择标签" style="width: 100%; margin-bottom: 20px;">
           <el-option v-if="props.tempAlgType === 0" v-for="item in label_tianxian" :key="item.value" :label="item.label" :value="item.value"></el-option>
           <el-option v-else-if="props.tempAlgType === 1" v-for="item in label_banji" :key="item.label" :label="item.label" :value="item.value"></el-option>
-          <el-option v-else v-for="(index, item) in label_mozu" :key="index" :label="item.label" :value="item.value"></el-option>
+          <el-option v-else v-for="(item, index) in label_mozu" :key="item.label + index" :label="item.label" :value="item.value"></el-option>
         </el-select>
 
         <el-input
@@ -684,12 +684,9 @@ const onMouseUp = () => {
   nextTick(() => { inputRef.value?.focus(); });
 };
 
-// 【核心新增】：向包装列表中追加数据
+// 【包装修改】：去除上传引导图的强制校验
 const confirmPackageInfo = () => {
   if (!packageData.value.productInfo) return proxy.$modal.msgWarning('请输入产品信息');
-  if (!uploadFile.value && (!canvas.value || !canvas.value.backgroundImage)) {
-    return proxy.$modal.msgWarning('请先上传引导图片！');
-  }
 
   // 生成唯一ID并推入列表
   packageList.value.push({
@@ -712,13 +709,9 @@ const removePackageInfo = (index) => {
 const confirmLabel = () => {
   if (!labelText.value) return proxy.$modal.msgWarning('请输入标签');
 
-  // labelText.value = labelText.value[labelText.value.length-1]
-
   if (!remark) remark.value = '';
 
   const uniqueId = `rect_${Date.now()}`;
-
-  console.log(labelText.value)
 
   activeRect.set({
     id: uniqueId,
@@ -738,7 +731,6 @@ const confirmLabel = () => {
   canvas.value.renderAll();
 
   dialogVisible.value = false;
-  // labelText.value = '';
   remark.value = '';
   activeRect = null;
 };
@@ -765,7 +757,6 @@ const highlightAnnotation = (id, isHover) => {
 const cancelAnnotation = () => {
   if (activeRect) { canvas.value.remove(activeRect); canvas.value.renderAll(); }
   dialogVisible.value = false;
-  // labelText.value = '';
   remark.value = '';
   activeRect = null;
 };
@@ -783,28 +774,35 @@ const uploadToMinio = async () => {
   // 根据不同模式走不同的检验规则
   if (props.packageFlag) {
     if (packageList.value.length === 0) return proxy.$modal.msgWarning('请先录入包装信息！');
-    if (!uploadFile.value && (!canvas.value || !canvas.value.backgroundImage)) return proxy.$modal.msgWarning('请上传引导图！');
+    // 【包装修改】：去除必须有图片的拦截
   } else {
     if (!canvas.value || canvas.value.getObjects().length === 0) return proxy.$modal.msgWarning('请先完成标注！');
+    if (!uploadFile.value) return proxy.$modal.msgError('未找到原始图片文件');
   }
-
-  if (!uploadFile.value) return proxy.$modal.msgError('未找到原始图片文件');
 
   proxy.$modal.loading('正在保存数据...')
   try {
-    const resOrig = await getUploadUrl();
-    const resAnnot = await getUploadUrl();
+    let urlList = [];
 
-    await axios.put(resOrig.data.url, uploadFile.value, {
-      headers: {'Content-Type': uploadFile.value.type || 'image/jpeg'}
-    });
+    // 【包装修改】：只有用户传了图片，才去调用Minio接口
+    if (uploadFile.value) {
+      const resOrig = await getUploadUrl();
+      const resAnnot = await getUploadUrl();
 
-    const annotationFile = getFile();
-    await axios.put(resAnnot.data.url, annotationFile, {
-      headers: {'Content-Type': 'image/jpeg'}
-    });
+      await axios.put(resOrig.data.url, uploadFile.value, {
+        headers: {'Content-Type': uploadFile.value.type || 'image/jpeg'}
+      });
 
-    const urlList = [resOrig.data.objectName, resAnnot.data.objectName];
+      const annotationFile = getFile();
+      if (annotationFile) {
+        await axios.put(resAnnot.data.url, annotationFile, {
+          headers: {'Content-Type': 'image/jpeg'}
+        });
+        urlList = [resOrig.data.objectName, resAnnot.data.objectName];
+      } else {
+        urlList = [resOrig.data.objectName, resOrig.data.objectName];
+      }
+    }
 
     // 判断不同模式的数据结构 (包装模式将存为数组 [{productInfo, quantity}, ...])
     const coordsInfoData = props.packageFlag
@@ -813,7 +811,8 @@ const uploadToMinio = async () => {
 
     const data = {
       id: currentStepId.value,
-      guideMapUrl: JSON.stringify(urlList),
+      // 如果没有传图片，urlList 为空数组，此时直接存 null，保证后端数据干净
+      guideMapUrl: urlList.length > 0 ? JSON.stringify(urlList) : null,
       coordsInfo: JSON.stringify(coordsInfoData),
     }
 
@@ -837,7 +836,7 @@ const uploadToMinio = async () => {
       }).catch(() => {});
     }
   } catch (error) {
-    proxy.$modal.msgError('绑定失败，请检查网络');
+    proxy.$modal.msgError('保存失败，请检查网络');
   } finally {
     proxy.$modal.closeLoading()
   }

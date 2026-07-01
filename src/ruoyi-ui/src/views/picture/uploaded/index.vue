@@ -13,7 +13,7 @@
         <el-col :span="9">
           <div class="step-container">
             <h3 class="step-header">1：扫码或输入信息</h3>
-            <h4 class="step-hit">输入格式为：工单号_工序号（例：100001_10）</h4>
+            <h4 class="step-hit">输入格式为：工单号_工序号（例：100001-01_10）</h4>
             <div class="step-content">
               <el-input
                   v-model="barcodeInput"
@@ -79,6 +79,28 @@
           <div class="step-container media-container">
             <div class="media-header">
               <h3 class="step-header" style="margin:0; border:none">2：图像采集和处理</h3>
+
+              <el-button type="success" plain size="small" icon="Tools" @click="openDebugTool">
+                打开摄像头调试工具
+              </el-button>
+
+              <div v-show="mode === 'camera' && currentBarcode" style="margin-right: auto; margin-left: 20px;">
+                <el-select
+                    v-model="selectedDeviceId"
+                    size="small"
+                    placeholder="切换摄像头"
+                    style="width: 200px"
+                    @change="handleCameraSwitch"
+                >
+                  <el-option
+                      v-for="item in videoDevices"
+                      :key="item.deviceId"
+                      :label="item.label || `摄像头 ${item.deviceId.slice(0, 6)}`"
+                      :value="item.deviceId"
+                  />
+                </el-select>
+              </div>
+
               <el-radio-group v-model="mode" size="small" @change="handleModeChange"
                               :disabled="!currentBarcode || processing">
                 <el-radio-button label="camera">摄像头拍照</el-radio-button>
@@ -235,6 +257,39 @@ const canvasRef = ref(null);
 const isCameraOpen = ref(false);
 let mediaStream = null;
 
+// 设备列表与选中设备
+const videoDevices = ref([]);
+const selectedDeviceId = ref('');
+
+// 枚举视频输入设备（仅在已获得摄像头权限后才能拿到 label）
+const enumerateVideoDevices = async () => {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    videoDevices.value = devices.filter(d => d.kind === 'videoinput');
+    if (videoDevices.value.length > 0 && !selectedDeviceId.value) {
+      selectedDeviceId.value = videoDevices.value[0].deviceId;
+    }
+  } catch (e) {
+    console.warn('枚举摄像头失败', e);
+  }
+};
+
+const handleCameraSwitch = async () => {
+  if (isCameraOpen.value) {
+    stopCamera();
+    await new Promise(resolve => setTimeout(resolve, 100));
+    await startCamera();
+  }
+};
+
+const openDebugTool = () => {
+  // 直接通过 window.location.href 触发自定义协议
+  window.location.href = 'cameradebug://';
+
+  // 给用户一个反馈，因为唤起本地程序有时会有点慢
+  proxy.$modal.msgSuccess('正在尝试唤起调试程序...');
+};
+
 const cropDialogVisible = ref(false);
 const cropping = ref(false);
 const cropperImgRef = ref(null); // 指向模板里的 <img>
@@ -340,18 +395,18 @@ const focusInput = () => {
 const handleScan = () => {
   if (!barcodeInput.value) return proxy.$modal.msgWarning('请输入条码');
 
-  const regex = /^[A-Za-z0-9]+(_[A-Za-z0-9]+)+$/;
+  const regex = /^[A-Za-z0-9]+-[A-Za-z0-9]+(_[A-Za-z0-9]+)+$/;
 
   if (!regex.test(barcodeInput.value)) {
-    return proxy.$modal.msgWarning('格式错误！请以"_"隔开各段信息');
+    return proxy.$modal.msgWarning('格式错误！请确保格式类似：100001-01_10');
   }
 
   currentBarcode.value = barcodeInput.value;
   proxy.$modal.msgSuccess('条码锁定，请采集图像');
 
-  if (mode.value === 'camera') {
-    startCamera();
-  }
+  // 锁定条码后立即枚举设备，让用户在打开摄像头前就能选择 USB 摄像头
+  // 注意：未授权前 label 可能为空，授权后会再次刷新
+  enumerateVideoDevices();
 };
 
 // --- Step 2: 相机控制逻辑 ---
@@ -367,13 +422,15 @@ const startCamera = async () => {
   }
 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        width: {ideal: 1920},
-        height: {ideal: 1080},
-        facingMode: "environment"
-      }
-    });
+    // 先用通用约束打开一次，触发权限授权，便于后续 enumerateDevices 拿到 label
+    const constraints = {
+      video: selectedDeviceId.value
+          // ? { deviceId: { exact: selectedDeviceId.value } }
+          ? { deviceId: { exact: selectedDeviceId.value }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+          : { width: { ideal: 1920 }, height: { ideal: 1080 } }
+    };
+
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
     mediaStream = stream;
     if (videoRef.value) {
@@ -381,10 +438,18 @@ const startCamera = async () => {
       videoRef.value.play();
     }
     isCameraOpen.value = true;
+
+    // 权限已获得，刷新设备列表（label 此时才可读）
+    await enumerateVideoDevices();
+
   } catch (err) {
     let msg = '无法启动摄像头';
     if (err.name === 'NotAllowedError') msg = '请允许浏览器访问摄像头权限';
     if (err.name === 'NotFoundError') msg = '未检测到摄像头设备';
+    if (err.name === 'OverconstrainedError') {
+      msg = '所选摄像头不可用，请更换设备';
+      selectedDeviceId.value = '';
+    }
     proxy.$modal.msgError(msg);
   }
 };
@@ -451,7 +516,6 @@ const handleModeChange = (val) => {
     clearCapture();
   } else {
     clearCapture();
-    if (currentBarcode.value) startCamera();
   }
 };
 
@@ -696,6 +760,19 @@ const resetFlow = () => {
   color: #909399;
   margin-top: 10px;
   font-size: 12px;
+}
+
+.device-select-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  gap: 8px;
+}
+
+.device-label {
+  color: #fff;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .camera-controls {

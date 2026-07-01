@@ -203,7 +203,7 @@ public class CraftServiceImpl implements ICraftService {
         for (Process process : processes) {
             List<StepVO> steps = bizStepMapper.selectStepByProcessId(process.getId());
             for (StepVO step : steps)
-                if (!"78".equals(step.getStep_code()) && step.getGuide_url() == null) {
+                if (!"78".equals(step.getStep_code()) && !"88".equals(step.getStep_code()) && step.getGuide_url() == null) {
                     isNotGuide = true;
                     break;
                 }

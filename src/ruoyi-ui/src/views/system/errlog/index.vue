@@ -115,12 +115,17 @@
       </template>
     </el-dialog>
 
+    <el-dialog title="异常信息" v-model="openExceptionMessage" width="500px" append-to-body>
+        <div class="error-body">
+          <div class="error-msg">{{ errMsg }}</div>
+        </div>
+    </el-dialog>
+
   </div>
 </template>
 
 <script setup name="Errlog">
 import {listErrlog, getErrlog, delErrlog, addErrlog, updateErrlog, cleanErrLog} from "@/api/system/errlog"
-import {ElMessage, ElMessageBox} from 'element-plus'
 
 const { proxy } = getCurrentInstance()
 
@@ -133,6 +138,8 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
+const openExceptionMessage = ref(false)
+const errMsg = ref("")
 
 const data = reactive({
   form: {},
@@ -218,7 +225,8 @@ function handleUpdate(row) {
 }
 
 function showExceptionMessage(exceptionMessage){
-  ElMessageBox.alert(exceptionMessage, "异常信息", { dangerouslyUseHTMLString: true })
+  openExceptionMessage.value = true
+  errMsg.value = exceptionMessage
 }
 
 /** 提交按钮 */

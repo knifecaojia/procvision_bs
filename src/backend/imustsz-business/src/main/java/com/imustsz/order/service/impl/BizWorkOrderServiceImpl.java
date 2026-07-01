@@ -403,7 +403,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService {
             throw new RuntimeException(e);
         }
 
-        String fileName = finishedOrderDTO.getWorkOrderCode() + ":" + finishedOrderDTO.getProcessCode() + ":" + finishedOrderDTO.getStepNo() + extension;
+        String fileName = finishedOrderDTO.getWorkOrderCode() + "_" + finishedOrderDTO.getProcessCode() + "_" + finishedOrderDTO.getStepNo() + extension;
 
         JSONObject imageObj = new JSONObject();
         imageObj.put("fileName", fileName);
@@ -483,14 +483,20 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService {
                         resMsg = returnObj.getString("msg") == null ? "" : returnObj.getString("msg");
                     } catch (Exception e) {
                         log.error("解析响应报文失败, 报文内容: {}", returnJsonStr, e);
+                        throw new RuntimeException("解析 MOM 响应报文失败: " + returnJsonStr, e);
                     }
                 }
             }
 
             log.info("照片回传结果: status:{}, msg:{}", resStatus, resMsg);
 
+            if ("0".equals(resStatus)) {
+                throw new RuntimeException("MOM端返回业务失败, 状态码:" + resStatus + ", 错误信息:" + resMsg);
+            }
+
         } catch (Exception e) {
             log.error("发送 WebService 请求失败", e);
+            throw new RuntimeException("调用 MOM WebService 接口失败: " + e.getMessage(), e);
         }
 
         return "".equals(resStatus) ? -1 : Integer.parseInt(resStatus);
