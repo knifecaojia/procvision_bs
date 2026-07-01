@@ -80,10 +80,6 @@
             <div class="media-header">
               <h3 class="step-header" style="margin:0; border:none">2：图像采集和处理</h3>
 
-              <el-button type="success" plain size="small" icon="Tools" @click="openDebugTool">
-                打开摄像头调试工具
-              </el-button>
-
               <div v-show="mode === 'camera' && currentBarcode" style="margin-right: auto; margin-left: 20px;">
                 <el-select
                     v-model="selectedDeviceId"
@@ -99,6 +95,10 @@
                       :value="item.deviceId"
                   />
                 </el-select>
+
+                <el-button type="success" plain size="small" icon="Tools" @click="openDebugTool" style="margin-left: 20px">
+                  打开摄像头调试工具
+                </el-button>
               </div>
 
               <el-radio-group v-model="mode" size="small" @change="handleModeChange"
@@ -109,8 +109,18 @@
             </div>
 
             <div v-show="mode === 'camera'" class="camera-wrapper">
-              <div class="video-box" v-show="!previewImage">
-                <video ref="videoRef" autoplay playsinline muted class="video-stream"></video>
+              <div class="video-box" ref="videoBoxRef" v-show="!previewImage">
+                <video ref="videoRef" autoplay playsinline muted class="video-stream"
+                       :style="videoStyle"></video>
+                <div class="video-toolbar" v-if="isCameraOpen">
+                  <el-button-group size="small">
+                    <el-button icon="RefreshLeft" @click="rotateLeft" title="左转90°"/>
+                    <el-button icon="Refresh" @click="rotateRight" title="右转90°"/>
+                    <el-button :type="mirrored ? 'primary' : 'info'" @click="toggleMirror" title="水平镜像">镜像</el-button>
+                    <el-button icon="RefreshRight" @click="resetTransform" title="复位"
+                               :disabled="rotation === 0 && !mirrored"/>
+                  </el-button-group>
+                </div>
                 <div class="camera-mask" v-if="!isCameraOpen">
                   <el-button type="primary" icon="VideoCamera" @click="startCamera" :disabled="!currentBarcode">
                     打开摄像头
@@ -224,7 +234,7 @@
 </template>
 
 <script setup>
-import {ref, onMounted, onBeforeUnmount, nextTick, getCurrentInstance} from 'vue';
+import {ref, computed, onMounted, onBeforeUnmount, nextTick, getCurrentInstance} from 'vue';
 import axios from "axios";
 import {getUploadUrl} from "@/api/algorithm/algorithm.js";
 import {addData, checkExist, updateData, uploadData} from "@/api/collection/data.js";
@@ -256,6 +266,52 @@ const videoRef = ref(null);
 const canvasRef = ref(null);
 const isCameraOpen = ref(false);
 let mediaStream = null;
+
+// 画面旋转与镜像
+const rotation = ref(0); // 0 / 90 / 180 / 270
+const mirrored = ref(false);
+const videoBoxRef = ref(null);
+const boxSize = ref({w: 0, h: 0});
+let resizeObserver = null;
+
+// 90/270 度旋转时需要交换视频元素的宽高，否则 object-fit: contain 会导致画面被裁剪
+const videoStyle = computed(() => {
+  const rot = rotation.value;
+  const swap = rot === 90 || rot === 270;
+  // 💡 修改点：将 mirror 的空格放在右侧，确保在 transform 字符串中排在 rotate 前面
+  const mirror = mirrored.value ? 'scaleX(-1) ' : '';
+  if (swap && boxSize.value.w > 0) {
+    return {
+      position: 'absolute',
+      left: '50%',
+      top: '50%',
+      width: boxSize.value.h + 'px',
+      height: boxSize.value.w + 'px',
+      // 💡 修改点：先 mirror，再 rotate
+      transform: `translate(-50%, -50%) ${mirror}rotate(${rot}deg)`,
+    };
+  }
+  return {
+    // 💡 修改点：先 mirror，再 rotate
+    transform: `${mirror}rotate(${rot}deg)`,
+  };
+});
+
+const rotateLeft = () => {
+  const delta = mirrored.value ? 90 : 270;
+  rotation.value = (rotation.value + delta) % 360;
+};
+const rotateRight = () => {
+  const delta = mirrored.value ? 270 : 90;
+  rotation.value = (rotation.value + delta) % 360;
+};
+const toggleMirror = () => {
+  mirrored.value = !mirrored.value;
+};
+const resetTransform = () => {
+  rotation.value = 0;
+  mirrored.value = false;
+};
 
 // 设备列表与选中设备
 const videoDevices = ref([]);
@@ -379,10 +435,19 @@ const confirmCrop = () => {
 // --- 生命周期 ---
 onMounted(() => {
   focusInput();
+  if (videoBoxRef.value && 'ResizeObserver' in window) {
+    resizeObserver = new ResizeObserver(entries => {
+      for (const e of entries) {
+        boxSize.value = {w: e.contentRect.width, h: e.contentRect.height};
+      }
+    });
+    resizeObserver.observe(videoBoxRef.value);
+  }
 });
 
 onBeforeUnmount(() => {
   stopCamera();
+  if (resizeObserver) resizeObserver.disconnect();
 });
 
 const focusInput = () => {
@@ -469,9 +534,21 @@ const takePhoto = () => {
   const canvas = canvasRef.value;
   const context = canvas.getContext('2d');
 
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  const rot = rotation.value % 360;
+  const swap = rot === 90 || rot === 270;
+
+  canvas.width = swap ? vh : vw;
+  canvas.height = swap ? vw : vh;
+
+  context.save();
+  context.translate(canvas.width / 2, canvas.height / 2);
+  if (mirrored.value)
+    context.scale(-1, 1);
+  context.rotate(rot * Math.PI / 180);
+  context.drawImage(video, -vw / 2, -vh / 2, vw, vh);
+  context.restore();
 
   canvas.toBlob((blob) => {
     const filename = `${currentBarcode.value}_${Date.now()}.jpg`;
@@ -740,6 +817,14 @@ const resetFlow = () => {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.video-toolbar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 15;
+  opacity: 0.9;
 }
 
 .camera-mask {
