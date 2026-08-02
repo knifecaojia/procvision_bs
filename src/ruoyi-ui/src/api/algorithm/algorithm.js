@@ -66,3 +66,10 @@ export function safeDelCheck(ids){
         method: 'get'
     })
 }
+
+export function getAllAlg(){
+    return request({
+        url: '/algorithm/allAlg',
+        method: 'get'
+    })
+}

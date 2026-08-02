@@ -47,6 +47,11 @@ public class  BizAlgorithmController extends BaseController {
         return getDataTable(list);
     }
 
+    @GetMapping("/allAlg")
+    public TableDataInfo GetAllAlg() throws Exception {
+        return getDataTable(bizAlgorithmService.getAllAlg());
+    }
+
     /**
      * 导出算法列表
      */

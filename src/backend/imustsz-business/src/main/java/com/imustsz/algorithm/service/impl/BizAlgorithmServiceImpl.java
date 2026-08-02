@@ -2,6 +2,7 @@ package com.imustsz.algorithm.service.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.imustsz.cilent.domain.vo.AlgorithmVO;
 import com.imustsz.common.utils.bean.MinioUtils;
@@ -123,5 +124,18 @@ public class BizAlgorithmServiceImpl implements IBizAlgorithmService
             }
         }
         return algorithmVOS;
+    }
+
+    @Override
+    public List<BizAlgorithm> getAllAlg() throws Exception {
+        List<BizAlgorithm> algList =  bizAlgorithmMapper.selectBizAlgorithmList(new BizAlgorithm());
+        for (BizAlgorithm alg: algList){
+            try {
+                alg.setUrl(minioUtils.getPresignedUrl(alg.getObjectName()));
+            } catch (Exception e) {
+                throw new Exception("获取预签名URL失败");
+            }
+        }
+        return algList;
     }
 }

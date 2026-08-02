@@ -21,6 +21,18 @@
             <el-button type="primary" icon="FolderOpened">本地上传</el-button>
           </el-upload>
 
+          <el-button type="primary" plain icon="pointer" @click="openAnnotationTool">打开标注工具</el-button>
+
+          <el-upload
+              v-if="!props.packageFlag"
+              :auto-upload="false"
+              :show-file-list="false"
+              accept=".xml,text/xml,application/xml"
+              :on-change="handleVocFileChange"
+          >
+            <el-button type="primary" plain icon="DocumentAdd">导入标注</el-button>
+          </el-upload>
+
           <el-button type="success" icon="Camera" @click="openCameraDialog">打开相机</el-button>
 
           <el-divider direction="vertical"/>
@@ -34,7 +46,7 @@
             >
               {{ isDrawingMode ? '结束标注' : '开始标注' }}
             </el-button>
-            <el-button type="danger" @click="clearCanvasAnnotations" icon="Delete">清空标注</el-button>
+            <el-button type="danger" @click="clearCurrentAnnotations" icon="Delete">清空标注</el-button>
           </template>
 
           <el-button
@@ -110,27 +122,123 @@
             </el-scrollbar>
           </el-card>
 
-          <el-card shadow="never" class="annotation-card" v-else>
+          <el-card shadow="never" class="annotation-card annotation-info-card" v-else>
             <template #header>
-              <div class="card-header">
-                <span>标注信息面板</span>
-                <el-tag type="info" size="small">共 {{ annotationList.length }} 个</el-tag>
+              <div class="annotation-panel-heading">
+                <div class="panel-heading-main">
+                  <div class="panel-heading-mark">标</div>
+                  <div class="panel-heading-copy">
+                    <div class="panel-heading-title">标注信息</div>
+                    <div class="panel-heading-subtitle">悬停可定位，点击编辑可修改标签信息</div>
+                  </div>
+                </div>
+                <div class="annotation-count-badge">
+                  <strong>{{ annotationList.length }}</strong>
+                  <span>个标注</span>
+                </div>
               </div>
             </template>
-            <el-scrollbar height="500px">
-              <el-empty v-if="annotationList.length === 0" description="暂无标注信息" :image-size="80" />
-              <div
-                  v-for="(item, index) in annotationList"
-                  :key="item.id"
-                  class="annotation-item"
-                  @mouseenter="highlightAnnotation(item.id, true)"
-                  @mouseleave="highlightAnnotation(item.id, false)"
+
+            <div v-if="annotationList.length > 0" class="annotation-batch-toolbar">
+              <div class="batch-select-area">
+                <el-checkbox
+                    :model-value="isAllAnnotationsSelected"
+                    :indeterminate="isAnnotationSelectionIndeterminate"
+                    @change="toggleSelectAllAnnotations"
+                >
+                  全选
+                </el-checkbox>
+                <span class="selection-summary">
+                  已选 <strong>{{ selectedAnnotationIds.length }}</strong> 项
+                </span>
+              </div>
+              <el-button
+                  type="danger"
+                  plain
+                  size="small"
+                  icon="Delete"
+                  :disabled="selectedAnnotationIds.length === 0"
+                  @click="removeSelectedAnnotations"
               >
-                <div class="item-info">
-                  <div class="item-label"><el-tag size="small">{{ item.label }}</el-tag></div>
-                  <div class="item-remark">{{ item.remark }}</div>
+                删除所选
+              </el-button>
+            </div>
+
+            <el-scrollbar class="annotation-scrollbar">
+              <el-empty
+                  v-if="annotationList.length === 0"
+                  class="annotation-empty"
+                  description="暂无标注信息"
+                  :image-size="88"
+              >
+                <template #description>
+                  <div class="empty-description">
+                    <strong>暂无标注信息</strong>
+                    <span>导入 VOC 文件或在图片上绘制标注框</span>
+                  </div>
+                </template>
+              </el-empty>
+
+              <div v-else class="annotation-list-content">
+                <div
+                    v-for="(item, index) in annotationList"
+                    :key="item.id"
+                    class="annotation-item annotation-info-item"
+                    :class="{
+                      'is-highlighted': hoveredAnnotationId === item.id,
+                      'is-selected': selectedAnnotationIds.includes(item.id)
+                    }"
+                    @mouseenter="highlightAnnotation(item.id, true)"
+                    @mouseleave="highlightAnnotation(item.id, false)"
+                >
+                  <el-checkbox
+                      class="annotation-checkbox"
+                      :model-value="selectedAnnotationIds.includes(item.id)"
+                      @change="(checked) => toggleAnnotationSelection(item.id, checked)"
+                      @click.stop
+                  />
+
+                  <div class="annotation-sequence">{{ String(index + 1).padStart(2, '0') }}</div>
+
+                  <div class="item-info annotation-item-info">
+                    <div class="annotation-item-topline">
+                      <el-tag class="annotation-label-tag" size="small" effect="light" round>
+                        {{ item.label }}
+                      </el-tag>
+                      <span v-if="hoveredAnnotationId === item.id" class="locating-text">定位中</span>
+                    </div>
+                    <div class="item-remark annotation-remark" :class="{ 'is-empty': !item.remark }">
+                      {{ item.remark || '暂无备注' }}
+                    </div>
+                  </div>
+
+                  <div class="annotation-action-group">
+                    <el-tooltip content="修改标签和备注" placement="top">
+                      <el-button
+                          class="annotation-edit-button"
+                          type="primary"
+                          icon="EditPen"
+                          circle
+                          text
+                          size="small"
+                          aria-label="编辑该标注"
+                          @click.stop="openEditAnnotation(item)"
+                      />
+                    </el-tooltip>
+                    <el-tooltip content="删除该标注" placement="top">
+                      <el-button
+                          class="annotation-delete-button"
+                          type="danger"
+                          icon="Delete"
+                          circle
+                          text
+                          size="small"
+                          aria-label="删除该标注"
+                          @click.stop="removeAnnotation(index, item.id)"
+                      />
+                    </el-tooltip>
+                  </div>
                 </div>
-                <el-button type="danger" icon="Delete" circle plain size="small" @click="removeAnnotation(index, item.id)"></el-button>
               </div>
             </el-scrollbar>
           </el-card>
@@ -139,13 +247,20 @@
 
       <el-dialog
           v-model="dialogVisible"
-          title="添加标注信息"
+          :title="annotationDialogMode === 'edit' ? '修改标注信息' : '添加标注信息'"
           width="300px"
           append-to-body
           :close-on-click-modal="false"
           @close="cancelAnnotation"
       >
-        <el-select v-model="labelText" filterable placeholder="请选择标签" style="width: 100%; margin-bottom: 20px;">
+        <el-select
+            v-model="labelText"
+            filterable
+            allow-create
+            default-first-option
+            placeholder="请选择或输入标签"
+            style="width: 100%; margin-bottom: 20px;"
+        >
           <el-option v-if="props.tempAlgType === 0" v-for="item in label_tianxian" :key="item.value" :label="item.label" :value="item.value"></el-option>
           <el-option v-else-if="props.tempAlgType === 1" v-for="item in label_banji" :key="item.label" :label="item.label" :value="item.value"></el-option>
           <el-option v-else v-for="(item, index) in label_mozu" :key="item.label + index" :label="item.label" :value="item.value"></el-option>
@@ -161,7 +276,9 @@
         <template #footer>
         <span class="dialog-footer">
           <el-button @click="cancelAnnotation">取消</el-button>
-          <el-button type="primary" @click="confirmLabel">确定</el-button>
+          <el-button type="primary" @click="confirmLabel">
+            {{ annotationDialogMode === 'edit' ? '保存修改' : '确定' }}
+          </el-button>
         </span>
         </template>
       </el-dialog>
@@ -232,6 +349,8 @@ const labelVisible = defineModel()
 const canvas = ref(null);
 const isDrawingMode = ref(false);
 const dialogVisible = ref(false);
+const annotationDialogMode = ref('create');
+const editingAnnotationId = ref(null);
 const labelText = ref('');
 const inputRef = ref(null);
 const stepCount = ref(0);
@@ -239,6 +358,14 @@ const currentStepContent = ref('');
 
 // 标注模式状态管理
 const annotationList = ref([]);
+const selectedAnnotationIds = ref([]);
+const hoveredAnnotationId = ref(null);
+
+// 批量绑定工步时仅保存最近一次导入 VOC 时的原始模板快照。
+// 当前工步对标注的新增、删除、移动或缩放只作用于当前工步，不写回该模板。
+// 进入其他工步时，始终按这份导入快照恢复标注框和标签列表。
+const batchVocTemplate = ref(null);
+const isUsingBatchVocTemplate = ref(false);
 
 // 包装模式状态管理（现改为数组支持多条录入）
 const packageDialogVisible = ref(false);
@@ -309,6 +436,13 @@ const emit = defineEmits(['change-status'])
 const currentIndex = ref(0);
 const currentStepId = computed(() => props.stepIds[currentIndex.value]);
 
+const isAllAnnotationsSelected = computed(() =>
+    annotationList.value.length > 0 && selectedAnnotationIds.value.length === annotationList.value.length
+);
+const isAnnotationSelectionIndeterminate = computed(() =>
+    selectedAnnotationIds.value.length > 0 && selectedAnnotationIds.value.length < annotationList.value.length
+);
+
 watch(() => props.visible, (visible) => {
   if (visible) {
     currentIndex.value = 0;
@@ -321,6 +455,10 @@ watch(() => props.visible, (visible) => {
     if (canvas.value) canvas.value.clear();
     stopLocalCamera();
     annotationList.value = [];
+    selectedAnnotationIds.value = [];
+    hoveredAnnotationId.value = null;
+    batchVocTemplate.value = null;
+    isUsingBatchVocTemplate.value = false;
     packageList.value = [];
     packageData.value = { productInfo: '', quantity: 1 };
   }
@@ -399,6 +537,14 @@ const loadCurrentStepData = async () => {
       if (currentIndex.value === 0) {
         if (canvas.value) canvas.value.clear();
         uploadFile.value = null;
+        isUsingBatchVocTemplate.value = false;
+      } else if (!props.packageFlag && canvas.value?.backgroundImage && batchVocTemplate.value) {
+        // 后续工步没有独立引导图时，沿用当前图片并恢复导入时的原始标签模板。
+        renderVocAnnotations(
+            batchVocTemplate.value.objects,
+            batchVocTemplate.value.size,
+            { clearExisting: false, showMessage: false, markAsBatchTemplate: true }
+        );
       }
     }
   } catch (err) {
@@ -437,6 +583,8 @@ const initCanvas = () => {
   canvas.value.on('mouse:down', onMouseDown);
   canvas.value.on('mouse:move', onMouseMove);
   canvas.value.on('mouse:up', onMouseUp);
+  canvas.value.on('mouse:over', handleCanvasObjectMouseOver);
+  canvas.value.on('mouse:out', handleCanvasObjectMouseOut);
   window.addEventListener('keydown', handleKeydown);
 };
 
@@ -450,6 +598,8 @@ const handleKeydown = (e) => {
       activeObjects.forEach((obj) => {
         if (obj.id) {
           annotationList.value = annotationList.value.filter(item => item.id !== obj.id);
+          selectedAnnotationIds.value = selectedAnnotationIds.value.filter(id => id !== obj.id);
+          if (hoveredAnnotationId.value === obj.id) hoveredAnnotationId.value = null;
         }
         canvas.value.remove(obj);
         stepCount.value -= 1;
@@ -513,6 +663,8 @@ const loadFileToCanvas = (file, historyCoords = []) => {
     imgObj.onload = () => {
       canvas.value.clear();
       annotationList.value = [];
+      selectedAnnotationIds.value = [];
+      hoveredAnnotationId.value = null;
       stepCount.value = 1;
 
       const fImg = new fabric.Image(imgObj);
@@ -528,8 +680,17 @@ const loadFileToCanvas = (file, historyCoords = []) => {
       });
       canvas.value.setViewportTransform([1, 0, 0, 1, 0, 0]);
 
-      // 普通模式下的标注框回显
-      if (historyCoords && Array.isArray(historyCoords) && historyCoords.length > 0) {
+      // 批量绑定已导入 VOC 后，始终优先恢复导入时的原始模板。
+      // 不读取目标工步的历史标签，也不沿用上一工步对模板所做的增删改。
+      if (!props.packageFlag && props.stepIds.length > 1 && batchVocTemplate.value) {
+        renderVocAnnotations(
+            batchVocTemplate.value.objects,
+            batchVocTemplate.value.size,
+            { clearExisting: false, showMessage: false, markAsBatchTemplate: true }
+        );
+      } else if (historyCoords && Array.isArray(historyCoords) && historyCoords.length > 0) {
+        // 非批量模板场景下，正常回显当前工步的历史标注。
+        isUsingBatchVocTemplate.value = false;
         const bgLogicalLeft = (canvasWidth / 2) - (fImg.width * scale) / 2;
         const bgLogicalTop = (canvasHeight / 2) - (fImg.height * scale) / 2;
 
@@ -567,6 +728,8 @@ const loadFileToCanvas = (file, historyCoords = []) => {
           }
         });
         canvas.value.requestRenderAll();
+      } else {
+        isUsingBatchVocTemplate.value = false;
       }
       proxy.$modal.closeLoading();
     };
@@ -583,6 +746,178 @@ const handleFileChange = (file) => {
   if (file && file.raw) {
     loadFileToCanvas(file.raw);
   }
+};
+
+// 解析 Pascal VOC XML，并将其中的目标框绘制到当前图片上
+const handleVocFileChange = async (file) => {
+  if (!file?.raw) return;
+  if (!canvas.value?.backgroundImage) {
+    proxy.$modal.msgWarning('请先上传或加载对应的原始图片，再导入 VOC 标注文件！');
+    return;
+  }
+
+  try {
+    const xmlText = await file.raw.text();
+    const xmlDoc = new DOMParser().parseFromString(xmlText, 'application/xml');
+
+    if (xmlDoc.querySelector('parsererror')) {
+      throw new Error('XML 文件格式不正确');
+    }
+
+    const objectNodes = Array.from(xmlDoc.getElementsByTagName('object'));
+    if (objectNodes.length === 0) {
+      proxy.$modal.msgWarning('该 VOC 文件中没有找到 object 标注节点！');
+      return;
+    }
+
+    const getText = (root, tagName) => root?.getElementsByTagName(tagName)?.[0]?.textContent?.trim() || '';
+    const getNumber = (root, tagName) => {
+      const value = Number(getText(root, tagName));
+      return Number.isFinite(value) ? value : NaN;
+    };
+
+    const sizeNode = xmlDoc.getElementsByTagName('size')[0];
+    const vocWidth = getNumber(sizeNode, 'width');
+    const vocHeight = getNumber(sizeNode, 'height');
+
+    const vocObjects = objectNodes.map((node) => {
+      const boxNode = node.getElementsByTagName('bndbox')[0];
+      return {
+        label: getText(node, 'name') || 'unknown',
+        xmin: getNumber(boxNode, 'xmin'),
+        ymin: getNumber(boxNode, 'ymin'),
+        xmax: getNumber(boxNode, 'xmax'),
+        ymax: getNumber(boxNode, 'ymax'),
+        remark: ''
+      };
+    }).filter(item =>
+        [item.xmin, item.ymin, item.xmax, item.ymax].every(Number.isFinite) &&
+        item.xmax > item.xmin && item.ymax > item.ymin
+    );
+
+    if (vocObjects.length === 0) {
+      proxy.$modal.msgWarning('VOC 文件中没有可用的矩形框坐标！');
+      return;
+    }
+
+    if (canvas.value.getObjects().length > 0) {
+      try {
+        await proxy.$modal.confirm(
+            '导入 VOC 标注会替换当前页面上已有的标注框，是否继续？',
+            '导入确认',
+            { confirmButtonText: '继续导入', cancelButtonText: '取消', type: 'warning' }
+        );
+      } catch (e) {
+        return;
+      }
+    }
+
+    // 只在导入动作发生时更新批量模板；后续工步中的任何编辑都不会改写这份快照。
+    batchVocTemplate.value = {
+      objects: vocObjects.map(item => ({ ...item })),
+      size: { width: vocWidth, height: vocHeight }
+    };
+
+    renderVocAnnotations(
+        vocObjects,
+        { width: vocWidth, height: vocHeight },
+        { markAsBatchTemplate: true }
+    );
+  } catch (error) {
+    console.error('VOC 标注导入失败：', error);
+    proxy.$modal.msgError(error?.message || 'VOC 标注文件解析失败，请检查 XML 格式！');
+  }
+};
+
+const renderVocAnnotations = (vocObjects, vocSize, options = {}) => {
+  const { clearExisting = true, showMessage = true, markAsBatchTemplate = false } = options;
+  const bgImg = canvas.value?.backgroundImage;
+  if (!bgImg) return;
+
+  // VOC 文件尺寸可能与当前图片实际尺寸不同，这里先换算到原图坐标，再映射到画布。
+  const sourceWidth = Number.isFinite(vocSize.width) && vocSize.width > 0 ? vocSize.width : bgImg.width;
+  const sourceHeight = Number.isFinite(vocSize.height) && vocSize.height > 0 ? vocSize.height : bgImg.height;
+  const sourceScaleX = bgImg.width / sourceWidth;
+  const sourceScaleY = bgImg.height / sourceHeight;
+
+  const bgScaleX = bgImg.scaleX;
+  const bgScaleY = bgImg.scaleY;
+  const bgLogicalLeft = bgImg.left - (bgImg.width * bgScaleX) / 2;
+  const bgLogicalTop = bgImg.top - (bgImg.height * bgScaleY) / 2;
+
+  if (clearExisting) clearCanvasAnnotations();
+  isUsingBatchVocTemplate.value = markAsBatchTemplate;
+  selectedAnnotationIds.value = [];
+  hoveredAnnotationId.value = null;
+  isDrawingMode.value = false;
+  canvas.value.skipTargetFind = false;
+  canvas.value.selection = true;
+
+  let importedCount = 0;
+  let skippedCount = 0;
+
+  vocObjects.forEach((item, index) => {
+    let realX = item.xmin * sourceScaleX;
+    let realY = item.ymin * sourceScaleY;
+    let realRight = item.xmax * sourceScaleX;
+    let realBottom = item.ymax * sourceScaleY;
+
+    realX = Math.max(0, Math.min(realX, bgImg.width));
+    realY = Math.max(0, Math.min(realY, bgImg.height));
+    realRight = Math.max(0, Math.min(realRight, bgImg.width));
+    realBottom = Math.max(0, Math.min(realBottom, bgImg.height));
+
+    const realWidth = realRight - realX;
+    const realHeight = realBottom - realY;
+    if (realWidth <= 0 || realHeight <= 0) {
+      skippedCount++;
+      return;
+    }
+
+    const uniqueId = `rect_voc_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 8)}`;
+    const rect = new fabric.Rect({
+      left: bgLogicalLeft + realX * bgScaleX,
+      top: bgLogicalTop + realY * bgScaleY,
+      width: realWidth * bgScaleX,
+      height: realHeight * bgScaleY,
+      fill: 'rgba(255, 0, 0, 0)',
+      stroke: 'red',
+      strokeWidth: 1,
+      selectable: true,
+      evented: true,
+      id: uniqueId,
+      customData: { label: item.label, remark: item.remark || '' }
+    });
+
+    canvas.value.add(rect);
+    annotationList.value.push({
+      id: uniqueId,
+      label: item.label,
+      remark: item.remark || ''
+    });
+    importedCount++;
+  });
+
+  stepCount.value = importedCount + 1;
+  canvas.value.discardActiveObject();
+  canvas.value.requestRenderAll();
+
+  if (showMessage) {
+    if (skippedCount > 0) {
+      proxy.$modal.msgWarning(`已导入 ${importedCount} 个标注框，另有 ${skippedCount} 个越界或无效框被忽略。`);
+    } else {
+      const batchTip = props.stepIds.length > 1 ? '，后续工步将恢复导入时的原始标注' : '';
+      proxy.$modal.msgSuccess(`VOC 标注导入成功，共加载 ${importedCount} 个标注框${batchTip}。`);
+    }
+  }
+};
+
+const openAnnotationTool = () => {
+  // 直接通过 window.location.href 触发自定义协议
+  window.location.href = 'annotationdebug://';
+
+  // 给用户一个反馈，因为唤起本地程序有时会有点慢
+  proxy.$modal.msgSuccess('正在尝试唤起调试程序...');
 };
 
 const openCameraDialog = async () => {
@@ -680,6 +1015,10 @@ const onMouseUp = () => {
   if (!isDrawingMode.value || !isMouseDown || props.packageFlag) return;
   isMouseDown = false;
   if (activeRect.width < 5 || activeRect.height < 5) { canvas.value.remove(activeRect); activeRect = null; return; }
+  annotationDialogMode.value = 'create';
+  editingAnnotationId.value = null;
+  labelText.value = '';
+  remark.value = '';
   dialogVisible.value = true;
   nextTick(() => { inputRef.value?.focus(); });
 };
@@ -706,10 +1045,69 @@ const removePackageInfo = (index) => {
   packageList.value.splice(index, 1);
 };
 
-const confirmLabel = () => {
-  if (!labelText.value) return proxy.$modal.msgWarning('请输入标签');
+const openEditAnnotation = (item) => {
+  if (!item?.id) return;
 
-  if (!remark) remark.value = '';
+  annotationDialogMode.value = 'edit';
+  editingAnnotationId.value = item.id;
+  labelText.value = item.label || '';
+  remark.value = item.remark || '';
+
+  const target = canvas.value?.getObjects().find(obj => obj.id === item.id);
+  if (target) {
+    canvas.value.setActiveObject(target);
+    canvas.value.requestRenderAll();
+  }
+
+  dialogVisible.value = true;
+  nextTick(() => { inputRef.value?.focus(); });
+};
+
+const resetAnnotationDialog = () => {
+  annotationDialogMode.value = 'create';
+  editingAnnotationId.value = null;
+  labelText.value = '';
+  remark.value = '';
+};
+
+const confirmLabel = () => {
+  const normalizedLabel = String(labelText.value || '').trim();
+  const normalizedRemark = String(remark.value || '').trim();
+  if (!normalizedLabel) return proxy.$modal.msgWarning('请输入标签');
+
+  if (annotationDialogMode.value === 'edit') {
+    const annotation = annotationList.value.find(item => item.id === editingAnnotationId.value);
+    const target = canvas.value?.getObjects().find(obj => obj.id === editingAnnotationId.value);
+
+    if (!annotation || !target) {
+      proxy.$modal.msgWarning('未找到对应标注，可能已被删除');
+      dialogVisible.value = false;
+      resetAnnotationDialog();
+      return;
+    }
+
+    annotation.label = normalizedLabel;
+    annotation.remark = normalizedRemark;
+    target.set({
+      customData: {
+        ...(target.customData || {}),
+        label: normalizedLabel,
+        remark: normalizedRemark
+      }
+    });
+    target.setCoords();
+    canvas.value.requestRenderAll();
+
+    dialogVisible.value = false;
+    resetAnnotationDialog();
+    proxy.$modal.msgSuccess('标注信息已更新');
+    return;
+  }
+
+  if (!activeRect) {
+    proxy.$modal.msgWarning('未找到待添加的标注框');
+    return;
+  }
 
   const uniqueId = `rect_${Date.now()}`;
 
@@ -717,13 +1115,13 @@ const confirmLabel = () => {
     id: uniqueId,
     selectable: true,
     evented: true,
-    customData: { label: labelText.value, remark: remark.value }
+    customData: { label: normalizedLabel, remark: normalizedRemark }
   });
 
   annotationList.value.push({
     id: uniqueId,
-    label: labelText.value,
-    remark: remark.value
+    label: normalizedLabel,
+    remark: normalizedRemark
   });
 
   stepCount.value += 1;
@@ -731,34 +1129,97 @@ const confirmLabel = () => {
   canvas.value.renderAll();
 
   dialogVisible.value = false;
-  remark.value = '';
   activeRect = null;
+  resetAnnotationDialog();
 };
 
 const removeAnnotation = (index, id) => {
   annotationList.value.splice(index, 1);
+  selectedAnnotationIds.value = selectedAnnotationIds.value.filter(itemId => itemId !== id);
+  if (hoveredAnnotationId.value === id) hoveredAnnotationId.value = null;
+
   const objects = canvas.value.getObjects();
   const objToRemove = objects.find(obj => obj.id === id);
   if (objToRemove) {
     canvas.value.remove(objToRemove);
     canvas.value.requestRenderAll();
   }
+  stepCount.value = annotationList.value.length + 1;
 };
 
-const highlightAnnotation = (id, isHover) => {
-  const obj = canvas.value.getObjects().find(o => o.id === id);
+const toggleAnnotationSelection = (id, checked) => {
+  if (checked) {
+    if (!selectedAnnotationIds.value.includes(id)) selectedAnnotationIds.value.push(id);
+  } else {
+    selectedAnnotationIds.value = selectedAnnotationIds.value.filter(itemId => itemId !== id);
+  }
+};
+
+const toggleSelectAllAnnotations = (checked) => {
+  selectedAnnotationIds.value = checked ? annotationList.value.map(item => item.id) : [];
+};
+
+const removeSelectedAnnotations = async () => {
+  if (selectedAnnotationIds.value.length === 0) return;
+
+  try {
+    await proxy.$modal.confirm(
+        `确定删除选中的 ${selectedAnnotationIds.value.length} 个标注吗？`,
+        '批量删除确认',
+        { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
+    );
+  } catch (e) {
+    return;
+  }
+
+  const idSet = new Set(selectedAnnotationIds.value);
+  canvas.value.getObjects().forEach(obj => {
+    if (obj.id && idSet.has(obj.id)) canvas.value.remove(obj);
+  });
+  annotationList.value = annotationList.value.filter(item => !idSet.has(item.id));
+  selectedAnnotationIds.value = [];
+  if (hoveredAnnotationId.value && idSet.has(hoveredAnnotationId.value)) hoveredAnnotationId.value = null;
+  stepCount.value = annotationList.value.length + 1;
+  canvas.value.discardActiveObject();
+  canvas.value.requestRenderAll();
+};
+
+const setCanvasObjectHighlight = (id, isHover) => {
+  const obj = canvas.value?.getObjects().find(o => o.id === id);
   if (obj) {
-    obj.set('strokeWidth', isHover ? 2 : 1);
+    obj.set('strokeWidth', isHover ? 3 : 1);
     obj.set('stroke', isHover ? '#409EFF' : 'red');
     canvas.value.requestRenderAll();
   }
 };
 
+const highlightAnnotation = (id, isHover) => {
+  hoveredAnnotationId.value = isHover ? id : (hoveredAnnotationId.value === id ? null : hoveredAnnotationId.value);
+  setCanvasObjectHighlight(id, isHover);
+};
+
+const handleCanvasObjectMouseOver = (opt) => {
+  const id = opt?.target?.id;
+  if (!id) return;
+  hoveredAnnotationId.value = id;
+  setCanvasObjectHighlight(id, true);
+};
+
+const handleCanvasObjectMouseOut = (opt) => {
+  const id = opt?.target?.id;
+  if (!id) return;
+  if (hoveredAnnotationId.value === id) hoveredAnnotationId.value = null;
+  setCanvasObjectHighlight(id, false);
+};
+
 const cancelAnnotation = () => {
-  if (activeRect) { canvas.value.remove(activeRect); canvas.value.renderAll(); }
+  if (annotationDialogMode.value === 'create' && activeRect) {
+    canvas.value.remove(activeRect);
+    canvas.value.renderAll();
+    activeRect = null;
+  }
   dialogVisible.value = false;
-  remark.value = '';
-  activeRect = null;
+  resetAnnotationDialog();
 };
 
 const clearCanvasAnnotations = () => {
@@ -766,11 +1227,18 @@ const clearCanvasAnnotations = () => {
   const objects = canvas.value.getObjects();
   objects.forEach(obj => canvas.value.remove(obj));
   annotationList.value = [];
+  selectedAnnotationIds.value = [];
+  hoveredAnnotationId.value = null;
   stepCount.value = 1;
   canvas.value.requestRenderAll();
 };
 
+const clearCurrentAnnotations = () => {
+  clearCanvasAnnotations();
+};
+
 const uploadToMinio = async () => {
+
   // 根据不同模式走不同的检验规则
   if (props.packageFlag) {
     if (packageList.value.length === 0) return proxy.$modal.msgWarning('请先录入包装信息！');
@@ -933,7 +1401,7 @@ const dataURLtoBlob = (dataurl) => {
 };
 
 function handleLabelDialogClose(){
-  labelText.value = ''
+  resetAnnotationDialog();
 }
 </script>
 
@@ -961,13 +1429,17 @@ function handleLabelDialogClose(){
 
 .annotation-list-wrapper {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }
 
 .annotation-card {
   height: 600px;
-  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #e4e7ed;
+  border-radius: 10px;
+  background: #fff;
 }
 
 .card-header {
@@ -977,29 +1449,339 @@ function handleLabelDialogClose(){
   font-weight: bold;
 }
 
+/* 标注信息面板 */
+.annotation-info-card {
+  box-shadow: 0 8px 24px rgba(31, 45, 61, 0.06);
+}
+
+.annotation-info-card :deep(.el-card__header) {
+  padding: 16px 16px 14px;
+  border-bottom: 1px solid #edf0f5;
+  background: linear-gradient(180deg, #fbfdff 0%, #ffffff 100%);
+}
+
+.annotation-info-card :deep(.el-card__body) {
+  height: calc(100% - 67px);
+  min-height: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.annotation-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel-heading-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.panel-heading-mark {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #409eff, #79bbff);
+  box-shadow: 0 5px 12px rgba(64, 158, 255, 0.24);
+}
+
+.panel-heading-copy {
+  min-width: 0;
+}
+
+.panel-heading-title {
+  color: #303133;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 22px;
+}
+
+.panel-heading-subtitle {
+  margin-top: 2px;
+  color: #909399;
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.annotation-count-badge {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 5px 9px;
+  color: #606266;
+  font-size: 11px;
+  border: 1px solid #d9ecff;
+  border-radius: 999px;
+  background: #ecf5ff;
+}
+
+.annotation-count-badge strong {
+  color: #409eff;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.annotation-batch-toolbar {
+  height: 52px;
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  box-sizing: border-box;
+  border-bottom: 1px solid #edf0f5;
+  background: #fafbfc;
+}
+
+.batch-select-area {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selection-summary {
+  padding-left: 8px;
+  color: #909399;
+  font-size: 12px;
+  white-space: nowrap;
+  border-left: 1px solid #dcdfe6;
+}
+
+.selection-summary strong {
+  color: #409eff;
+  font-weight: 700;
+}
+
+.annotation-scrollbar {
+  flex: 1;
+  min-height: 0;
+  background: #f7f9fc;
+}
+
+.annotation-scrollbar :deep(.el-scrollbar__wrap) {
+  overflow-x: hidden;
+}
+
+.annotation-list-content {
+  padding: 10px;
+}
+
 .annotation-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 10px;
-  border-bottom: 1px solid #ebeef5;
-  transition: background-color 0.3s;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.annotation-item:hover {
-  background-color: #f5f7fa;
+
+/* 包装信息面板继续沿用紧凑列表，避免被标注卡片样式影响 */
+.annotation-card:not(.annotation-info-card) .annotation-item {
+  padding: 12px 10px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.annotation-card:not(.annotation-info-card) .annotation-item:hover {
+  background: #f5f7fa;
+}
+
+.annotation-info-item {
+  position: relative;
+  min-height: 68px;
+  margin-bottom: 8px;
+  padding: 10px 8px 10px 10px;
+  box-sizing: border-box;
+  border: 1px solid #e4e7ed;
+  border-radius: 9px;
+  background: #fff;
+  cursor: default;
+}
+
+.annotation-info-item:last-child {
+  margin-bottom: 0;
+}
+
+.annotation-info-item:hover,
+.annotation-info-item.is-highlighted {
+  border-color: #a0cfff;
+  background: #f5faff;
+  box-shadow: 0 5px 14px rgba(64, 158, 255, 0.11);
+  transform: translateY(-1px);
+}
+
+.annotation-info-item.is-highlighted::before {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: -1px;
+  width: 3px;
+  content: '';
+  border-radius: 0 3px 3px 0;
+  background: #409eff;
+}
+
+.annotation-info-item.is-selected {
+  border-color: #b3d8ff;
+  background: #ecf5ff;
+}
+
+.annotation-info-item.is-selected.is-highlighted {
+  border-color: #409eff;
+}
+
+.annotation-checkbox {
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.annotation-sequence {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 9px;
+  color: #909399;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border-radius: 7px;
+  background: #f0f2f5;
+}
+
+.annotation-info-item.is-highlighted .annotation-sequence,
+.annotation-info-item.is-selected .annotation-sequence {
+  color: #409eff;
+  background: #d9ecff;
 }
 
 .item-info {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 5px;
-  flex: 1;
   overflow: hidden;
 }
 
-.item-label { font-weight: bold; }
-.item-remark { font-size: 13px; color: #606266; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.annotation-item-info {
+  min-width: 0;
+  padding-right: 4px;
+}
+
+.annotation-item-topline {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.annotation-label-tag {
+  max-width: 100%;
+  font-weight: 600;
+}
+
+.annotation-label-tag :deep(.el-tag__content) {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.locating-text {
+  flex: 0 0 auto;
+  color: #409eff;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.item-label {
+  font-weight: bold;
+}
+
+.item-remark {
+  color: #606266;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.annotation-remark {
+  line-height: 18px;
+}
+
+.annotation-remark.is-empty {
+  color: #b1b3b8;
+  font-style: italic;
+}
+
+.annotation-action-group {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin-left: 3px;
+}
+
+.annotation-edit-button,
+.annotation-delete-button {
+  flex: 0 0 auto;
+  opacity: 0.32;
+  transition: opacity 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.annotation-edit-button:hover,
+.annotation-delete-button:hover {
+  transform: scale(1.06);
+}
+
+.annotation-info-item:hover .annotation-edit-button,
+.annotation-info-item:hover .annotation-delete-button,
+.annotation-info-item.is-highlighted .annotation-edit-button,
+.annotation-info-item.is-highlighted .annotation-delete-button,
+.annotation-info-item.is-selected .annotation-edit-button,
+.annotation-info-item.is-selected .annotation-delete-button {
+  opacity: 1;
+}
+
+.annotation-empty {
+  height: 100%;
+  padding-top: 70px;
+  box-sizing: border-box;
+}
+
+.empty-description {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.empty-description strong {
+  color: #606266;
+  font-size: 14px;
+}
+
+.empty-description span {
+  color: #a8abb2;
+  font-size: 12px;
+}
 
 .camera-preview-box { width: 100%; height: 500px; background-color: #000; display: flex; justify-content: center; align-items: center; border-radius: 4px; overflow: hidden; margin-bottom: 20px; }
 .live-stream { width: 100%; height: 100%; object-fit: contain; }

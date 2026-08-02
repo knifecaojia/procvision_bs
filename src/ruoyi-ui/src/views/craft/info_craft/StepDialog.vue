@@ -395,6 +395,10 @@ function handleDelete(row) {
 }
 
 async function handleGenerateFinalStep() {
+  const isExistFinalStep = stepList.value.find(s => s.code === '99')
+  if (isExistFinalStep){
+    return proxy.$modal.msgWarning("当前已存在终检步骤，若要重新生成请删除旧的终检步骤")
+  }
   const normalSteps = stepList.value.filter(s => s.code !== '99' && s.code !== '-1' && s.code !== '88');
   if (normalSteps.length === 0) {
     return proxy.$modal.msgWarning("当前没有任何工步，无法生成终检！");

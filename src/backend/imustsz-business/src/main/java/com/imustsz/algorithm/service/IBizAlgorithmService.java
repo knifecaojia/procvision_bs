@@ -61,4 +61,6 @@ public interface IBizAlgorithmService
     public int deleteBizAlgorithmById(Long id);
 
     List<AlgorithmVO> getAlgorithmVOList() throws Exception;
+
+    List<BizAlgorithm> getAllAlg() throws Exception;
 }

@@ -158,7 +158,7 @@ import {
   updateProcess
 } from "@/api/craft/process.js";
 import StepDialog from "@/views/craft/info_craft/StepDialog.vue";
-import {listAlgorithm} from "@/api/algorithm/algorithm.js";
+import {getAllAlg, listAlgorithm} from "@/api/algorithm/algorithm.js";
 import {changeStatus} from "@/api/craft/craft.js";
 import LabelDialog from "@/views/craft/info_craft/LabelDialog.vue";
 
@@ -355,7 +355,7 @@ function handleProcessDelete(row) {
 }
 
 function getAlgList() {
-  listAlgorithm().then(response => {
+  getAllAlg().then(response => {
     algList.value = response.rows
   })
 }
