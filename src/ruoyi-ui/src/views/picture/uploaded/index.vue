@@ -68,6 +68,7 @@
                 class="submit-btn"
                 @click="submitData"
                 :loading="submitting"
+                :disabled="processing || watermarking"
                 icon="UploadFilled"
             >
               保存并上传
@@ -102,7 +103,7 @@
               </div>
 
               <el-radio-group v-model="mode" size="small" @change="handleModeChange"
-                              :disabled="!currentBarcode || processing">
+                              :disabled="!currentBarcode || processing || watermarking">
                 <el-radio-button label="camera">摄像头拍照</el-radio-button>
                 <el-radio-button label="upload">本地上传</el-radio-button>
               </el-radio-group>
@@ -132,7 +133,7 @@
               <div class="preview-box" v-if="previewImage">
                 <img :src="previewImage" class="captured-img"/>
                 <div class="re-capture-overlay">
-                  <el-button type="warning" icon="Refresh" round @click="clearCapture" :disabled="processing">重拍
+                  <el-button type="warning" icon="Refresh" round @click="clearCapture" :disabled="processing || watermarking">重拍
                   </el-button>
                 </div>
               </div>
@@ -165,35 +166,76 @@
               <div v-else class="preview-box">
                 <img :src="previewImage" class="captured-img"/>
                 <div style="text-align: center; margin-top: 10px; margin-right: 10px">
-                  <el-button type="text" icon="Delete" @click="clearCapture" :disabled="processing">清除重选</el-button>
+                  <el-button type="text" icon="Delete" @click="clearCapture" :disabled="processing || watermarking">清除重选</el-button>
                 </div>
               </div>
             </div>
 
             <transition name="el-fade-in">
-              <div class="algorithm-toolbar" v-if="previewImage">
-                <div class="toolbar-title">
-                  <el-icon>
-                    <MagicStick/>
-                  </el-icon>
-                  图像预处理与特征提取
+              <div v-if="previewImage" class="image-tools">
+                <div class="algorithm-toolbar">
+                  <div class="toolbar-title">
+                    <el-icon>
+                      <MagicStick/>
+                    </el-icon>
+                    图像预处理与特征提取
+                  </div>
+                  <div class="toolbar-actions">
+                    <el-button-group>
+                      <el-button type="primary" plain size="small" @click="processImage('GRAY')" :loading="processing"
+                                 :disabled="watermarking"
+                                 icon="Picture">灰度化
+                      </el-button>
+                      <el-button type="primary" plain size="small" @click="processImage('BLUR')" :loading="processing"
+                                 :disabled="watermarking" icon="Filter">高斯去噪
+                      </el-button>
+                      <el-button type="primary" plain size="small" @click="processImage('EDGE_CANNY')"
+                                 :loading="processing" :disabled="watermarking" icon="Scissor">边缘提取
+                      </el-button>
+                      <el-button type="warning" plain size="small" @click="openCropperDialog"
+                                 :disabled="processing || watermarking" icon="Crop">手动裁剪</el-button>
+                    </el-button-group>
+                    <el-button type="info" plain size="small" @click="resetOriginalImage"
+                               :disabled="!isProcessed || processing || watermarking" icon="RefreshLeft"
+                               style="margin-left: 10px;">
+                      恢复原图
+                    </el-button>
+                  </div>
                 </div>
-                <div class="toolbar-actions">
-                  <el-button-group>
-                    <el-button type="primary" plain size="small" @click="processImage('GRAY')" :loading="processing"
-                               icon="Picture">灰度化
-                    </el-button>
-                    <el-button type="primary" plain size="small" @click="processImage('BLUR')" :loading="processing"
-                               icon="Filter">高斯去噪
-                    </el-button>
-                    <el-button type="primary" plain size="small" @click="processImage('EDGE_CANNY')"
-                               :loading="processing" icon="Scissor">边缘提取
-                    </el-button>
-                    <el-button type="warning" plain size="small" @click="openCropperDialog" :disabled="processing" icon="Crop">手动裁剪</el-button>
-                  </el-button-group>
-                  <el-button type="info" plain size="small" @click="resetOriginalImage"
-                             :disabled="!isProcessed || processing" icon="RefreshLeft" style="margin-left: 10px;">
-                    恢复原图
+
+                <div class="watermark-toolbar">
+                  <div class="toolbar-title watermark-title">图片水印</div>
+                  <el-input
+                      v-model="watermarkText"
+                      size="small"
+                      maxlength="100"
+                      show-word-limit
+                      clearable
+                      placeholder="请输入水印内容"
+                      class="watermark-input"
+                      :disabled="watermarking || processing"
+                      @keyup.enter="applyWatermark"
+                  />
+                  <el-button
+                      type="success"
+                      plain
+                      size="small"
+                      icon="EditPen"
+                      :loading="watermarking"
+                      :disabled="processing || !watermarkText.trim()"
+                      @click="applyWatermark"
+                  >
+                    {{ hasWatermark ? '更新水印' : '添加水印' }}
+                  </el-button>
+                  <el-button
+                      v-if="hasWatermark"
+                      type="danger"
+                      link
+                      size="small"
+                      :disabled="watermarking || processing"
+                      @click="removeWatermark"
+                  >
+                    移除水印
                   </el-button>
                 </div>
               </div>
@@ -260,6 +302,13 @@ const previewImage = ref('');     // 预览 URL
 // 新增：算法处理状态
 const processing = ref(false);
 const isProcessed = ref(false); // 标记当前展示的是否为处理后的图片
+
+// 水印相关状态：默认使用扫码内容，也允许手动修改
+const watermarkText = ref('');
+const watermarking = ref(false);
+const hasWatermark = ref(false);
+const watermarkSourceFile = ref(null); // 保存添加水印前的文件，更新水印时避免重复叠加
+const watermarkSourceProcessedState = ref(false);
 
 // 相机相关 Ref
 const videoRef = ref(null);
@@ -424,6 +473,7 @@ const confirmCrop = () => {
     // 3. 更新当前文件，使其可用于后续的 Canny 边缘检测等算法
     originalFile.value = croppedFile;
     resultFile.value = croppedFile;
+    clearWatermarkState();
     isProcessed.value = true;
 
     cropDialogVisible.value = false;
@@ -467,6 +517,7 @@ const handleScan = () => {
   }
 
   currentBarcode.value = barcodeInput.value;
+  watermarkText.value = currentBarcode.value;
   proxy.$modal.msgSuccess('条码锁定，请采集图像');
 
   // 锁定条码后立即枚举设备，让用户在打开摄像头前就能选择 USB 摄像头
@@ -557,6 +608,7 @@ const takePhoto = () => {
     rawCaptureFile.value = file; // 🌟 存入底片
     originalFile.value = file;
     resultFile.value = file;
+    clearWatermarkState();
     previewImage.value = URL.createObjectURL(blob);
     isProcessed.value = false;
 
@@ -565,9 +617,11 @@ const takePhoto = () => {
 };
 
 const clearCapture = () => {
+  rawCaptureFile.value = null;
   originalFile.value = null;
   resultFile.value = null;
   previewImage.value = '';
+  clearWatermarkState();
   isProcessed.value = false;
   if (mode.value === 'camera' && !isCameraOpen.value) {
     startCamera();
@@ -583,6 +637,7 @@ const handleFileChange = (file) => {
   rawCaptureFile.value = rawFile; // 🌟 存入底片
   originalFile.value = rawFile;
   resultFile.value = rawFile;
+  clearWatermarkState();
   previewImage.value = URL.createObjectURL(rawFile);
   isProcessed.value = false;
 };
@@ -600,7 +655,7 @@ const handleModeChange = (val) => {
 const processImage = async (algorithmType) => {
   // 1. 逻辑锁：如果正在处理中，直接拦截，防止DOM未及时禁用导致的连点
 
-  if (processing.value) {
+  if (processing.value || watermarking.value) {
     // 可选：给个轻提示，或者直接 return 默默拦截
     // proxy.$modal.msgWarning('图像处理中，请稍候...');
     return;
@@ -621,6 +676,7 @@ const processImage = async (algorithmType) => {
 
     const newFilename = originalFile.value.name.replace(/\.[^/.]+$/, "") + `_${algorithmType}.jpg`;
     resultFile.value = base64ToFile(base64Str, newFilename);
+    clearWatermarkState();
     isProcessed.value = true;
 
     proxy.$modal.msgSuccess('图像处理完成');
@@ -649,8 +705,111 @@ const resetOriginalImage = () => {
   if (!rawCaptureFile.value) return;
   originalFile.value = rawCaptureFile.value;
   resultFile.value = rawCaptureFile.value;
+  clearWatermarkState();
   previewImage.value = URL.createObjectURL(rawCaptureFile.value);
   isProcessed.value = false;
+};
+
+// 清理水印状态。图像经过裁剪、算法处理或重新选择后，水印需要重新添加。
+const clearWatermarkState = () => {
+  hasWatermark.value = false;
+  watermarkSourceFile.value = null;
+  watermarkSourceProcessedState.value = false;
+};
+
+const loadImageFromFile = (file) => {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('图片加载失败'));
+    };
+    image.src = objectUrl;
+  });
+};
+
+// 在图片右下角绘制半透明文字水印。
+// 更新水印时始终从 watermarkSourceFile 重新生成，避免多次点击造成重复叠加。
+const applyWatermark = async () => {
+  const text = watermarkText.value.trim();
+  if (!resultFile.value) return proxy.$modal.msgWarning('请先采集或上传图片');
+  if (!text) return proxy.$modal.msgWarning('请输入水印内容');
+  if (watermarking.value || processing.value) return;
+
+  watermarking.value = true;
+  try {
+    if (!hasWatermark.value || !watermarkSourceFile.value) {
+      watermarkSourceFile.value = resultFile.value;
+      watermarkSourceProcessedState.value = isProcessed.value;
+    }
+
+    const sourceFile = watermarkSourceFile.value;
+    const image = await loadImageFromFile(sourceFile);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = image.naturalWidth || image.width;
+    canvas.height = image.naturalHeight || image.height;
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    const padding = Math.max(16, Math.round(canvas.width * 0.02));
+    const maxTextWidth = canvas.width - padding * 2;
+    let fontSize = Math.max(18, Math.min(64, Math.round(canvas.width * 0.035)));
+
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.font = `600 ${fontSize}px "Microsoft YaHei", Arial, sans-serif`;
+
+    while (fontSize > 18 && ctx.measureText(text).width > maxTextWidth) {
+      fontSize -= 2;
+      ctx.font = `600 ${fontSize}px "Microsoft YaHei", Arial, sans-serif`;
+    }
+
+    // 使用描边和半透明填充，使水印在深色、浅色背景上都清晰可见。
+    ctx.lineWidth = Math.max(2, Math.round(fontSize * 0.08));
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.62)';
+    ctx.strokeText(text, canvas.width - padding, canvas.height - padding, maxTextWidth);
+    ctx.fillText(text, canvas.width - padding, canvas.height - padding, maxTextWidth);
+
+    const mimeType = sourceFile.type === 'image/png' ? 'image/png' : 'image/jpeg';
+    const extension = mimeType === 'image/png' ? 'png' : 'jpg';
+    const filename = sourceFile.name.replace(/\.[^/.]+$/, '') + `_watermark.${extension}`;
+
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob(
+          value => value ? resolve(value) : reject(new Error('水印图片生成失败')),
+          mimeType,
+          mimeType === 'image/jpeg' ? 0.95 : undefined
+      );
+    });
+
+    resultFile.value = new File([blob], filename, {type: mimeType});
+    previewImage.value = URL.createObjectURL(blob);
+    hasWatermark.value = true;
+    isProcessed.value = true;
+    proxy.$modal.msgSuccess('水印已添加');
+  } catch (e) {
+    console.error(e);
+    proxy.$modal.msgError('添加水印失败');
+  } finally {
+    watermarking.value = false;
+  }
+};
+
+const removeWatermark = () => {
+  if (!watermarkSourceFile.value) return;
+  resultFile.value = watermarkSourceFile.value;
+  previewImage.value = URL.createObjectURL(watermarkSourceFile.value);
+  isProcessed.value = watermarkSourceProcessedState.value;
+  clearWatermarkState();
+  proxy.$modal.msgSuccess('水印已移除');
 };
 
 // 工具方法：Base64 转 File 对象
@@ -739,9 +898,12 @@ const submitData = async () => {
 const resetFlow = () => {
   barcodeInput.value = '';
   currentBarcode.value = '';
+  rawCaptureFile.value = null;
   originalFile.value = null;
   resultFile.value = null;
   previewImage.value = '';
+  watermarkText.value = '';
+  clearWatermarkState();
   isProcessed.value = false;
   focusInput();
 };
@@ -773,7 +935,7 @@ const resetFlow = () => {
 }
 
 .media-container {
-  height: 550px; /* 增加了一点高度以容纳操作栏 */
+  height: 620px; /* 为图像处理和水印操作栏预留空间 */
   display: flex;
   flex-direction: column;
 }
@@ -888,13 +1050,18 @@ const resetFlow = () => {
 
 .re-capture-overlay {
   position: absolute;
-  bottom: 20px;
+  top: 20px;
   right: 20px;
+  z-index: 25;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
 }
 
-/* 新增：算法工具栏样式 */
-.algorithm-toolbar {
+/* 图像处理与水印工具栏 */
+.image-tools {
   margin-top: 15px;
+}
+
+.algorithm-toolbar {
   padding: 10px 15px;
   background-color: #f0f2f5;
   border-radius: 6px;
@@ -902,6 +1069,27 @@ const resetFlow = () => {
   justify-content: space-between;
   align-items: center;
   border: 1px solid #e4e7ed;
+}
+
+.watermark-toolbar {
+  margin-top: 10px;
+  padding: 10px 15px;
+  background-color: #f0f9eb;
+  border: 1px solid #e1f3d8;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.watermark-title {
+  flex: 0 0 auto;
+  color: #67c23a;
+}
+
+.watermark-input {
+  flex: 1;
+  min-width: 180px;
 }
 
 .toolbar-title {
