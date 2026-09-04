@@ -1,6 +1,6 @@
 <template>
   <div>
-    <el-dialog title="工步信息" v-model="stepOpen" width="900px" @close="onClose">
+    <el-dialog title="工步信息" v-model="stepOpen" width="950px" @close="onClose">
       <el-row :gutter="10" class="mb8">
         <el-col :span="1.5">
           <el-button
@@ -48,10 +48,23 @@
         </el-col>
       </el-row>
 
-      <el-table v-loading="loading" :data="stepList" height="600px" @selection-change="handleSelectionChange">
+      <el-table v-loading="loading" :data="stepList" height="650px" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center"/>
         <el-table-column label="编号" align="center" prop="code"/>
         <el-table-column label="名称" align="center" prop="name"/>
+
+        <!-- 易错工步行内快速切换 -->
+<!--        <el-table-column label="易错物料" align="center" prop="errMaterial" width="100">-->
+<!--          <template #default="scope">-->
+<!--            <el-switch-->
+<!--                v-model="scope.row.errMaterial"-->
+<!--                :active-value="1"-->
+<!--                :inactive-value="0"-->
+<!--                :before-change="() => handleBeforeErrMaskChange(scope.row)"-->
+<!--            />-->
+<!--          </template>-->
+<!--        </el-table-column>-->
+
         <el-table-column label="引导图" align="center">
           <template #default="scope">
             <el-tag type="danger" v-if="(scope.row.code !== '78' && scope.row.code !== '88') && (scope.row.guideMapUrl === '' || scope.row.guideMapUrl === null) ">未绑定</el-tag>
@@ -120,6 +133,15 @@
         <el-form-item label="名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入名称"/>
         </el-form-item>
+<!--        <el-form-item label="易错工步" prop="errMaterial">-->
+<!--          <el-switch-->
+<!--              v-model="form.errMaterial"-->
+<!--              :active-value="1"-->
+<!--              :inactive-value="0"-->
+<!--              active-text="是"-->
+<!--              inactive-text="否"-->
+<!--          />-->
+<!--        </el-form-item>-->
         <el-form-item label="内容">
           <el-input type="textarea" v-model="form.content" placeholder="请输入内容"/>
         </el-form-item>
@@ -217,9 +239,31 @@ function reset() {
     name: null,
     content: null,
     processId: null,
+    // errMaterial: 0 // 默认值设为 0 (非易错)
   }
   proxy.resetForm("stepRef")
 }
+
+// 行内直接修改 errMaterial 状态并同步到后台
+// function handleBeforeErrMaskChange(row) {
+//   return new Promise((resolve, reject) => {
+//     // 计算点击后的目标值 (当前是1则变为0，反之亦然)
+//     const targetVal = row.errMaterial === 1 ? 0 : 1;
+//     const isErr = targetVal === 1;
+//     const statusText = isErr ? "已标记为易错工步" : "已取消易错工步";
+//
+//     updateStep({
+//       id: row.id,
+//       errMaterial: targetVal
+//     }).then(() => {
+//       proxy.$modal.msgSuccess(`${row.name || '工步'}${statusText}`);
+//       resolve(true); // 返回 true 允许开关切换状态
+//     }).catch(() => {
+//       proxy.$modal.msgError("状态更新失败");
+//       reject(false); // 失败时自动拦截，开关保持原样
+//     });
+//   });
+// }
 
 function handleMoveUp(index, row) {
   const prevRow = stepList.value[index - 1];
@@ -232,7 +276,6 @@ function handleMoveDown(index, row) {
 }
 
 async function swapOrder(row1, row2) {
-  // 交换 sort 属性，而非 code，保证工步的业务属性不变
   const tempSort = row1.sort;
   row1.sort = row2.sort;
   row2.sort = tempSort;
@@ -273,6 +316,8 @@ function handleUpdate(row) {
   getStep(_id).then(response => {
     form.value = response.data
     form.value.guideMapUrl = null
+    // 保证 errMaterial 有确切的数值 (兼容 null / undefined)
+    // form.value.errMaterial = (response.data.errMaterial === 1 || response.data.errMaterial === true) ? 1 : 0;
     open.value = true
     title.value = "修改工步信息"
   })
@@ -314,7 +359,6 @@ async function handlePackage() {
     if (existingPackageStep) {
       packageStepId = existingPackageStep.id;
     } else {
-      // 动态计算当前最大的 sort，确保排序连续性
       const maxSort = stepList.value.length > 0
           ? Math.max(...stepList.value.map(s => Number(s.sort) || 0))
           : 0;
@@ -324,7 +368,7 @@ async function handlePackage() {
         name: '包装',
         content: '包装检测',
         processId: props.processId,
-        sort: maxSort + 1 // 显式传递计算好的 sort
+        sort: maxSort + 1
       };
 
       await addStep(stepData);
@@ -337,7 +381,6 @@ async function handlePackage() {
     proxy.$modal.closeLoading();
     proxy.$modal.msgSuccess("包装工步生成成功！");
 
-    // 唤起标注弹窗并开启包装模式
     packageFlag.value = true;
     targetStepIds.value = [packageStepId];
     labelVisible.value = true;
@@ -357,7 +400,6 @@ async function handleScratch() {
     if (existingScratchStep) {
       proxy.$modal.msgWarning("已存在划痕检测工步！");
     } else {
-      // 动态计算当前最大的 sort，确保排序连续性
       const maxSort = stepList.value.length > 0
           ? Math.max(...stepList.value.map(s => Number(s.sort) || 0))
           : 0;
@@ -368,7 +410,7 @@ async function handleScratch() {
         content: '划痕检测',
         guideMapUrl: null,
         processId: props.processId,
-        sort: maxSort + 1 // 显式传递计算好的 sort
+        sort: maxSort + 1
       };
 
       await addStep(stepData);
@@ -480,7 +522,7 @@ async function handleGenerateFinalStep() {
       const step99 = stepList.value.find(s => s.code === '99');
       if (step99) {
         borrowImageUrl.value = fullImageUrl;
-        packageFlag.value = false; // 关闭包装模式
+        packageFlag.value = false;
         handleBind(step99);
       }
     }).catch(() => {});
@@ -511,7 +553,7 @@ function onClose() {
 }
 
 function handleBind(row) {
-  packageFlag.value = false; // 普通绑定关闭包装模式
+  packageFlag.value = false;
   targetStepIds.value = [row.id]
   packageFlag.value = row.code === '88'
   labelVisible.value = true
@@ -519,7 +561,7 @@ function handleBind(row) {
 
 function handleBatchBind() {
   if (ids.value.length === 0) return;
-  packageFlag.value = false; // 批量绑定关闭包装模式
+  packageFlag.value = false;
   targetStepIds.value = [...ids.value]
   labelVisible.value = true
 }

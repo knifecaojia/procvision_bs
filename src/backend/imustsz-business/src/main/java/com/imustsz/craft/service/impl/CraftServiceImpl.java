@@ -14,6 +14,7 @@ import com.imustsz.craft.domain.Process;
 import com.imustsz.craft.mapper.BizStepMapper;
 import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
+import com.imustsz.craft.service.IBizCraftFilterService;
 import com.imustsz.craft.service.ICraftService;
 import com.imustsz.craft.service.IProcessService;
 import com.imustsz.framework.aspectj.AutoFill;
@@ -51,6 +52,9 @@ public class CraftServiceImpl implements ICraftService {
 
     @Autowired
     private BizWorkOrderMapper bizWorkOrderMapper;
+
+    @Autowired
+    private IBizCraftFilterService craftFilterService;
 
     /**
      * 查询工艺信息
@@ -142,7 +146,7 @@ public class CraftServiceImpl implements ICraftService {
             ProcessInfo crackInfo = CrackProcess.getProcessInfo();
             List<Operation> operationList = CrackProcess.getOperationList();
 
-            Craft cf = craftMapper.selectCraftByCodeAndVersion(crackInfo.getProcessNo(), crackInfo.getProcessVersion());
+            Craft cf = craftMapper.selectCraftByCodeAndVersion(crackInfo.getProcessNo(), crackInfo.getProcessVersion(), crackInfo.getProductionOrderNo());
 
             if (cf != null)
                 throw new RuntimeException("该工艺已存在");
@@ -162,6 +166,7 @@ public class CraftServiceImpl implements ICraftService {
             //导入工序信息
             operationList.forEach(processMMO -> {
                 OperationInfo processInfo = processMMO.getOperationInfo();
+
                 Process process = new Process();
                 process.setCode(processInfo.getOperationNo());
                 process.setName(processInfo.getOperationName());
@@ -172,14 +177,27 @@ public class CraftServiceImpl implements ICraftService {
                 processMapper.insertProcess(process);
 
                 //导入工步信息
+                int processType = -1;
+                if (crackInfo.getProcessNo().contains("TX"))
+                    processType = 0;
+                else if (crackInfo.getProcessNo().contains("BJ"))
+                    processType = 1;
+                else if (crackInfo.getProcessNo().contains("MZ"))
+                    processType = 2;
+
+                int finalProcessType = processType;
+
                 processMMO.getStepList().forEach(step -> {
-                    BizStep bizStep = new BizStep();
-                    bizStep.setProcessId(process.getId());
-                    bizStep.setCode(step.getStepNo());
-                    bizStep.setSort(Integer.parseInt(step.getStepNo()));
-                    bizStep.setName(step.getStepName());
-                    bizStep.setContent(step.getStepContent());
-                    bizStepMapper.insertBizStep(bizStep);
+
+                    if (!craftFilterService.isStepFiltered(finalProcessType, processInfo.getOperationName(), step.getStepName())) {
+                        BizStep bizStep = new BizStep();
+                        bizStep.setProcessId(process.getId());
+                        bizStep.setCode(step.getStepNo());
+                        bizStep.setSort(Integer.parseInt(step.getStepNo()));
+                        bizStep.setName(step.getStepName());
+                        bizStep.setContent(step.getStepContent());
+                        bizStepMapper.insertBizStep(bizStep);
+                    }
                 });
 
             });

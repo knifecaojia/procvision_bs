@@ -6,6 +6,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,6 +16,8 @@ import cn.hutool.core.util.XmlUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.github.pagehelper.PageHelper;
@@ -31,6 +34,8 @@ import com.imustsz.common.utils.sign.Base64;
 import com.imustsz.craft.domain.BizStep;
 import com.imustsz.craft.domain.Craft;
 import com.imustsz.craft.domain.Process;
+import com.imustsz.craft.domain.json.MaterialInfo;
+import com.imustsz.craft.domain.json.StepMaterialInfo;
 import com.imustsz.craft.mapper.BizStepMapper;
 import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
@@ -90,6 +95,9 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService {
     @Autowired
     private BizProcessRecordMapper bizProcessRecordMapper;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Value("${minio.bucketName}")
     private String bucketName;
 
@@ -139,7 +147,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService {
      */
     @Override
     public int insertBizWorkOrder(BizWorkOrder bizWorkOrder) {
-        Craft craft = craftMapper.selectCraftByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
+        Craft craft = craftMapper.selectCraftByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion(), bizWorkOrder.getProdOrderNo());
         if (craft == null)
             return -1;
         Process process = processMapper.selectProcessByCodeAndNameAndCraftId(bizWorkOrder.getProcessCode(), bizWorkOrder.getProcessName(), craft.getId());
@@ -301,7 +309,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService {
             workOrderVO.setTask_no(workOrder.getWorkOrderCode());
             workOrderVO.setCraft_no(workOrder.getCraftCode());
             workOrderVO.setCraft_version(workOrder.getCraftVersion());
-            Craft craft = craftMapper.selectCraftByCodeAndVersion(workOrder.getCraftCode(), workOrder.getCraftVersion());
+            Craft craft = craftMapper.selectCraftByCodeAndVersion(workOrder.getCraftCode(), workOrder.getCraftVersion(), workOrder.getProdOrderNo());
             workOrderVO.setCraft_name(craft.getName());
             workOrderVO.setProcess_code(workOrder.getProcessCode());
             workOrderVO.setProcess_name(workOrder.getProcessName());
@@ -312,6 +320,9 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService {
             workOrderVO.setProd_order_no(workOrder.getProdOrderNo());
 
             Process process = processMapper.selectProcessIdByCodeAndCraftId(workOrder.getProcessCode(), craft.getId());
+            workOrderVO.setProcess_desc(process.getDesc());
+            List<MaterialInfo> materialInfos = JSONUtil.toList(process.getProcessMaterialInfo(), MaterialInfo.class);
+            workOrderVO.setMaterial_list(materialInfos);
 
             List<StepVO> stepVOS = bizStepMapper.selectStepByProcessId(process.getId());
             stepVOS.forEach(stepVO -> {
@@ -354,7 +365,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService {
             workOrderVO.setTask_no(workOrder.getWorkOrderCode());
             workOrderVO.setCraft_no(workOrder.getCraftCode());
             workOrderVO.setCraft_version(workOrder.getCraftVersion());
-            Craft craft = craftMapper.selectCraftByCodeAndVersion(workOrder.getCraftCode(), workOrder.getCraftVersion());
+            Craft craft = craftMapper.selectCraftByCodeAndVersion(workOrder.getCraftCode(), workOrder.getCraftVersion(), workOrder.getProdOrderNo());
             workOrderVO.setCraft_name(craft.getName());
             workOrderVO.setProcess_code(workOrder.getProcessCode());
             workOrderVO.setProcess_name(workOrder.getProcessName());
@@ -539,7 +550,7 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService {
     @Override
     public StepVO getStepByWorkOrderCode(String workOrderCode, String stepCode) {
         BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCode(workOrderCode);
-        Craft craft = craftMapper.selectCraftByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
+        Craft craft = craftMapper.selectCraftByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion(), bizWorkOrder.getProdOrderNo());
         Process process = processMapper.selectProcessIdByCodeAndCraftId(bizWorkOrder.getProcessCode(), craft.getId());
         BizStep bizStep = bizStepMapper.selectBizStepByStepCodeAndProcessId(stepCode, process.getId());
 

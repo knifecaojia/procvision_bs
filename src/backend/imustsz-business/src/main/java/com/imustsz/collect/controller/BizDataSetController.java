@@ -7,12 +7,14 @@ import com.imustsz.common.core.controller.BaseController;
 import com.imustsz.common.core.domain.AjaxResult;
 import com.imustsz.common.core.page.TableDataInfo;
 import com.imustsz.common.enums.BusinessType;
+import com.imustsz.common.utils.file.FileUtils;
 import com.imustsz.common.utils.poi.ExcelUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 
 
@@ -63,7 +65,8 @@ public class BizDataSetController extends BaseController {
     @Log(title = "数据集", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody BizDataset BizDataset) {
-        return toAjax(BizDatasetService.insertBizDataset(BizDataset));
+        int rows = BizDatasetService.insertBizDataset(BizDataset);
+        return rows > 0 ? success(BizDataset) : error();
     }
 
     /**
@@ -84,5 +87,29 @@ public class BizDataSetController extends BaseController {
     @DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids) {
         return toAjax(BizDatasetService.deleteBizDatasetByIds(ids));
+    }
+
+    /**
+     * 下载数据集压缩包（包含原图、标注图、坐标信息和数据集清单）
+     */
+    @Log(title = "下载数据集", businessType = BusinessType.EXPORT)
+    @RequestMapping(value = "/download/{id}", method = {RequestMethod.GET, RequestMethod.POST})
+    public void download(@PathVariable Long id, HttpServletResponse response) throws IOException {
+        BizDataset dataset = BizDatasetService.selectBizDatasetById(id);
+        if (dataset == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "数据集不存在");
+            return;
+        }
+
+        response.setContentType("application/zip");
+        FileUtils.setAttachmentResponseHeader(response, safeFilename(dataset.getName()) + ".zip");
+        BizDatasetService.writeDatasetArchive(id, response.getOutputStream());
+    }
+
+    private String safeFilename(String filename) {
+        if (filename == null || filename.trim().isEmpty()) {
+            return "dataset";
+        }
+        return filename.replaceAll("[\\\\/:*?\"<>|]", "_");
     }
 }

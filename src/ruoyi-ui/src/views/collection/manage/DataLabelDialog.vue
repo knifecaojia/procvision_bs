@@ -1,5 +1,13 @@
 <template>
-  <el-dialog title="图片人工标注" v-model="labelVisible" width="1200px" :close-on-click-modal="false" @close="handleClose">
+  <el-dialog
+      title="图片人工标注"
+      v-model="labelVisible"
+      width="1200px"
+      :close-on-click-modal="false"
+      destroy-on-close
+      @opened="handleOpened"
+      @closed="handleClosed"
+  >
     <div class="annotator-container">
       <el-card class="toolbar">
         <el-space>
@@ -25,7 +33,7 @@
 
       <div class="main-workspace">
         <div class="canvas-wrapper" v-loading="canvasLoading" element-loading-text="正在加载原图...">
-          <canvas id="label-canvas"></canvas>
+          <canvas ref="canvasElement"></canvas>
         </div>
 
         <div class="annotation-list-wrapper">
@@ -75,39 +83,12 @@
       </template>
     </el-dialog>
 
-    <el-dialog
-        v-model="datasetDialogVisible"
-        title="选择保存的数据集"
-        width="400px"
-        append-to-body
-        :close-on-click-modal="false"
-    >
-      <el-form label-width="80px">
-        <el-form-item label="数据集">
-          <el-select v-model="selectedDatasetId" placeholder="请选择归属数据集" style="width: 100%">
-            <el-option
-                v-for="item in datasetOptions"
-                :key="item.id"
-                :label="item.name"
-                :value="item.id"
-            />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="datasetDialogVisible = false">返回修改</el-button>
-          <el-button type="primary" @click="submitFinalAnnotation" :loading="submitLoading">确认保存</el-button>
-        </span>
-      </template>
-    </el-dialog>
   </el-dialog>
 </template>
 
 <script setup>
-import { ref, watch, nextTick, getCurrentInstance } from 'vue';
+import { ref, onBeforeUnmount, getCurrentInstance } from 'vue';
 import { fabric } from 'fabric';
-import {listDataset} from "@/api/collection/dataset.js";
 import {getUploadUrl} from "@/api/algorithm/algorithm.js";
 import { updateData } from "@/api/collection/data" // 根据你的实际API引入
 import axios from "axios";
@@ -126,6 +107,7 @@ const labelVisible = defineModel();
 
 // 画布相关状态
 const canvas = ref(null);
+const canvasElement = ref(null);
 const isDrawingMode = ref(false);
 const canvasLoading = ref(false);
 const annotationList = ref([]);
@@ -136,15 +118,7 @@ const dialogVisible = ref(false);
 const labelText = ref('');
 const remark = ref('');
 
-// 数据集选择弹窗状态
-const datasetDialogVisible = ref(false);
-const selectedDatasetId = ref(null);
 const submitLoading = ref(false);
-// 模拟的数据集列表，实际项目中需从接口获取
-const datasetOptions = ref([
-  { id: 1, name: '检测缺陷数据集 v1' },
-  { id: 2, name: '样本训练数据集 v2' }
-]);
 
 const BASE_API = import.meta.env.VITE_APP_BASE_API;
 
@@ -154,29 +128,38 @@ let startX = 0;
 let startY = 0;
 let activeRect = null;
 
-watch(() => labelVisible.value, (visible) => {
-  if (visible) {
-    nextTick(() => {
-      initCanvas();
-      loadTargetImage();
-      listDataset().then(res => {
-        datasetOptions.value = res.rows;
-      })
-    });
-  }
-});
-
-const handleClose = () => {
-  isDrawingMode.value = false;
-  if (canvas.value) canvas.value.dispose();
-  annotationList.value = [];
-  selectedDatasetId.value = null;
+const handleOpened = () => {
+  initCanvas();
+  loadTargetImage();
 };
+
+const cleanupAnnotator = () => {
+  isDrawingMode.value = false;
+  isMouseDown = false;
+  activeRect = null;
+  dialogVisible.value = false;
+  canvasLoading.value = false;
+  window.removeEventListener('keydown', handleKeydown);
+  if (canvas.value) {
+    canvas.value.off();
+    canvas.value.dispose();
+    canvas.value = null;
+  }
+  annotationList.value = [];
+  uploadFile.value = null;
+  labelText.value = '';
+  remark.value = '';
+};
+
+const handleClosed = () => cleanupAnnotator();
+
+onBeforeUnmount(() => cleanupAnnotator());
 
 // ================= 画布初始化与图片加载 =================
 const initCanvas = () => {
-  if (canvas.value) canvas.value.dispose();
-  canvas.value = new fabric.Canvas('label-canvas', {
+  cleanupAnnotator();
+  if (!canvasElement.value) return;
+  canvas.value = new fabric.Canvas(canvasElement.value, {
     width: 800,
     height: 600,
     selection: true
@@ -264,6 +247,7 @@ const loadTargetImage = async () => {
       const imgObj = new Image();
       imgObj.src = e.target.result;
       imgObj.onload = () => {
+        if (!canvas.value || !labelVisible.value) return;
         canvas.value.clear();
         annotationList.value = [];
         const fImg = new fabric.Image(imgObj);
@@ -381,21 +365,12 @@ const highlightAnnotation = (id, isHover) => {
   }
 };
 
-// ================= 保存核心流程：选择数据集 -> 提取坐标 -> 提交 =================
-
-// 步骤 1：触发保存，弹出数据集选择框
-const handleSaveProcess = () => {
+// ================= 保存核心流程：提取坐标 -> 上传标注图 -> 提交 =================
+const handleSaveProcess = async () => {
   if (!canvas.value || annotationList.value.length === 0) {
     return proxy.$modal.msgWarning('请先完成至少一个框的标注！');
   }
-  datasetDialogVisible.value = true;
-};
-
-// 步骤 2：确认数据集并上传
-const submitFinalAnnotation = async () => {
-  if (!selectedDatasetId.value) {
-    return proxy.$modal.msgWarning('必须选择一个数据集才能保存');
-  }
+  if (submitLoading.value) return;
 
   submitLoading.value = true;
   try {
@@ -410,7 +385,6 @@ const submitFinalAnnotation = async () => {
     // 组装提交给后端的数据包
     const submitPayload = {
       id: props.rowData.id,               // 对应当前编辑数据的ID
-      datasetId: selectedDatasetId.value, // 选择的数据集ID
       coordsInfo: JSON.stringify(coordsData), // 绝对坐标JSON
       labelImage: labelImage,  // 如需保存画了框的图
     };
@@ -419,11 +393,7 @@ const submitFinalAnnotation = async () => {
 
     // ============================================
 
-    // 模拟API请求延迟
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    proxy.$modal.msgSuccess('标注数据已归档至所选数据集！');
-    datasetDialogVisible.value = false;
+    proxy.$modal.msgSuccess('标注保存成功！');
     emit('success');
   } catch (error) {
     console.error(error);

@@ -53,7 +53,26 @@
           </div>
 
           <div class="action-area" v-if="resultFile">
-            <el-divider>3：归档</el-divider>
+            <el-divider>3：选择数据集</el-divider>
+            <div class="dataset-selector">
+              <el-select
+                  v-model="selectedDatasetId"
+                  placeholder="请选择数据集"
+                  filterable
+                  :loading="datasetLoading"
+                  style="flex: 1"
+              >
+                <el-option
+                    v-for="item in datasetOptions"
+                    :key="item.id"
+                    :label="item.name"
+                    :value="item.id"
+                />
+              </el-select>
+              <el-button type="primary" plain icon="Plus" @click="openCreateDataset">新建数据集</el-button>
+            </div>
+
+            <el-divider>4：归档</el-divider>
             <div class="file-info">
               <el-tag type="info" size="small" :type="isProcessed ? 'success' : 'info'">
                 {{ isProcessed ? '已处理待上传' : '待上传' }}: {{ resultFile.name }}
@@ -67,7 +86,7 @@
                 class="submit-btn"
                 @click="submitData"
                 :loading="submitting"
-                :disabled="processing || watermarking"
+                :disabled="processing || watermarking || !selectedDatasetId"
                 icon="UploadFilled"
             >
               保存并上传
@@ -217,6 +236,29 @@
     </el-card>
 
     <el-dialog
+        v-model="datasetCreateVisible"
+        title="新建数据集"
+        width="500px"
+        append-to-body
+        :close-on-click-modal="false"
+    >
+      <el-form ref="datasetFormRef" :model="datasetForm" :rules="datasetRules" label-width="100px">
+        <el-form-item label="数据集名称" prop="name">
+          <el-input v-model="datasetForm.name" placeholder="请输入数据集名称" maxlength="100" show-word-limit />
+        </el-form-item>
+        <el-form-item label="数据集描述" prop="desc">
+          <el-input v-model="datasetForm.desc" type="textarea" :rows="3" placeholder="请输入数据集描述（可选）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="datasetCreateVisible = false">取消</el-button>
+          <el-button type="primary" :loading="datasetCreating" @click="createDataset">创建并选择</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <el-dialog
         v-model="cropDialogVisible"
         title="图像裁剪"
         width="800px"
@@ -251,6 +293,7 @@ import {ref, onMounted, onBeforeUnmount, nextTick, getCurrentInstance} from 'vue
 import axios from "axios";
 import {getUploadUrl} from "@/api/algorithm/algorithm.js";
 import {addData, checkExist, updateData, uploadData} from "@/api/collection/data.js";
+import {addData as addDataset, listDataset} from "@/api/collection/dataset.js";
 import 'cropperjs/dist/cropper.css';
 import Cropper from 'cropperjs';
 import {MagicStick, Monitor, UploadFilled} from "@element-plus/icons-vue";
@@ -262,6 +305,16 @@ const barcodeInput = ref('');
 const currentBarcode = ref('');
 const barcodeInputRef = ref(null);
 const submitting = ref(false);
+const selectedDatasetId = ref(null);
+const datasetOptions = ref([]);
+const datasetLoading = ref(false);
+const datasetCreateVisible = ref(false);
+const datasetCreating = ref(false);
+const datasetFormRef = ref(null);
+const datasetForm = ref({name: '', desc: ''});
+const datasetRules = {
+  name: [{required: true, message: '请输入数据集名称', trigger: 'blur'}]
+};
 
 // --- 状态管理 ---
 const mode = ref('upload');
@@ -377,6 +430,7 @@ const confirmCrop = () => {
 // --- 生命周期 ---
 onMounted(() => {
   focusInput();
+  loadDatasets();
 });
 
 onBeforeUnmount(() => {
@@ -387,6 +441,47 @@ const focusInput = () => {
   nextTick(() => {
     barcodeInputRef.value?.focus();
   });
+};
+
+const loadDatasets = async () => {
+  datasetLoading.value = true;
+  try {
+    const response = await listDataset();
+    datasetOptions.value = response.rows || [];
+  } catch (e) {
+    console.error(e);
+    proxy.$modal.msgError('数据集列表加载失败');
+  } finally {
+    datasetLoading.value = false;
+  }
+};
+
+const openCreateDataset = () => {
+  datasetForm.value = {name: '', desc: ''};
+  datasetCreateVisible.value = true;
+  nextTick(() => datasetFormRef.value?.clearValidate());
+};
+
+const createDataset = async () => {
+  if (!datasetFormRef.value) return;
+  const valid = await datasetFormRef.value.validate().catch(() => false);
+  if (!valid) return;
+
+  datasetCreating.value = true;
+  try {
+    const response = await addDataset({...datasetForm.value});
+    const createdDataset = response.data;
+    await loadDatasets();
+    selectedDatasetId.value = createdDataset?.id ??
+        datasetOptions.value.find(item => item.name === datasetForm.value.name)?.id ?? null;
+    datasetCreateVisible.value = false;
+    proxy.$modal.msgSuccess('数据集创建成功，已自动选择');
+  } catch (e) {
+    console.error(e);
+    proxy.$modal.msgError('数据集创建失败');
+  } finally {
+    datasetCreating.value = false;
+  }
 };
 
 // --- Step 1: 扫码 ---
@@ -711,9 +806,10 @@ const generateThumbnail = (file, maxWidth = 800) => {
   });
 };
 
-// --- Step 3: 上传归档 ---
+// --- Step 4: 上传归档 ---
 const submitData = async () => {
   if (!resultFile.value || !currentBarcode.value) return;
+  if (!selectedDatasetId.value) return proxy.$modal.msgWarning('请先选择数据集');
 
   submitting.value = true;
   try {
@@ -746,7 +842,8 @@ const submitData = async () => {
     // ================= 3. 构造并提交业务数据 =================
     const postData = {
       data: currentBarcode.value,
-      imagePath: JSON.stringify([origObjectName, thumbObjectName])
+      imagePath: JSON.stringify([origObjectName, thumbObjectName]),
+      datasetId: selectedDatasetId.value
     };
 
     const isExist = await checkExist(postData.data)
@@ -780,6 +877,7 @@ const resetFlow = () => {
   resultFile.value = null;
   previewImage.value = '';
   watermarkText.value = '';
+  selectedDatasetId.value = null;
   clearWatermarkState();
   isProcessed.value = false;
   focusInput();
@@ -809,6 +907,13 @@ const resetFlow = () => {
   border-left: 4px solid #409EFF;
   padding-left: 10px;
   color: #303133;
+}
+
+.dataset-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .media-container {

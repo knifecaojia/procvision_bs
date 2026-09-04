@@ -2,6 +2,8 @@ package com.imustsz.collect.service;
 
 import com.imustsz.collect.domain.BizDataset;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
 
 public interface IBizDatasetService
@@ -53,4 +55,12 @@ public interface IBizDatasetService
      * @return 结果
      */
     public int deleteBizDatasetById(Long id);
+
+    /**
+     * 将指定数据集写入 ZIP 输出流。
+     *
+     * @param id 数据集主键
+     * @param outputStream 响应输出流
+     */
+    public void writeDatasetArchive(Long id, OutputStream outputStream) throws IOException;
 }

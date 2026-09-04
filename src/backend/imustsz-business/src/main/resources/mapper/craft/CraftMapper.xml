@@ -102,7 +102,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectCraftByCodeAndVersion" resultMap="CraftResult">
         <include refid="selectCraftVo"/>
-        where code = #{code} and version = #{version}
+        where code = #{code} and version = #{version} and production_order_no = #{productionOrderNo}
     </select>
 
     <update id="changeCraftStatus">

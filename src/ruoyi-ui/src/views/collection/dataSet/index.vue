@@ -56,6 +56,7 @@
       <el-table-column label="创建时间" align="center" prop="createTime" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
+          <el-button link type="primary" icon="Download" @click="handleDownload(scope.row)">下载</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)">删除</el-button>
         </template>
@@ -213,6 +214,12 @@ function handleDelete(row) {
     getList()
     proxy.$modal.msgSuccess("删除成功")
   }).catch(() => {})
+}
+
+/** 下载数据集压缩包 */
+function handleDownload(row) {
+  const filename = `${(row.name || 'dataset').replace(/[\\/:*?"<>|]/g, '_')}.zip`
+  proxy.$download.zip(`/collection/dataset/download/${row.id}`, filename)
 }
 
 getList()

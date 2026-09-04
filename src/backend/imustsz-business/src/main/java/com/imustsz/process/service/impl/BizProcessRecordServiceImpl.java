@@ -162,7 +162,7 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
 
         BizWorkOrder bizWorkOrder = bizWorkOrderMapper.selectBizWorkOrderByCodeAndProcessCode(processDTO.getTask_no(), processDTO.getProcess_code());
 
-        Craft craft = craftMapper.selectCraftByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion());
+        Craft craft = craftMapper.selectCraftByCodeAndVersion(bizWorkOrder.getCraftCode(), bizWorkOrder.getCraftVersion(), bizWorkOrder.getProdOrderNo());
 
         Process process = processMapper.selectProcessIdByCodeAndCraftId(bizWorkOrder.getProcessCode(), craft.getId());
 

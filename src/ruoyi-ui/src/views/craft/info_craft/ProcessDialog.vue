@@ -41,13 +41,13 @@
             <el-button link icon="view" type="primary" @click="showStep(scope.row)">查看工步</el-button>
           </template>
         </el-table-column>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="250px">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300px">
           <template #default="scope">
             <el-button link type="primary" icon="link" @click="showBindAlg(scope.row)">
               绑定算法
             </el-button>
             <el-button link type="primary" icon="Edit" @click="handleProcessUpdate(scope.row)">
-              修改
+              查看详情
             </el-button>
             <el-button link type="primary" icon="Delete" @click="handleProcessDelete(scope.row)">
               删除

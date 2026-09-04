@@ -9,7 +9,6 @@ import javax.servlet.http.HttpServletResponse;
 import com.imustsz.common.utils.DateUtils;
 import com.imustsz.common.utils.bean.MinioUtils;
 import com.imustsz.craft.domain.dto.GuideInfoDTO;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.imustsz.common.annotation.Log;
