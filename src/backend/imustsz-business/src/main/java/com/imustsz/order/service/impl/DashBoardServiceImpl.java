@@ -1,244 +1,138 @@
 package com.imustsz.order.service.impl;
 
+import com.imustsz.common.exception.ServiceException;
 import com.imustsz.common.utils.bean.MinioUtils;
-import com.imustsz.order.domain.GroupByStatus;
-import com.imustsz.order.domain.StatisticsData;
-import com.imustsz.order.mapper.BizWorkOrderMapper;
+import com.imustsz.order.domain.dto.ResultQuery;
+import com.imustsz.order.mapper.DashboardResultMapper;
 import com.imustsz.order.service.IDashboardService;
-import com.imustsz.process.domain.BizProcessRecord;
-import com.imustsz.process.mapper.BizProcessRecordMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Service
+@Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 public class DashBoardServiceImpl implements IDashboardService {
-
-    @Autowired
-    private BizWorkOrderMapper workOrderMapper;
-
-    @Autowired
-    private BizProcessRecordMapper processRecordMapper;
-
-    @Autowired
-    private MinioUtils minioUtils;
-
-    @Autowired
-    private BizProcessRecordMapper bizProcessRecordMapper;
+    private static final int MAX_REPORT_RECORDS = 500;
+    @Autowired private DashboardResultMapper mapper;
+    @Autowired private MinioUtils minioUtils;
 
     @Override
-    public StatisticsData getKpiStats() {
-        StatisticsData stats = new StatisticsData();
-
-        List<GroupByStatus> data = workOrderMapper.countOrders();
-        int total = data.stream().mapToInt(GroupByStatus::getCount).sum();
-        stats.setTotal(total);
-
-        int abnormal = data.stream().filter(item -> item.getStatus() == -1 || item.getStatus() == -2 || item.getStatus() == 1).mapToInt(GroupByStatus::getCount).sum();
-        stats.setAbnormal(abnormal);
-
-        int completed = data.stream().filter(item -> item.getStatus() == 3 || item.getStatus() == 4).mapToInt(GroupByStatus::getCount).sum();
-        stats.setCompleted(completed);
-
-        int inProgress = data.stream().filter(item -> item.getStatus() == 2).mapToInt(GroupByStatus::getCount).sum();
-        stats.setInProgress(inProgress);
-
-        return stats;
+    public Map<String, Object> getOverview(ResultQuery query) {
+        query.validated();
+        Map<String, Object> result = summary(query);
+        Map<String, Object> stats = castMap(result.get("statistics"));
+        result.put("rows", records(query, query.getOffset(), query.getPageSize(), true));
+        result.put("total", stats.get("recordCount"));
+        return result;
     }
 
+    @Override
+    public Map<String, Object> getRecords(ResultQuery query) {
+        query.validated();
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("total", mapper.selectRecordStats(query).get("recordCount"));
+        result.put("rows", records(query, query.getOffset(), query.getPageSize(), true));
+        return result;
+    }
 
     @Override
-    public Map<String, Object> getTrendData() {
-        // 1. 生成最近7天的连续日期列表 (X轴)
+    public Map<String, Object> getReport(ResultQuery query) {
+        query.validated();
+        // Count before loading details. Never silently export only the visible page.
+        long count = number(mapper.selectRecordStats(query), "recordCount");
+        if (count > MAX_REPORT_RECORDS) {
+            throw new ServiceException("本次匹配" + count + "条记录，单份PDF最多500条，请缩小日期范围或增加筛选条件后导出");
+        }
+        Map<String, Object> result = summary(query);
+        result.put("rows", records(query, 0, MAX_REPORT_RECORDS, false));
+        result.put("total", count);
+        result.put("generatedAt", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        return result;
+    }
+
+    private Map<String, Object> summary(ResultQuery query) {
+        Map<String, Object> stats = new LinkedHashMap<>(mapper.selectRecordStats(query));
+        long total = 0, completed = 0, inProgress = 0, abnormal = 0, pending = 0;
+        List<Map<String, Object>> statusData = new ArrayList<>();
+        for (Map<String, Object> row : mapper.selectTaskStats(query)) {
+            int status = row.get("status") == null ? Integer.MIN_VALUE : ((Number) row.get("status")).intValue();
+            long count = number(row, "totalCount");
+            total += count;
+            if (status == 3 || status == 4) completed += count;
+            if (status == 2) inProgress += count;
+            if (status == -1 || status == -2) abnormal += count;
+            if (status == 1) pending += count;
+            statusData.add(pie(statusName(status), count));
+        }
+        stats.put("total", total); stats.put("completed", completed);
+        stats.put("inProgress", inProgress); stats.put("abnormal", abnormal); stats.put("pending", pending);
         List<String> dates = new ArrayList<>();
-        LocalDate today = LocalDate.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        for (int i = 6; i >= 0; i--) {
-            dates.add(today.minusDays(i).format(formatter));
+        List<Long> recordCounts = new ArrayList<>(), imageCounts = new ArrayList<>();
+        Map<String, Map<String, Object>> byDate = new HashMap<>();
+        for (Map<String, Object> row : mapper.selectTrend(query)) byDate.put(row.get("dateStr").toString(), row);
+        LocalDate end = LocalDate.parse(query.getEndDate());
+        for (LocalDate date = LocalDate.parse(query.getStartDate()); !date.isAfter(end); date = date.plusDays(1)) {
+            String key = date.toString();
+            dates.add(key);
+            Map<String, Object> row = byDate.getOrDefault(key, Collections.emptyMap());
+            recordCounts.add(number(row, "recordCount")); imageCounts.add(number(row, "imageCount"));
         }
-
-        String startDate = dates.get(0) + " 00:00:00";
-        String endDate = dates.get(dates.size() - 1) + " 23:59:59";
-
-        // 2. 查询数据库
-        List<Map<String, Object>> plannedList = workOrderMapper.selectPlannedCountByDate(startDate, endDate);
-        List<Map<String, Object>> completedList = workOrderMapper.selectCompletedCountByDate(startDate, endDate);
-
-        // 3. 将查询结果转为 Map 便于按日期匹配 (避免嵌套循环)
-        // map的格式为: {"2023-10-18": 15, "2023-10-19": 20}
-        Map<String, Long> plannedMap = plannedList.stream().collect(
-                Collectors.toMap(
-                        m -> m.get("dateStr").toString(),
-                        m -> ((Number) m.get("totalCount")).longValue()
-                )
-        );
-
-        Map<String, Long> completedMap = completedList.stream().collect(
-                Collectors.toMap(
-                        m -> m.get("dateStr").toString(),
-                        m -> ((Number) m.get("totalCount")).longValue()
-                )
-        );
-
-        // 4. 组装最终的 Y轴 数组 (保证每天都有数据，没有就是0)
-        List<Long> plannedData = new ArrayList<>();
-        List<Long> actualData = new ArrayList<>();
-
-        // 缩略日期格式用于图表展示，例如 "10-18"
-        List<String> displayDates = new ArrayList<>();
-
-        for (String dateStr : dates) {
-            displayDates.add(dateStr.substring(5)); // 截取 MM-dd
-            plannedData.add(plannedMap.getOrDefault(dateStr, 0L));
-            actualData.add(completedMap.getOrDefault(dateStr, 0L));
+        Map<String, Object> trend = new LinkedHashMap<>();
+        trend.put("dates", dates); trend.put("records", recordCounts); trend.put("images", imageCounts);
+        Map<Integer, Long> algCounts = new HashMap<>();
+        for (Map<String, Object> row : mapper.selectAlgStats(query)) {
+            algCounts.put(((Number) row.get("algResult")).intValue(), number(row, "totalCount"));
         }
-
-        // 5. 封装为前端 ECharts 需要的格式
-        Map<String, Object> trendData = new HashMap<>();
-        trendData.put("dates", displayDates);
-        trendData.put("planned", plannedData);
-        trendData.put("actual", actualData);
-
-        return trendData;
+        List<Map<String, Object>> algData = Arrays.asList(pie("OK（合格）", algCounts.getOrDefault(0, 0L)),
+            pie("NG（不合格）", algCounts.getOrDefault(1, 0L)), pie("执行失败", algCounts.getOrDefault(-1, 0L)),
+            pie("未检测/未知", algCounts.getOrDefault(2, 0L)));
+        List<String> categories = new ArrayList<>();
+        List<Long> counts = new ArrayList<>();
+        for (Map<String, Object> row : mapper.selectNgSteps(query)) {
+            categories.add(Objects.toString(row.get("stepName"), "未知工步") + " ["
+                + Objects.toString(row.get("processCode"), "-") + "/" + Objects.toString(row.get("stepCode"), "-") + "]");
+            counts.add(number(row, "totalCount"));
+        }
+        Map<String, Object> ng = new LinkedHashMap<>(); ng.put("categories", categories); ng.put("counts", counts);
+        Map<String, Object> charts = new LinkedHashMap<>();
+        charts.put("trendData", trend); charts.put("statusData", statusData);
+        charts.put("algResultData", algData); charts.put("ngStepStats", ng);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("statistics", stats); result.put("charts", charts); result.put("query", query);
+        return result;
     }
 
-    @Override
-    public List<Map<String, Object>> getStatusData(String startDate, String endDate) {
-        List<Map<String, Object>> dbResult = workOrderMapper.selectStatusDistribution(startDate, endDate);
-        List<Map<String, Object>> statusData = new ArrayList<>();
-
-        // 预定义状态字典与颜色映射
-        Map<Integer, String> nameMap = new HashMap<>();
-        nameMap.put(3, "正常完成");
-        nameMap.put(4, "手工通过");
-        nameMap.put(2, "进行中");
-        nameMap.put(1, "待派单");
-        nameMap.put(-1, "引导资源未就绪");
-        nameMap.put(-2, "检测资源未就绪");
-
-        Map<Integer, String> colorMap = new HashMap<>();
-        colorMap.put(3, "#67C23A"); // 绿
-        colorMap.put(4, "#33CC99"); // 青绿
-        colorMap.put(2, "#409EFF"); // 蓝
-        colorMap.put(1, "#909399"); // 灰
-        colorMap.put(-1, "#F56C6C"); // 红
-        colorMap.put(-2, "#E6A23C"); // 橙
-
-        for (Map<String, Object> row : dbResult) {
-            Integer status = ((Number) row.get("status")).intValue();
-            Long count = ((Number) row.get("totalCount")).longValue();
-
-            Map<String, Object> item = new HashMap<>();
-            item.put("name", nameMap.getOrDefault(status, "未知状态(" + status + ")"));
-            item.put("value", count);
-
-            Map<String, String> itemStyle = new HashMap<>();
-            itemStyle.put("color", colorMap.getOrDefault(status, "#CCCCCC"));
-            item.put("itemStyle", itemStyle);
-
-            statusData.add(item);
-        }
-        return statusData;
-    }
-
-    @Override
-    public List<Map<String, Object>> getRecentRecords(String startDate, String endDate) throws Exception {
-        List<BizProcessRecord> dbResult = processRecordMapper.selectRecordByDate(startDate, endDate);
-        List<Map<String, Object>> statusData = new ArrayList<>();
-
-        for (BizProcessRecord record : dbResult) {
-            Map<String, Object> item = new HashMap<>();
-            item.put("workOrderCode", record.getWorkOrderCode());
-            item.put("stepName", record.getStepName());
-            item.put("stepStatus", record.getStepStatus());
-            item.put("imgUrl", minioUtils.getPresignedUrl(record.getImagePath()));
-            statusData.add(item);
-        }
-
-        return statusData;
-    }
-
-    @Override
-    public List<Map<String, Object>> getAlgResultData() {
-
-        // 1. 计算时间范围 (近7天)
-        LocalDate today = LocalDate.now();
-        String startDate = today.minusDays(6).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + " 00:00:00";
-        String endDate = today.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + " 23:59:59";
-
-        // 2. 获取并处理【算法执行结果】数据
-        List<Map<String, Object>> algResultStats = bizProcessRecordMapper.selectAlgResultData(startDate, endDate);
-
-        List<Map<String, Object>> algResultData = new ArrayList<>();
-
-        // 预定义三个状态，确保即使某天某种状态数量为0，图表图例也能正常显示
-        long okCount = 0;
-        long ngCount = 0;
-        long failCount = 0;
-
-        // 遍历数据库返回的分组统计结果
-        for (Map<String, Object> row : algResultStats) {
-            Integer algResult = ((Number) row.get("algResult")).intValue();
-            Long count = ((Number) row.get("totalCount")).longValue();
-
-            if (algResult == 0) {
-                okCount = count;
-            } else if (algResult == 1) {
-                ngCount = count;
-            } else if (algResult == -1) {
-                failCount = count;
+    private List<Map<String, Object>> records(ResultQuery query, int offset, int limit, boolean preview) {
+        List<Map<String, Object>> rows = mapper.selectRecords(query, offset, limit);
+        for (Map<String, Object> row : rows) {
+            String path = Objects.toString(row.get("imagePath"), "").trim();
+            row.put("hasImage", !path.isEmpty());
+            row.put("imgUrl", "");
+            if (preview && !path.isEmpty()) {
+                try { row.put("imgUrl", minioUtils.getPresignedUrl(path)); }
+                catch (Exception ex) { row.put("imageError", "图片暂不可用"); }
             }
         }
-
-        // 组装成 ECharts 饼图需要的格式：[{name: '...', value: ...}]
-        // 顺序建议固定：OK -> NG -> 失败，以对应前端 color: ['#67C23A', '#F56C6C', '#909399']
-        algResultData.add(createPieItem("OK (合格)", okCount));
-        algResultData.add(createPieItem("NG (不合格)", ngCount));
-        algResultData.add(createPieItem("算法执行失败", failCount));
-
-        return algResultData;
+        return rows;
     }
-
-    @Override
-    public Map<String, Object> getNgStepStats() {
-
-        LocalDate today = LocalDate.now();
-        String startDate = today.minusDays(6).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + " 00:00:00";
-        String endDate = today.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + " 23:59:59";
-
-        List<Map<String, Object>> ngStepStats = bizProcessRecordMapper.selectNgStepStats(startDate, endDate);
-
-        List<String> ngCategories = new ArrayList<>();
-        List<Long> ngCounts = new ArrayList<>();
-
-        for (Map<String, Object> row : ngStepStats) {
-            String stepName = (String) row.get("stepName");
-            Long count = ((Number) row.get("totalCount")).longValue();
-
-            // 如果工步名称为空，给个默认值防止前端图表显示异常
-            ngCategories.add(stepName != null ? stepName : "未知工步");
-            ngCounts.add(count);
+    private long number(Map<String, Object> row, String key) {
+        Object value = row.get(key); return value instanceof Number ? ((Number) value).longValue() : 0;
+    }
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> castMap(Object value) { return (Map<String, Object>) value; }
+    private Map<String, Object> pie(String name, long value) {
+        Map<String, Object> result = new LinkedHashMap<>(); result.put("name", name); result.put("value", value); return result;
+    }
+    private String statusName(int status) {
+        switch (status) {
+            case 3: return "正常完成"; case 4: return "手工通过"; case 2: return "进行中";
+            case 1: return "待派单"; case -1: return "引导资源未就绪"; case -2: return "检测资源未就绪";
+            default: return "未知状态";
         }
-
-        Map<String, Object> ngStepData = new HashMap<>();
-        ngStepData.put("categories", ngCategories);
-        ngStepData.put("counts", ngCounts);
-
-        return ngStepData;
-    }
-
-    // 辅助方法：构建饼图数据项
-    private Map<String, Object> createPieItem(String name, long value) {
-        Map<String, Object> item = new HashMap<>();
-        item.put("name", name);
-        item.put("value", value);
-        return item;
     }
 }

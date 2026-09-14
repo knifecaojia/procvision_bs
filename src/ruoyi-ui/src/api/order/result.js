@@ -1,26 +1,8 @@
 import request from '@/utils/request'
 
-// 获取顶部 KPI 统计指标
-export function getKpiStats() {
-    return request({
-        url: '/dashboard/kpiStats',
-        method: 'get'
-    })
-}
-
-// 获取 ECharts 分析数据 (包含趋势、状态分布、缺陷类型等)
-export function getChartAnalysis(query) {
-    return request({
-        url: '/dashboard/chartAnalysis',
-        method: 'get',
-        params: query
-    })
-}
-
-// 获取最新装配实拍结果流
-export function getRecentResults() {
-    return request({
-        url: '/dashboard/recentResults',
-        method: 'get'
-    })
-}
+export const getResultOverview = params => request({ url: '/dashboard/overview', method: 'get', params, timeout: 60000 })
+export const getKpiStats = params => request({ url: '/dashboard/kpiStats', method: 'get', params })
+export const getChartAnalysis = params => request({ url: '/dashboard/chartAnalysis', method: 'get', params })
+export const getRecentResults = params => request({ url: '/dashboard/recentResults', method: 'get', params, timeout: 60000 })
+export const getResultReport = params => request({ url: '/dashboard/reportData', method: 'get', params, timeout: 60000 })
+export const getResultImage = id => request({ url: `/dashboard/records/${encodeURIComponent(id)}/image`, method: 'get', params: { report: true }, responseType: 'blob', timeout: 300000 })

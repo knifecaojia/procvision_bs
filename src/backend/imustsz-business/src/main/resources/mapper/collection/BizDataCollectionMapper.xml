@@ -18,10 +18,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createBy"    column="create_by"    />
         <result property="updateBy"    column="update_by"    />
         <result property="remark"    column="remark"    />
+        <result column="product_time" property="productTime"/>
+        <result column="product_model" property="productModel"/>
+        <result column="product_batch" property="productBatch"/>
+        <result column="process_num" property="processNum"/>
+        <result column="other_info" property="otherInfo"/>
     </resultMap>
 
     <sql id="selectBizDataCollectionVo">
-        select id, image_path, data, dataset_id, label_image, coords_info, uploaded, type, create_time, remark from biz_data_collection
+        select id, image_path, data, dataset_id, label_image, coords_info, uploaded, type, create_time, remark, product_time, product_model, product_batch, process_num, other_info from biz_data_collection
     </sql>
 
     <select id="selectBizDataCollectionList" parameterType="BizDataCollection" resultMap="BizDataCollectionResult">
@@ -51,6 +56,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <insert id="insertBizDataCollection" parameterType="BizDataCollection" useGeneratedKeys="true" keyProperty="id">
         insert into biz_data_collection
         <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="otherInfo != null">other_info,</if>
+            <if test="processNum != null">process_num,</if>
+            <if test="productBatch != null">product_batch,</if>
+            <if test="productModel != null">product_model,</if>
+            <if test="productTime != null">product_time,</if>
             <if test="imagePath != null">image_path,</if>
             <if test="data != null">data,</if>
             <if test="uploaded != null">uploaded,</if>
@@ -65,13 +75,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="remark != null">remark,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="otherInfo != null">#{otherInfo},</if>
+            <if test="processNum != null">#{processNum},</if>
+            <if test="productBatch != null">#{productBatch},</if>
+            <if test="productModel != null">#{productModel},</if>
+            <if test="productTime != null">#{productTime},</if>
             <if test="imagePath != null">#{imagePath},</if>
             <if test="data != null">#{data},</if>
-            <if test="datasetId != null">#{datasetId},</if>
             <if test="uploaded != null">#{uploaded},</if>
             <if test="type != null">#{type},</if>
-            <if test="coordsInfo != null and coordsInfo != ''">#{coordsInfo},</if>
-            <if test="labelImage != null and labelImage != ''">#{labelImage},</if>
+            <if test="datasetId != null">#{datasetId},</if>
+            <if test="coordsInfo != null">#{coordsInfo},</if>
+            <if test="labelImage != null">#{labelImage},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="createBy != null and createBy != ''">#{createBy},</if>
@@ -83,6 +98,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="updateBizDataCollection" parameterType="BizDataCollection">
         update biz_data_collection
         <trim prefix="SET" suffixOverrides=",">
+            <if test="otherInfo != null">other_info = #{otherInfo},</if>
+            <if test="processNum != null">process_num = #{processNum},</if>
+            <if test="productBatch != null">product_batch = #{productBatch},</if>
+            <if test="productModel != null">product_model = #{productModel},</if>
+            <if test="productTime != null or productModel != null or productBatch != null or processNum != null or otherInfo != null">product_time = #{productTime,jdbcType=TIMESTAMP},</if>
             <if test="imagePath != null">image_path = #{imagePath},</if>
             <if test="data != null">data = #{data},</if>
             <if test="datasetId != null">dataset_id = #{datasetId},</if>

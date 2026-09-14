@@ -79,6 +79,7 @@ public class BizDataCollectionServiceImpl implements IBizDataCollectionService {
      */
     @Override
     public int insertBizDataCollection(BizDataCollection bizDataCollection) {
+        validateProductFields(bizDataCollection, bizDataCollection.getType());
         BizDataCollection data = bizDataCollectionMapper.checkData(bizDataCollection.getData());
         if (data != null) throw new RuntimeException("产品信息已存在");
         return bizDataCollectionMapper.insertBizDataCollection(bizDataCollection);
@@ -92,6 +93,10 @@ public class BizDataCollectionServiceImpl implements IBizDataCollectionService {
      */
     @Override
     public int updateBizDataCollection(BizDataCollection bizDataCollection) {
+        if (hasProductFields(bizDataCollection)) {
+            BizDataCollection current = bizDataCollectionMapper.selectBizDataCollectionById(bizDataCollection.getId());
+            validateProductFields(bizDataCollection, current == null ? null : current.getType());
+        }
         return bizDataCollectionMapper.updateBizDataCollection(bizDataCollection);
     }
 
@@ -120,5 +125,14 @@ public class BizDataCollectionServiceImpl implements IBizDataCollectionService {
     @Override
     public BizDataCollection checkProduction(String productionInfo) {
         return bizDataCollectionMapper.checkData(productionInfo);
+    }
+    private boolean hasProductFields(BizDataCollection row) {
+        return row.getProductTime()!=null || row.getProductModel()!=null || row.getProductBatch()!=null || row.getProcessNum()!=null || row.getOtherInfo()!=null;
+    }
+    private void validateProductFields(BizDataCollection row, Integer type) {
+        if (!hasProductFields(row)) return;
+        if (!Integer.valueOf(1).equals(type)) throw new com.imustsz.common.exception.ServiceException("生产信息仅适用于type=1采集记录");
+        String[] values={row.getProductModel(),row.getProductBatch(),row.getProcessNum(),row.getOtherInfo()};
+        for(int i=0;i<values.length;i++) if(values[i]!=null && values[i].length()>(i==3?500:100)) throw new com.imustsz.common.exception.ServiceException("生产信息超过允许长度");
     }
 }

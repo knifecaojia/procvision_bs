@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.imustsz.order.mapper.DashboardResultMapper">
+    <!-- A work order can contain several processes. Resolve by BOTH keys and choose one
+         deterministic row if historical duplicates exist, so image counts never multiply. -->
+    <sql id="recordSource">
+        FROM biz_process_record r
+        LEFT JOIN biz_work_order w ON w.id = (
+            SELECT MAX(w2.id) FROM biz_work_order w2
+            WHERE w2.work_order_code = r.work_order_code AND w2.process_code = r.process_code
+        )
+    </sql>
+    <sql id="recordFilter">
+        WHERE ((r.submit_time &gt;= #{q.startTime} AND r.submit_time &lt; #{q.endTimeExclusive})
+            OR (r.submit_time IS NULL AND r.create_time &gt;= #{q.startTime} AND r.create_time &lt; #{q.endTimeExclusive}))
+        <if test="q.product != null">
+            AND (LOCATE(#{q.product}, w.material_no) &gt; 0 OR LOCATE(#{q.product}, w.material_name) &gt; 0)
+        </if>
+        <if test="q.prodBatchNo != null">AND LOCATE(#{q.prodBatchNo}, w.prod_batch_no) &gt; 0</if>
+        <if test="q.workOrderCode != null">AND LOCATE(#{q.workOrderCode}, r.work_order_code) &gt; 0</if>
+        <if test="q.process != null">
+            AND (LOCATE(#{q.process}, r.process_code) &gt; 0 OR LOCATE(#{q.process}, w.process_name) &gt; 0)
+        </if>
+        <if test="q.step != null">
+            AND (LOCATE(#{q.step}, r.step_code) &gt; 0 OR LOCATE(#{q.step}, r.step_name) &gt; 0)
+        </if>
+        <if test="q.algResult != null">
+            <choose>
+                <when test="q.algResult == 2">AND (r.alg_result IS NULL OR r.alg_result NOT IN (-1, 0, 1))</when>
+                <otherwise>AND r.alg_result = #{q.algResult}</otherwise>
+            </choose>
+        </if>
+        <if test="q.hasImage != null">
+            <choose>
+                <when test="q.hasImage">AND NULLIF(TRIM(r.image_path), '') IS NOT NULL</when>
+                <otherwise>AND NULLIF(TRIM(r.image_path), '') IS NULL</otherwise>
+            </choose>
+        </if>
+    </sql>
+    <select id="selectRecordStats" resultType="java.util.Map">
+        SELECT COUNT(*) AS recordCount,
+            COALESCE(SUM(CASE WHEN NULLIF(TRIM(r.image_path), '') IS NOT NULL THEN 1 ELSE 0 END), 0) AS imageCount
+        <include refid="recordSource"/><include refid="recordFilter"/>
+    </select>
+    <select id="selectTaskStats" resultType="java.util.Map">
+        SELECT t.status, COUNT(*) AS totalCount FROM (
+            SELECT r.work_order_code, r.process_code, MAX(w.status) AS status
+            <include refid="recordSource"/><include refid="recordFilter"/>
+            GROUP BY r.work_order_code, r.process_code
+        ) t GROUP BY t.status
+    </select>
+    <select id="selectTrend" resultType="java.util.Map">
+        SELECT DATE_FORMAT(COALESCE(r.submit_time, r.create_time), '%Y-%m-%d') AS dateStr,
+            COUNT(*) AS recordCount,
+            SUM(CASE WHEN NULLIF(TRIM(r.image_path), '') IS NOT NULL THEN 1 ELSE 0 END) AS imageCount
+        <include refid="recordSource"/><include refid="recordFilter"/>
+        GROUP BY DATE_FORMAT(COALESCE(r.submit_time, r.create_time), '%Y-%m-%d')
+    </select>
+    <select id="selectAlgStats" resultType="java.util.Map">
+        SELECT CASE WHEN r.alg_result IN (-1, 0, 1) THEN r.alg_result ELSE 2 END AS algResult, COUNT(*) AS totalCount
+        <include refid="recordSource"/><include refid="recordFilter"/>
+        GROUP BY CASE WHEN r.alg_result IN (-1, 0, 1) THEN r.alg_result ELSE 2 END
+    </select>
+    <select id="selectNgSteps" resultType="java.util.Map">
+        SELECT r.process_code AS processCode, r.step_code AS stepCode, MAX(r.step_name) AS stepName, COUNT(*) AS totalCount
+        <include refid="recordSource"/><include refid="recordFilter"/>
+        AND r.alg_result = 1
+        GROUP BY r.process_code, r.step_code
+        ORDER BY totalCount DESC, r.process_code, r.step_code LIMIT 10
+    </select>
+    <select id="selectRecords" resultType="java.util.Map">
+        SELECT CAST(r.id AS CHAR) AS id, r.work_order_code AS workOrderCode,
+            r.process_code AS processCode, w.process_name AS processName,
+            r.step_code AS stepCode, r.step_name AS stepName, r.step_status AS stepStatus,
+            r.alg_result AS algResult, r.ng_reason AS ngReason, r.image_path AS imagePath,
+            DATE_FORMAT(COALESCE(r.submit_time, r.create_time), '%Y-%m-%d %H:%i:%s') AS recordTime,
+            w.material_no AS materialNo, w.material_name AS materialName, w.prod_batch_no AS prodBatchNo,
+            w.prod_order_no AS prodOrderNo, w.worker_name AS workerName
+        <include refid="recordSource"/><include refid="recordFilter"/>
+        ORDER BY COALESCE(r.submit_time, r.create_time) DESC, r.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+</mapper>

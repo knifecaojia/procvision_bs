@@ -1,494 +1,400 @@
 <template>
-  <div class="app-container" id="pdf-content">
-    <el-row :gutter="10" class="mb8" style="justify-content: flex-start;" data-html2canvas-ignore="true">
-      <el-col :span="1.5">
-        <el-button
-            type="warning"
-            plain
-            icon="Download"
-            @click="handleExportPDF"
-        >导出 PDF 报告
-        </el-button>
-      </el-col>
-    </el-row>
+  <div class="app-container assembly-results">
+    <el-card shadow="never" class="filter-card">
+      <el-form :inline="true" :model="filters" label-width="100px" @submit.prevent="handleQuery">
+        <el-form-item label="记录时间">
+          <el-date-picker v-model="dateRange" type="daterange" value-format="YYYY-MM-DD"
+                          start-placeholder="开始日期" end-placeholder="结束日期" :clearable="false"
+                          :shortcuts="dateShortcuts"/>
+        </el-form-item>
+        <el-form-item v-for="field in searchFields" :key="field.key" :label="field.label">
+          <el-input v-model="filters[field.key]" :placeholder="field.placeholder" clearable maxlength="100"
+                    @keyup.enter="handleQuery"/>
+        </el-form-item>
+        <el-form-item label="检测结果">
+          <el-select v-model="filters.algResult" clearable placeholder="全部结果" style="width: 190px">
+            <el-option v-for="option in algOptions" :key="option.value" :label="option.label" :value="option.value"/>
+          </el-select>
+        </el-form-item>
+<!--        <el-form-item label="图像条件">-->
+<!--          <el-select v-model="filters.hasImage" clearable placeholder="全部记录" style="width: 190px">-->
+<!--            <el-option label="有图像" :value="true"/>-->
+<!--            <el-option label="无图像" :value="false"/>-->
+<!--          </el-select>-->
+<!--        </el-form-item>-->
+        <el-form-item>
+          <el-button type="primary" icon="Search" :loading="loading" :disabled="exporting" @click="handleQuery">查询
+          </el-button>
+          <el-button icon="Refresh" :disabled="loading || exporting" @click="handleReset">重置</el-button>
+          <el-button type="warning" plain icon="Download" :loading="exporting" :disabled="loading || !loaded"
+                     @click="handleExportPDF">
+            {{ exporting ? exportProgress : '一键导出多媒体 PDF 报告' }}
+          </el-button>
+        </el-form-item>
+      </el-form>
+      <!--      <div class="query-note">按提交时间查询，提交时间为空时取创建时间。默认近7天，单次查询最多366天；PDF包含全部匹配记录，单份最多500条。</div>-->
+    </el-card>
 
-    <el-row :gutter="20" class="panel-group">
-      <el-col :span="6" class="card-panel-col">
-        <el-card shadow="hover" class="box-card">
-          <div class="card-header">
-            <el-icon class="icon-blue">
-              <Document/>
-            </el-icon>
-            <span>总装配任务</span>
+    <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" class="status-alert"/>
+    <template v-if="loaded">
+      <div class="applied-query">当前结果：{{ appliedQuery.startDate }} 至 {{ appliedQuery.endDate }} ·
+        {{ appliedDescription }}
+      </div>
+      <el-row :gutter="16" v-loading="loading">
+        <el-col v-for="card in statCards" :key="card.key" :xs="12" :sm="8" :lg="4">
+          <el-card shadow="hover" class="stat-card">
+            <div>{{ card.label }}</div>
+            <strong :style="{ color: card.color }">{{ statistics[card.key] || 0 }}</strong></el-card>
+        </el-col>
+      </el-row>
+      <div class="query-note">资源未就绪 {{ statistics.abnormal || 0 }} 个，待派单 {{ statistics.pending || 0 }} 个。
+      </div>
+      <el-row :gutter="16" class="charts" v-loading="loading">
+        <el-col v-for="(title, index) in chartTitles" :key="title" :xs="24" :lg="12">
+          <el-card shadow="hover">
+            <template #header>{{ title }}</template>
+            <div :ref="el => chartElements[index] = el" class="chart"/>
+          </el-card>
+        </el-col>
+      </el-row>
+      <el-card shadow="never" class="records-panel">
+        <template #header>
+          <div class="records-header"><span>装配图像明细（共 {{ total }} 条记录）</span>
+            <el-button link type="primary" icon="Refresh" :disabled="loading || exporting" @click="refreshApplied">
+              刷新当前结果
+            </el-button>
           </div>
-          <div class="card-value">{{ statistics.total }}</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6" class="card-panel-col">
-        <el-card shadow="hover" class="box-card">
-          <div class="card-header">
-            <el-icon class="icon-green">
-              <CircleCheck/>
-            </el-icon>
-            <span>已完成任务</span>
-          </div>
-          <div class="card-value">{{ statistics.completed }}</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6" class="card-panel-col">
-        <el-card shadow="hover" class="box-card">
-          <div class="card-header">
-            <el-icon class="icon-orange">
-              <Loading/>
-            </el-icon>
-            <span>进行中任务</span>
-          </div>
-          <div class="card-value">{{ statistics.inProgress }}</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6" class="card-panel-col">
-        <el-card shadow="hover" class="box-card">
-          <div class="card-header">
-            <el-icon class="icon-red">
-              <Warning/>
-            </el-icon>
-            <span>资源未就绪</span>
-          </div>
-          <div class="card-value">{{ statistics.abnormal }}</div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-row :gutter="20" style="margin-top: 20px;">
-      <el-col :span="16">
-        <el-card shadow="hover">
-          <template #header>
-            <div class="clearfix">
-              <span>近7天装配任务趋势</span>
-            </div>
-          </template>
-          <div ref="trendChartRef" style="height: 350px;"/>
-        </el-card>
-      </el-col>
-      <el-col :span="8">
-        <el-card shadow="hover">
-          <template #header>
-            <div class="clearfix">
-              <span>近7天任务状态分布</span>
-            </div>
-          </template>
-          <div ref="statusChartRef" style="height: 350px;"/>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-row :gutter="20" style="margin-top: 20px;">
-      <el-col :span="16">
-        <el-card shadow="hover">
-          <template #header>
-            <div class="clearfix">
-              <span>高频出错工步</span>
-            </div>
-          </template>
-          <div ref="ngStepChartRef" style="height: 350px;" />
-        </el-card>
-      </el-col>
-      <el-col :span="8">
-        <el-card shadow="hover">
-          <template #header>
-            <div class="clearfix">
-              <span>算法检测结果占比</span>
-            </div>
-          </template>
-          <div ref="algResultChartRef" style="height: 350px;"/>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-row :gutter="20" style="margin-top: 20px;">
-      <el-col :span="24">
-        <el-card shadow="hover">
-          <template #header>
-            <div class="clearfix">
-              <span>最新装配工步结果</span>
-              <el-button style="float: right; padding: 3px 0" link type="primary" icon="Refresh"
-                         @click="fetchRecentResults">刷新
-              </el-button>
-            </div>
-          </template>
-
-          <el-row :gutter="20" v-loading="loadingResults">
-            <el-col :span="4" v-for="(item, index) in recentStepResults" :key="index" style="margin-bottom: 20px;">
-              <el-card :body-style="{ padding: '0px' }" shadow="never" class="result-card">
-                <el-image
-                    :src="item.imgUrl"
-                    :preview-src-list="[item.imgUrl]"
-                    fit="cover"
-                    class="image"
-                    lazy
-                    :preview-teleported="true"
-                >
-                  <template #error>
-                    <div class="image-slot">
-                      <el-icon>
-                        <Picture/>
-                      </el-icon>
-                    </div>
-                  </template>
-                </el-image>
-                <div style="padding: 14px;">
-                  <span class="step-title">{{ item.stepName }}</span>
-                  <div class="bottom-info">
-                    <span class="order-code">{{ item.workOrderCode }}</span>
-                    <el-tag :type="item.stepStatus === 2 ? 'success' : 'danger'" size="small">
-                      {{ item.stepStatus === 2 ? '已完成' : '未完成' }}
-                    </el-tag>
-                  </div>
+        </template>
+        <el-empty v-if="!rows.length && !loading" description="当前条件下暂无装配记录"/>
+        <el-row :gutter="16" v-loading="loading">
+          <el-col v-for="item in rows" :key="item.id" :xs="24" :sm="12" :lg="6" class="record-column">
+            <el-card :body-style="{ padding: '0' }" shadow="hover">
+              <el-image v-if="item.hasImage" :src="item.imgUrl" :preview-src-list="item.imgUrl ? [item.imgUrl] : []"
+                        fit="contain" class="record-image" lazy preview-teleported>
+                <template #error>
+                  <div class="image-empty">{{ item.imageError || '图片暂不可用' }}</div>
+                </template>
+              </el-image>
+              <div v-else class="record-image image-empty">未保存图像</div>
+              <div class="record-details">
+                <div>工单：{{ item.workOrderCode || '—' }}</div>
+                <div>工序：{{ item.processName || item.processCode || '—' }}</div>
+                <div>工步：{{ item.stepName || item.stepCode || '—' }}</div>
+                <div>时间：{{ item.recordTime || '—' }}</div>
+                <div class="record-tags">
+                  <el-tag :type="Number(item.stepStatus) === 2 ? 'success' : 'info'">
+                    {{ Number(item.stepStatus) === 2 ? '已完成' : '未完成' }}
+                  </el-tag>
+                  <el-tag
+                      :type="item.algResult != null && Number(item.algResult) === 0 ? 'success' : Number(item.algResult) === 1 ? 'danger' : 'info'">
+                    {{ algResultLabel(item.algResult) }}
+                  </el-tag>
                 </div>
-              </el-card>
-            </el-col>
-          </el-row>
-        </el-card>
-      </el-col>
-    </el-row>
+                <!--                <div-->
+                <!--                    v-if="item.ngReason"-->
+                <!--                    class="ng-reason"-->
+                <!--                    :title="item.ngReason"-->
+                <!--                >-->
+                <!--                  异常原因：{{ item.ngReason }}-->
+                <!--                </div>-->
+              </div>
+            </el-card>
+          </el-col>
+        </el-row>
+        <el-pagination v-if="total" v-model:current-page="pageNum" v-model:page-size="pageSize"
+                       :page-sizes="[12, 24, 48]"
+                       :total="total" layout="total, sizes, prev, pager, next" :disabled="loading || exporting"
+                       @current-change="changePage" @size-change="changeSize"/>
+      </el-card>
+    </template>
   </div>
 </template>
 
 <script setup name="AssemblyDashboard">
-import {ref, onMounted, onBeforeUnmount, nextTick} from 'vue'
+import {ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, onActivated} from 'vue'
+import {ElMessage} from 'element-plus'
 import * as echarts from 'echarts'
-import {getKpiStats, getChartAnalysis, getRecentResults} from '@/api/order/result.js'
-import {CircleCheck, Document, Loading, Picture, Warning} from "@element-plus/icons-vue";
-import {downloadPDF} from "@/utils/pdf.js";
+import {getResultOverview, getRecentResults, getResultReport, getResultImage} from '@/api/order/result'
+import {resultChartOptions, chartTitles, algResultLabel} from '@/utils/assemblyResultCharts'
+import {createAssemblyResultPdf} from '@/utils/assemblyResultReport'
 
-// --- 图表引用与实例 ---
-const trendChartRef = ref(null)
-const statusChartRef = ref(null)
-const algResultChartRef = ref(null) // 新增：算法结果图表
-const ngStepChartRef = ref(null) // 新增：异常工步图表 DOM 引用
-let ngStepChart = null           // 新增：异常工步 ECharts 实例
-let trendChart = null
-let defectChart = null
-let statusChart = null
-let algResultChart = null // 新增
+function lastDays(days) {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - days + 1);
+  return [start, end]
+}
 
-// --- 响应式数据 ---
-const loadingResults = ref(false)
-const chartLoading = ref(true)
+function dateString(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
 
-const statistics = ref({
-  total: 0,
-  completed: 0,
-  inProgress: 0,
-  abnormal: 0
+const dateRange = ref(lastDays(7).map(dateString))
+const dateShortcuts = [7, 30, 90].map(days => ({text: `近${days}天`, value: () => lastDays(days)}))
+const defaults = () => ({
+  product: '',
+  prodBatchNo: '',
+  workOrderCode: '',
+  process: '',
+  step: '',
+  algResult: null,
+  hasImage: null
 })
-const recentStepResults = ref([])
+const filters = reactive(defaults())
+const searchFields = [
+  {key: 'workOrderCode', label: '工单编码', placeholder: '输入工单编码'},
+  {key: 'process', label: '工序', placeholder: '工序名称或编码'},
+  {key: 'step', label: '工步', placeholder: '工步名称或编码'}
+]
+const algOptions = [0, 1, -1, 2].map(value => ({value, label: algResultLabel(value)}))
+const statCards = [
+  {key: 'recordCount', label: '匹配记录', color: '#409eff'}, {key: 'imageCount', label: '装配图像', color: '#409eff'},
+  {key: 'total', label: '关联装配任务', color: '#606266'}, {key: 'completed', label: '已完成任务', color: '#67c23a'},
+  {key: 'inProgress', label: '进行中任务', color: '#e6a23c'}, {key: 'abnormal', label: '资源未就绪', color: '#f56c6c'}
+]
+const loading = ref(false), loaded = ref(false), exporting = ref(false), exportProgress = ref('准备报告…')
+const errorMessage = ref(''), statistics = ref({}), rows = ref([]), total = ref(0)
+const pageNum = ref(1), pageSize = ref(12), appliedQuery = ref({})
+const appliedDescription = computed(() => {
+  const q = appliedQuery.value
+  const parts = searchFields.filter(f => q[f.key]).map(f => `${f.label}：${q[f.key]}`)
+  if (q.algResult != null) parts.push(algResultLabel(q.algResult))
+  if (q.hasImage != null) parts.push(q.hasImage ? '有图像' : '无图像')
+  return parts.join('；') || '全部产品、工序与检测结果'
+})
+const chartElements = []
+let charts = [], observer, requestVersion = 0, disposed = false
 
-const handleExportPDF = () => {
-  const el = document.getElementById('pdf-content')
-  // 导出前可以根据需要暂时隐藏某些不希望出现在PDF里的UI元素（如按钮）
-  downloadPDF(el, `装配结果分析报告_${new Date().getTime()}`)
+function renderCharts(data) {
+  const options = resultChartOptions(data)
+  options.forEach((option, index) => {
+    if (!charts[index]) {
+      charts[index] = echarts.init(chartElements[index])
+      observer?.observe(chartElements[index])
+    }
+    charts[index].setOption(option, true)
+  })
 }
 
-// --- 1. 图表初始化 (仅配置基础样式，不包含数据) ---
-const initCharts = () => {
-  if (!trendChartRef.value || !statusChartRef.value)
-    return;
-  // 趋势图基础配置
-  trendChart = echarts.init(trendChartRef.value)
-  trendChart.setOption({
-    tooltip: {trigger: 'axis'},
-    legend: {data: ['当天开始任务数', '当天完成任务数']},
-    grid: {left: '3%', right: '4%', bottom: '3%', containLabel: true},
-    xAxis: {type: 'category', boundaryGap: false, data: []}, // 数据留空
-    yAxis: {type: 'value'},
-    series: [
-      {name: '当天开始任务数', type: 'line', smooth: true, itemStyle: {color: '#409EFF'}, data: []},
-      {name: '当天完成任务数', type: 'line', smooth: true, itemStyle: {color: '#67C23A'}, data: []}
-    ]
-  })
-
-  statusChart = echarts.init(statusChartRef.value)
-  statusChart.setOption({
-    tooltip: {trigger: 'item'},
-    legend: {top: '5%', left: 'center'},
-    series: [
-      {
-        name: '任务状态',
-        type: 'pie',
-        radius: ['40%', '70%'],
-        avoidLabelOverlap: false,
-        itemStyle: {
-          borderRadius: 10,
-          borderColor: '#fff',
-          borderWidth: 2
-        },
-        label: {show: false, position: 'center'},
-        emphasis: {
-          label: {show: true, fontSize: 18, fontWeight: 'bold'}
-        },
-        labelLine: {show: false},
-        // 这里留空，等待后端数据填入
-        data: []
-      }
-    ]
-  })
-
-  algResultChart = echarts.init(algResultChartRef.value)
-  algResultChart.setOption({
-    tooltip: {trigger: 'item'},
-    legend: {top: '5%', left: 'center'},
-    // 预设颜色：绿色(OK), 红色(NG), 灰色(执行失败)
-    color: ['#67C23A', '#F56C6C', '#909399'],
-    series: [
-      {
-        name: '算法结果',
-        type: 'pie',
-        radius: ['40%', '70%'],
-        avoidLabelOverlap: false,
-        itemStyle: {
-          borderRadius: 10,
-          borderColor: '#fff',
-          borderWidth: 2
-        },
-        label: {show: false, position: 'center'},
-        emphasis: {
-          label: {show: true, fontSize: 18, fontWeight: 'bold'}
-        },
-        labelLine: {show: false},
-        data: [] // 等待后端填入
-      }
-    ]
-  })
-
-  if (ngStepChartRef.value) {
-    ngStepChart = echarts.init(ngStepChartRef.value)
-    ngStepChart.setOption({
-      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-      grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-      xAxis: {
-        type: 'category',
-        data: [],
-        axisLabel: { interval: 0, rotate: 15 } // 名称太长时倾斜显示防止重叠
-      },
-      yAxis: { type: 'value', name: '检测失败次数' },
-      series: [
-        {
-          name: '出错频次',
-          type: 'bar',
-          barWidth: '40%', // 控制柱子宽度
-          itemStyle: {
-            color: '#F56C6C', // 使用红色警示色
-            borderRadius: [4, 4, 0, 0] // 柱子顶部设为圆角，更美观
-          },
-          data: [],
-          label: { show: true, position: 'top' } // 在柱子顶部显示具体数值
-        }
-      ]
-    })
+function queryFromForm() {
+  if (!dateRange.value || dateRange.value.length !== 2) throw new Error('请选择完整日期范围')
+  const [startDate, endDate] = dateRange.value
+  const diff = (Date.parse(endDate) - Date.parse(startDate)) / 86400000
+  if (!Number.isFinite(diff) || diff < 0 || diff > 365) throw new Error('日期范围不能超过366天，开始日期不能晚于结束日期')
+  return {
+    ...Object.fromEntries(Object.entries(filters).map(([key, value]) => [key, typeof value === 'string' ? value.trim() || null : value === undefined ? null : value])),
+    startDate, endDate, algResult: filters.algResult === '' ? null : filters.algResult ?? null,
+    hasImage: filters.hasImage === '' ? null : filters.hasImage ?? null
   }
 }
 
-// --- 2. 异步获取数据并更新图表 ---
-const fetchDashboardData = async () => {
-  chartLoading.value = true
-  trendChart?.showLoading()
-  statusChart?.showLoading()
-  algResultChart?.showLoading() // 新增 Loading
-  ngStepChart?.showLoading()
-
+async function loadOverview(query) {
+  const version = ++requestVersion
+  loading.value = true;
+  errorMessage.value = ''
   try {
-    // 1. 获取 KPI 数据
-    const kpiRes = await getKpiStats()
-    if (kpiRes.code === 200) {
-      statistics.value = kpiRes.data
-    }
-
-    // 2. 获取图表数据
-    const chartRes = await getChartAnalysis({timeRange: '7days'})
-    if (chartRes.code === 200) {
-      const {trendData, statusData, algResultData, ngStepStats} = chartRes.data
-
-      algResultChart?.setOption({
-        series: [{
-          data: algResultData
-        }]
-      })
-
-      ngStepChart?.setOption({
-        xAxis: { data: ngStepStats.categories }, // X轴：工步名称
-        series: [{ data: ngStepStats.counts }]   // Y轴：NG数量
-      })
-
-
-      // 动态更新趋势图数据
-      trendChart?.setOption({
-        xAxis: {data: trendData.dates}, // e.g., ['周一', '周二', ...]
-        series: [
-          {data: trendData.planned},    // e.g., [120, 132, ...]
-          {data: trendData.actual}      // e.g., [110, 120, ...]
-        ]
-      })
-
-      statusChart?.setOption({
-        series: [{
-          data: statusData
-        }]
-      })
-    }
-
-    // 3. 获取底部图片结果流
-    await fetchRecentResults()
-
+    const {data} = await getResultOverview({...query, pageNum: 1, pageSize: pageSize.value})
+    if (disposed || version !== requestVersion) return
+    statistics.value = data.statistics;
+    rows.value = data.rows;
+    total.value = Number(data.total)
+    appliedQuery.value = {...query};
+    pageNum.value = 1;
+    loaded.value = true
+    await nextTick()
+    if (!disposed) renderCharts(data.charts)
   } catch (error) {
-    console.error('获取数据失败:', error)
+    if (version === requestVersion) errorMessage.value = '查询失败，请重试。已显示的结果仍属于上一次成功查询。'
   } finally {
-    chartLoading.value = false
-    trendChart?.hideLoading()
-    statusChart?.hideLoading()
-    algResultChart?.hideLoading() // 关闭 Loading
-    ngStepChart?.hideLoading()
+    if (version === requestVersion) loading.value = false
   }
 }
 
-// 单独抽离获取图片的逻辑，方便局部刷新
-const fetchRecentResults = async () => {
-  loadingResults.value = true
+function handleQuery() {
+  if (exporting.value) return
   try {
-    const res = await getRecentResults()
-    if (res.code === 200) {
-      recentStepResults.value = res.data
-    }
-  } finally {
-    loadingResults.value = false
+    return loadOverview(queryFromForm())
+  } catch (error) {
+    ElMessage.warning(error.message)
   }
 }
 
-// --- 生命周期与自适应 ---
-const handleResize = () => {
-  if (trendChart) trendChart.resize()
-  if (defectChart) defectChart.resize()
-  if (algResultChart) algResultChart.resize() // 新增
-  if (ngStepChart) ngStepChart.resize()
+function handleReset() {
+  Object.assign(filters, defaults());
+  dateRange.value = lastDays(7).map(dateString);
+  handleQuery()
+}
+
+function refreshApplied() {
+  return loadOverview(appliedQuery.value)
+}
+
+async function changePage() {
+  if (loading.value || exporting.value) return
+  const version = ++requestVersion
+  loading.value = true;
+  errorMessage.value = ''
+  try {
+    const {data} = await getRecentResults({...appliedQuery.value, pageNum: pageNum.value, pageSize: pageSize.value})
+    if (disposed || version !== requestVersion) return
+    rows.value = data.rows;
+    total.value = Number(data.total)
+  } catch (error) {
+    rows.value = [];
+    errorMessage.value = '明细加载失败，请刷新当前结果。'
+  } finally {
+    if (version === requestVersion) loading.value = false
+  }
+}
+
+function changeSize() {
+  pageNum.value = 1;
+  changePage()
+}
+
+async function handleExportPDF() {
+  if (exporting.value || loading.value || !loaded.value) return
+  exporting.value = true;
+  exportProgress.value = '正在读取全部记录…'
+  try {
+    const {data} = await getResultReport({...appliedQuery.value})
+    const {failures} = await createAssemblyResultPdf(data, {
+      fetchImage: getResultImage,
+      onProgress: (current, count) => {
+        exportProgress.value = `正在生成 ${current}/${count}`
+      }
+    })
+    if (failures.length) ElMessage.warning(`PDF已导出，其中${failures.length}条图像无法读取，已在报告中标注。`)
+    else ElMessage.success('PDF报告已导出，包含全部匹配记录。')
+  } catch (error) {
+    ElMessage.error(error?.message || '报告导出失败，请重试')
+  } finally {
+    exporting.value = false
+  }
+}
+
+function resizeCharts() {
+  charts.forEach(chart => chart.resize())
 }
 
 onMounted(() => {
-  nextTick(() => {
-    // 如果大屏在 el-tab 或 el-dialog 中，可以加一个 setTimeout 缓冲
-    setTimeout(() => {
-      initCharts()
-      fetchDashboardData()
-    }, 100)
-  })
-  window.addEventListener('resize', handleResize)
+  observer = new ResizeObserver(resizeCharts);
+  handleQuery();
+  window.addEventListener('resize', resizeCharts)
 })
-
+onActivated(() => nextTick(resizeCharts))
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize)
-  if (trendChart) trendChart.dispose()
-  if (defectChart) defectChart.dispose()
-  if (algResultChart) algResultChart.dispose() // 新增
-  if (ngStepChart) ngStepChart.dispose()
+  disposed = true;
+  requestVersion++;
+  observer?.disconnect();
+  window.removeEventListener('resize', resizeCharts)
+  charts.forEach(chart => chart.dispose());
+  charts = []
 })
 </script>
 
 <style scoped>
-.panel-group {
+.filter-card {
+  margin-bottom: 18px;
+}
+
+.query-note {
+  color: #737b86;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.applied-query {
+  margin: 16px 0;
+  font-size: 14px;
+  color: #495565;
+  overflow-wrap: anywhere;
+}
+
+.status-alert {
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  margin-bottom: 16px;
+  color: #606266;
+}
+
+.stat-card strong {
+  display: block;
+  font-size: 30px;
+  margin-top: 14px;
+}
+
+.charts {
   margin-top: 18px;
 }
 
-.card-panel-col {
-  margin-bottom: 32px;
+.charts .el-col {
+  margin-bottom: 16px;
 }
 
-.box-card {
-  border-radius: 8px;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  font-size: 16px;
-  color: #606266;
-  font-weight: bold;
-}
-
-.card-header .el-icon {
-  margin-right: 8px;
-  font-size: 20px;
-}
-
-.card-value {
-  font-size: 28px;
-  font-weight: bold;
-  color: #303133;
-  margin-top: 15px;
-  text-align: center;
-}
-
-/* 图标颜色 */
-.icon-blue {
-  color: #409EFF;
-}
-
-.icon-green {
-  color: #67C23A;
-}
-
-.icon-orange {
-  color: #E6A23C;
-}
-
-.icon-red {
-  color: #F56C6C;
-}
-
-/* 结果卡片样式 */
-.result-card {
-  transition: all 0.3s;
-}
-
-.result-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-}
-
-.image {
+.chart {
+  height: 350px;
   width: 100%;
-  height: 180px;
-  display: block;
-  background-color: #f5f7fa;
 }
 
-.image-slot {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  color: #909399;
-  font-size: 30px;
-}
-
-.step-title {
-  font-size: 14px;
-  font-weight: bold;
-  color: #303133;
-  display: block;
-  margin-bottom: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.bottom-info {
+.records-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.order-code {
-  font-size: 12px;
+.record-column {
+  margin-bottom: 16px;
+}
+
+.record-image {
+  display: block;
+  width: 100%;
+  height: 210px;
+  background: #f5f7fa;
+}
+
+.image-empty {
+  display: flex;
+  height: 210px;
+  align-items: center;
+  justify-content: center;
   color: #909399;
+}
+
+.record-details {
+  padding: 15px;
+  font-size: 13px;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+  color: #606266;
+}
+
+.record-details strong {
+  color: #303133;
+  font-size: 15px;
+}
+
+.record-tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.ng-reason {
+  color: #c45656;
+  margin-top: 8px;
+  max-height: 90px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.el-pagination {
+  margin-top: 14px;
+  flex-wrap: wrap;
 }
 </style>

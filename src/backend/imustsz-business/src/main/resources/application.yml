@@ -115,3 +115,10 @@ xss:
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*
 
+
+# PDF导出大图：原图保留在MinIO，报告用图在服务端降采样。
+assembly:
+  report:
+    max-image-mb: ${ASSEMBLY_REPORT_MAX_IMAGE_MB:256}
+    image-max-edge: ${ASSEMBLY_REPORT_IMAGE_MAX_EDGE:2048}
+    image-concurrency: ${ASSEMBLY_REPORT_IMAGE_CONCURRENCY:2}

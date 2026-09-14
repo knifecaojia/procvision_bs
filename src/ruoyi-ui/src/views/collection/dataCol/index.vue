@@ -35,13 +35,13 @@
 
             <transition name="el-zoom-in-top">
               <div class="current-task" v-if="currentBarcode">
-                <div class="task-header">
-                  <span class="task-label">图片信息</span>
-                </div>
+<!--                <div class="task-header">-->
+<!--                  <span class="task-label">图片信息</span>-->
+<!--                </div>-->
 
-                <el-scrollbar max-height="120px" class="task-content-scroll">
-                  <div class="task-value">{{ currentBarcode }}</div>
-                </el-scrollbar>
+<!--                <el-scrollbar max-height="120px" class="task-content-scroll">-->
+<!--                  <div class="task-value">{{ currentBarcode }}</div>-->
+<!--                </el-scrollbar>-->
 
                 <div class="task-actions">
                   <el-button type="danger" link size="small" icon="RefreshLeft" @click="resetFlow(false)">
@@ -52,6 +52,25 @@
             </transition>
           </div>
 
+          <el-form label-width="90px" :disabled="submitting" class="product-info-form">
+            <el-form-item label="产品型号">
+              <el-input v-model="productInfo.productModel" maxlength="100" placeholder="请输入产品型号" clearable/>
+            </el-form-item>
+            <el-form-item label="产品批次">
+              <el-input v-model="productInfo.productBatch" maxlength="100" placeholder="请输入产品批次" clearable/>
+            </el-form-item>
+            <el-form-item label="工序代号">
+              <el-input v-model="productInfo.processNum" maxlength="100" placeholder="请输入工序代号" clearable/>
+            </el-form-item>
+            <el-form-item label="生产日期">
+              <el-date-picker v-model="productInfo.productTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss"
+                              placeholder="请选择生产日期和时间" style="width:100%"/>
+            </el-form-item>
+            <el-form-item label="其他信息">
+              <el-input v-model="productInfo.otherInfo" type="textarea" maxlength="500" show-word-limit
+                        placeholder="请输入其他信息"/>
+            </el-form-item>
+          </el-form>
           <div class="action-area" v-if="resultFile">
             <el-divider>3：选择数据集</el-divider>
             <div class="dataset-selector">
@@ -153,7 +172,9 @@
                 <img :src="previewImage" class="captured-img"/>
               </div>
               <div v-if="previewImage" style="text-align: center; margin-top: 10px; margin-right: 10px">
-                <el-button type="text" icon="Delete" @click="clearCapture" :disabled="processing || watermarking">清除重选</el-button>
+                <el-button type="text" icon="Delete" @click="clearCapture" :disabled="processing || watermarking">
+                  清除重选
+                </el-button>
               </div>
             </div>
 
@@ -244,10 +265,10 @@
     >
       <el-form ref="datasetFormRef" :model="datasetForm" :rules="datasetRules" label-width="100px">
         <el-form-item label="数据集名称" prop="name">
-          <el-input v-model="datasetForm.name" placeholder="请输入数据集名称" maxlength="100" show-word-limit />
+          <el-input v-model="datasetForm.name" placeholder="请输入数据集名称" maxlength="100" show-word-limit/>
         </el-form-item>
         <el-form-item label="数据集描述" prop="desc">
-          <el-input v-model="datasetForm.desc" type="textarea" :rows="3" placeholder="请输入数据集描述（可选）" />
+          <el-input v-model="datasetForm.desc" type="textarea" :rows="3" placeholder="请输入数据集描述（可选）"/>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -289,7 +310,7 @@
 </template>
 
 <script setup>
-import {ref, onMounted, onBeforeUnmount, nextTick, getCurrentInstance} from 'vue';
+import {reactive, ref, onMounted, onBeforeUnmount, nextTick, getCurrentInstance} from 'vue';
 import axios from "axios";
 import {getUploadUrl} from "@/api/algorithm/algorithm.js";
 import {addData, checkExist, updateData, uploadData} from "@/api/collection/data.js";
@@ -305,6 +326,7 @@ const barcodeInput = ref('');
 const currentBarcode = ref('');
 const barcodeInputRef = ref(null);
 const submitting = ref(false);
+const productInfo = reactive({productTime: null, productModel: '', productBatch: '', processNum: '', otherInfo: ''});
 const selectedDatasetId = ref(null);
 const datasetOptions = ref([]);
 const datasetLoading = ref(false);
@@ -413,7 +435,7 @@ const confirmCrop = () => {
     // 2. 将 Blob 转为 File 对象
     const originalName = originalFile.value ? originalFile.value.name : 'capture.jpg';
     const newFilename = originalName.replace(/\.[^/.]+$/, "") + `_cropped.jpg`;
-    const croppedFile = new File([blob], newFilename, { type: 'image/jpeg' });
+    const croppedFile = new File([blob], newFilename, {type: 'image/jpeg'});
 
     // 3. 更新当前文件，使其可用于后续的 Canny 边缘检测等算法
     originalFile.value = croppedFile;
@@ -489,7 +511,7 @@ const handleScan = () => {
   if (!barcodeInput.value) return proxy.$modal.msgWarning('请输入条码');
   currentBarcode.value = barcodeInput.value;
   watermarkText.value = currentBarcode.value;
-  proxy.$modal.msgSuccess('条码锁定，请采集图像');
+  proxy.$modal.msgSuccess('条码锁定，请上传图像');
 
   if (mode.value === 'camera') {
     startCamera();
@@ -796,7 +818,7 @@ const generateThumbnail = (file, maxWidth = 800) => {
       // 导出为 Blob
       canvas.toBlob((blob) => {
         const thumbFilename = file.name.replace(/\.[^/.]+$/, "_thumb.jpg");
-        const thumbFile = new File([blob], thumbFilename, { type: 'image/jpeg' });
+        const thumbFile = new File([blob], thumbFilename, {type: 'image/jpeg'});
         URL.revokeObjectURL(img.src);
         resolve(thumbFile);
       }, 'image/jpeg', 0.8); // 0.8 为压缩质量，可按需调整
@@ -808,7 +830,7 @@ const generateThumbnail = (file, maxWidth = 800) => {
 
 // --- Step 4: 上传归档 ---
 const submitData = async () => {
-  if (!resultFile.value || !currentBarcode.value) return;
+  if (submitting.value || !resultFile.value || !currentBarcode.value) return;
   if (!selectedDatasetId.value) return proxy.$modal.msgWarning('请先选择数据集');
 
   submitting.value = true;
@@ -822,7 +844,7 @@ const submitData = async () => {
     });
 
     await axios.put(origUploadUrl, resultFile.value, {
-      headers: { 'Content-Type': resultFile.value.type }
+      headers: {'Content-Type': resultFile.value.type}
     });
 
     // ================= 2. 生成并上传缩略图 =================
@@ -836,14 +858,20 @@ const submitData = async () => {
     });
 
     await axios.put(thumbUploadUrl, thumbFile, {
-      headers: { 'Content-Type': thumbFile.type }
+      headers: {'Content-Type': thumbFile.type}
     });
 
     // ================= 3. 构造并提交业务数据 =================
     const postData = {
       data: currentBarcode.value,
       imagePath: JSON.stringify([origObjectName, thumbObjectName]),
-      datasetId: selectedDatasetId.value
+      datasetId: selectedDatasetId.value,
+      type: 1,
+      productTime: productInfo.productTime,
+      productModel: productInfo.productModel.trim(),
+      productBatch: productInfo.productBatch.trim(),
+      processNum: productInfo.processNum.trim(),
+      otherInfo: productInfo.otherInfo.trim()
     };
 
     const isExist = await checkExist(postData.data)
@@ -852,7 +880,7 @@ const submitData = async () => {
       await addData(postData);
       proxy.$modal.msgSuccess('归档成功！');
       resetFlow(true);
-    }else{
+    } else {
       proxy.$modal.confirm('数据已存在，是否替换？').then(async function () {
         postData.id = isExist.data.id
         await updateData(postData)
@@ -872,6 +900,7 @@ const submitData = async () => {
 const resetFlow = () => {
   barcodeInput.value = '';
   currentBarcode.value = '';
+  Object.assign(productInfo, {productTime: null, productModel: '', productBatch: '', processNum: '', otherInfo: ''});
   rawCaptureFile.value = null;
   originalFile.value = null;
   resultFile.value = null;

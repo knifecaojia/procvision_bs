@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.imustsz.collect.mapper.CollectionManageMapper">
+  <resultMap id="ManagedResult" type="com.imustsz.collect.domain.BizDataCollection">
+    <id column="id" property="id"/>
+    <result column="image_path" property="imagePath"/><result column="data" property="data"/>
+    <result column="dataset_id" property="datasetId"/><result column="type" property="type"/>
+    <result column="label_image" property="labelImage"/><result column="coords_info" property="coordsInfo"/>
+    <result column="create_time" property="createTime"/><result column="remark" property="remark"/>
+    <result column="product_time" property="productTime"/>
+    <result column="product_model" property="productModel"/>
+    <result column="product_batch" property="productBatch"/>
+    <result column="process_num" property="processNum"/>
+    <result column="other_info" property="otherInfo"/>
+  </resultMap>
+  <sql id="columns">id, image_path, data, dataset_id, type, label_image, coords_info, create_time, remark, product_time, product_model, product_batch, process_num, other_info</sql>
+  <sql id="managedFilter">
+    WHERE type = 1
+    <if test="q.data != null and q.data != ''">AND LOCATE(#{q.data}, data) &gt; 0</if>
+    <if test="q.datasetId != null">
+      <choose><when test="q.datasetId == 0">AND (dataset_id IS NULL OR dataset_id = 0)</when>
+      <otherwise>AND dataset_id = #{q.datasetId}</otherwise></choose>
+    </if>
+    <if test="q.beginProductTime != null">AND product_time &gt;= #{q.beginProductTime}</if>
+    <if test="q.endProductTime != null">AND product_time &lt;= #{q.endProductTime}</if>
+    <if test="q.productModel != null and q.productModel != ''">AND LOCATE(#{q.productModel}, product_model) &gt; 0</if>
+    <if test="q.productBatch != null and q.productBatch != ''">AND LOCATE(#{q.productBatch}, product_batch) &gt; 0</if>
+    <if test="q.processNum != null and q.processNum != ''">AND LOCATE(#{q.processNum}, process_num) &gt; 0</if>
+  </sql>
+  <select id="selectManagedList" resultMap="ManagedResult">
+    SELECT <include refid="columns"/> FROM biz_data_collection <include refid="managedFilter"/>
+    ORDER BY product_time DESC, id DESC
+  </select>
+  <select id="selectManagedExport" resultMap="ManagedResult">
+    SELECT <include refid="columns"/> FROM biz_data_collection <include refid="managedFilter"/>
+    AND id IN <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    ORDER BY id
+  </select>
+  <select id="selectManagedById" resultMap="ManagedResult">
+    SELECT <include refid="columns"/> FROM biz_data_collection WHERE id = #{id} AND type = 1
+  </select>
+  <update id="replaceManagedImage">
+    UPDATE biz_data_collection SET image_path = #{newPath}, update_time = NOW(), update_by = #{username}
+    WHERE id = #{id} AND type = 1 AND image_path &lt;=> #{oldPath}
+  </update>
+</mapper>
