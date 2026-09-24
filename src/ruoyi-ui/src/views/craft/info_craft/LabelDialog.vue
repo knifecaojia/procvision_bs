@@ -33,6 +33,12 @@
             <el-button type="primary" plain icon="DocumentAdd">导入标注</el-button>
           </el-upload>
 
+          <template v-if="!props.packageFlag">
+            <input ref="boundImportInput" type="file" multiple accept="image/*,.xml,text/xml,application/xml"
+                   class="bound-import-input" @change="handleBoundFilesChange" />
+            <el-button type="primary" plain icon="Upload" @click="boundImportInput?.click()">图像与标注一起导入</el-button>
+          </template>
+
           <el-button type="success" icon="Camera" @click="openCameraDialog">打开相机</el-button>
 
           <el-divider direction="vertical"/>
@@ -129,7 +135,7 @@
                   <div class="panel-heading-mark">标</div>
                   <div class="panel-heading-copy">
                     <div class="panel-heading-title">标注信息</div>
-                    <div class="panel-heading-subtitle">悬停可定位，点击编辑可修改标签信息</div>
+                    <div class="panel-heading-subtitle">点击图片上的标注框可保持定位，点击空白处取消</div>
                   </div>
                 </div>
                 <div class="annotation-count-badge">
@@ -139,29 +145,37 @@
               </div>
             </template>
 
-            <div v-if="annotationList.length > 0" class="annotation-batch-toolbar">
+            <div class="annotation-search">
+              <el-input v-model="annotationSearch" clearable placeholder="搜索标签或备注" prefix-icon="Search" />
+              <span v-if="annotationSearch">找到 {{ filteredAnnotations.length }} 项</span>
+            </div>
+
+            <div v-if="filteredAnnotations.length > 0" class="annotation-batch-toolbar">
               <div class="batch-select-area">
                 <el-checkbox
                     :model-value="isAllAnnotationsSelected"
                     :indeterminate="isAnnotationSelectionIndeterminate"
                     @change="toggleSelectAllAnnotations"
                 >
-                  全选
+                  全选搜索结果
                 </el-checkbox>
                 <span class="selection-summary">
-                  已选 <strong>{{ selectedAnnotationIds.length }}</strong> 项
+                   已选 <strong>{{ selectedFilteredCount }}</strong> 项
                 </span>
               </div>
+              <el-button size="small" @click="invertFilteredSelection">反选</el-button>
               <el-button
                   type="danger"
                   plain
                   size="small"
                   icon="Delete"
-                  :disabled="selectedAnnotationIds.length === 0"
+                  :disabled="selectedFilteredCount === 0"
                   @click="removeSelectedAnnotations"
               >
-                删除所选
-              </el-button>
+                 删除所选
+               </el-button>
+              <el-button type="success" plain size="small" :disabled="selectedFilteredCount === 0"
+                         @click="keepSelectedAnnotations">仅保留所选</el-button>
             </div>
 
             <el-scrollbar class="annotation-scrollbar">
@@ -179,17 +193,19 @@
                 </template>
               </el-empty>
 
+              <div v-else-if="filteredAnnotations.length === 0" class="annotation-empty">没有匹配的标签</div>
               <div v-else class="annotation-list-content">
                 <div
-                    v-for="(item, index) in annotationList"
+                    v-for="(item, index) in filteredAnnotations"
                     :key="item.id"
                     class="annotation-item annotation-info-item"
                     :class="{
-                      'is-highlighted': hoveredAnnotationId === item.id,
+                      'is-highlighted': hoveredAnnotationId === item.id || activeAnnotationId === item.id,
                       'is-selected': selectedAnnotationIds.includes(item.id)
                     }"
                     @mouseenter="highlightAnnotation(item.id, true)"
                     @mouseleave="highlightAnnotation(item.id, false)"
+                    @click="selectAnnotation(item.id)"
                 >
                   <el-checkbox
                       class="annotation-checkbox"
@@ -205,7 +221,8 @@
                       <el-tag class="annotation-label-tag" size="small" effect="light" round>
                         {{ item.label }}
                       </el-tag>
-                      <span v-if="hoveredAnnotationId === item.id" class="locating-text">定位中</span>
+                      <span v-if="activeAnnotationId === item.id" class="locating-text">已定位</span>
+                      <span v-else-if="hoveredAnnotationId === item.id" class="locating-text">定位中</span>
                     </div>
                     <div class="item-remark annotation-remark" :class="{ 'is-empty': !item.remark }">
                       {{ item.remark || '暂无备注' }}
@@ -234,7 +251,7 @@
                           text
                           size="small"
                           aria-label="删除该标注"
-                          @click.stop="removeAnnotation(index, item.id)"
+                           @click.stop="removeAnnotation(item.id)"
                       />
                     </el-tooltip>
                   </div>
@@ -339,7 +356,7 @@
 import {ref, computed, watch, nextTick, getCurrentInstance} from 'vue';
 import {fabric} from 'fabric';
 import {getUploadUrl} from "@/api/algorithm/algorithm.js";
-import {updateStep, getStep} from "@/api/craft/step.js";
+import {updateStep, getStep, listStepOri} from "@/api/craft/step.js";
 import axios from "axios";
 import {Loading, VideoCamera} from "@element-plus/icons-vue";
 const {proxy} = getCurrentInstance()
@@ -360,6 +377,12 @@ const currentStepContent = ref('');
 const annotationList = ref([]);
 const selectedAnnotationIds = ref([]);
 const hoveredAnnotationId = ref(null);
+const activeAnnotationId = ref(null);
+const annotationSearch = ref('');
+const boundImportInput = ref(null);
+const imageFingerprintCache = new Map();
+// 仅用于当前批量标注会话，不进入对外共享的 coordsInfo。
+const savedSourceBoxes = new Map();
 
 // 批量绑定工步时仅保存最近一次导入 VOC 时的原始模板快照。
 // 当前工步对标注的新增、删除、移动或缩放只作用于当前工步，不写回该模板。
@@ -410,7 +433,8 @@ const props = defineProps({
   packageFlag: {
     type: Boolean,
     default: false
-  }
+  },
+  processId: Number
 });
 
 const options = computed(() => [
@@ -436,12 +460,18 @@ const emit = defineEmits(['change-status'])
 const currentIndex = ref(0);
 const currentStepId = computed(() => props.stepIds[currentIndex.value]);
 
+const filteredAnnotations = computed(() => {
+  const keyword = annotationSearch.value.trim().toLocaleLowerCase();
+  return keyword ? annotationList.value.filter(item =>
+      String(item.label || '').toLocaleLowerCase().includes(keyword) ||
+      String(item.remark || '').toLocaleLowerCase().includes(keyword)) : annotationList.value;
+});
+const selectedFilteredCount = computed(() =>
+    filteredAnnotations.value.filter(item => selectedAnnotationIds.value.includes(item.id)).length);
 const isAllAnnotationsSelected = computed(() =>
-    annotationList.value.length > 0 && selectedAnnotationIds.value.length === annotationList.value.length
-);
+    filteredAnnotations.value.length > 0 && selectedFilteredCount.value === filteredAnnotations.value.length);
 const isAnnotationSelectionIndeterminate = computed(() =>
-    selectedAnnotationIds.value.length > 0 && selectedAnnotationIds.value.length < annotationList.value.length
-);
+    selectedFilteredCount.value > 0 && selectedFilteredCount.value < filteredAnnotations.value.length);
 
 watch(() => props.visible, (visible) => {
   if (visible) {
@@ -453,12 +483,17 @@ watch(() => props.visible, (visible) => {
   } else {
     isDrawingMode.value = false;
     if (canvas.value) canvas.value.clear();
+    window.removeEventListener('keydown', handleKeydown);
     stopLocalCamera();
     annotationList.value = [];
     selectedAnnotationIds.value = [];
     hoveredAnnotationId.value = null;
+    activeAnnotationId.value = null;
+    annotationSearch.value = '';
     batchVocTemplate.value = null;
     isUsingBatchVocTemplate.value = false;
+    imageFingerprintCache.clear();
+    savedSourceBoxes.clear();
     packageList.value = [];
     packageData.value = { productInfo: '', quantity: 1 };
   }
@@ -531,20 +566,15 @@ const loadCurrentStepData = async () => {
         const blob = await response.blob();
         const file = new File([blob], `history_${Date.now()}.jpg`, { type: blob.type });
 
-        loadFileToCanvas(file, props.packageFlag ? null : coordsInfo);
+        await loadFileToCanvas(file, props.packageFlag ? null : coordsInfo);
       }
     } else {
-      if (currentIndex.value === 0) {
+      if (!props.packageFlag && canvas.value?.backgroundImage && batchVocTemplate.value && uploadFile.value) {
+        await renderAvailableTemplate(uploadFile.value);
+      } else if (currentIndex.value === 0) {
         if (canvas.value) canvas.value.clear();
         uploadFile.value = null;
         isUsingBatchVocTemplate.value = false;
-      } else if (!props.packageFlag && canvas.value?.backgroundImage && batchVocTemplate.value) {
-        // 后续工步没有独立引导图时，沿用当前图片并恢复导入时的原始标签模板。
-        renderVocAnnotations(
-            batchVocTemplate.value.objects,
-            batchVocTemplate.value.size,
-            { clearExisting: false, showMessage: false, markAsBatchTemplate: true }
-        );
       }
     }
   } catch (err) {
@@ -585,11 +615,13 @@ const initCanvas = () => {
   canvas.value.on('mouse:up', onMouseUp);
   canvas.value.on('mouse:over', handleCanvasObjectMouseOver);
   canvas.value.on('mouse:out', handleCanvasObjectMouseOut);
+  canvas.value.on('mouse:down', handleCanvasObjectMouseDown);
   window.addEventListener('keydown', handleKeydown);
 };
 
 const handleKeydown = (e) => {
   if (props.packageFlag) return; // 包装模式禁用键盘删除框
+  if (e.target?.closest?.('input, textarea, [contenteditable="true"]')) return;
   if (e.key === 'Delete' || e.key === 'Backspace') {
     if (!canvas.value) return;
     const activeObjects = canvas.value.getActiveObjects();
@@ -652,7 +684,97 @@ const initZoom = () => {
   });
 };
 
-const loadFileToCanvas = (file, historyCoords = []) => {
+const originalImageUrl = (guideMapUrl) => {
+  if (!guideMapUrl) return '';
+  try {
+    const urls = JSON.parse(guideMapUrl);
+    return Array.isArray(urls) ? urls[0] || '' : String(urls || '');
+  } catch (e) {
+    return guideMapUrl;
+  }
+};
+
+// 上传后的对象地址会改变，按文件内容识别同一张原图。
+const fingerprintFile = async (file) => {
+  const bytes = await file.arrayBuffer();
+  if (globalThis.crypto?.subtle) {
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return `${file.size}:${Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')}`;
+  }
+  let hash = 2166136261;
+  for (const byte of new Uint8Array(bytes)) hash = Math.imul(hash ^ byte, 16777619);
+  return `${file.size}:${hash >>> 0}`;
+};
+
+const fingerprintUrl = async (url) => {
+  if (imageFingerprintCache.has(url)) return imageFingerprintCache.get(url);
+  const fullUrl = url.startsWith('http') ? url : BASE_API + url;
+  const response = await fetch(fullUrl, { cache: 'no-cache' });
+  if (!response.ok) throw new Error('前序工步的原图无法读取');
+  const fingerprint = await fingerprintFile(await response.blob());
+  imageFingerprintCache.set(url, fingerprint);
+  return fingerprint;
+};
+
+const sameBox = (a, b) => ['x', 'y', 'width', 'height'].every(key =>
+    Math.abs(a[key] - b[key]) <= 2);
+
+const unusedTemplateObjects = async (file) => {
+  const template = batchVocTemplate.value;
+  if (!template || !props.processId) return template?.objects || [];
+  // 普通列表接口会把 guideMapUrl 换成标注效果图；这里需要原始记录和原图。
+  const response = await listStepOri({ processId: props.processId, pageNum: 1, pageSize: 10000 });
+  const steps = response.rows || [];
+  const current = steps.find(step => String(step.id) === String(currentStepId.value));
+  if (!current) throw new Error('无法确认当前工步顺序');
+  const currentFingerprint = await fingerprintFile(file);
+  const usedBoxes = [];
+  const usedSourceIds = new Set();
+  for (const step of steps) {
+    if (Number(step.sort) >= Number(current.sort)) continue;
+    const coordsText = step.coordsInfo || step.guideInfo;
+    if (!coordsText || !originalImageUrl(step.guideMapUrl)) continue;
+    const originalStep = await getStep(step.id);
+    const originalUrl = originalImageUrl(originalStep.data?.guideMapUrl);
+    if (!originalUrl || await fingerprintUrl(originalUrl) !== currentFingerprint) continue;
+    let groups;
+    try { groups = JSON.parse(coordsText); } catch (e) { continue; }
+    if (!Array.isArray(groups)) continue;
+    groups.forEach(group => (group.posList || []).forEach(pos => {
+      // 兼容此前已保存的记录；新记录不再写入该字段。
+      if (pos.sourceBoxId) usedSourceIds.add(String(pos.sourceBoxId));
+      if (['x', 'y', 'width', 'height'].every(key => Number.isFinite(Number(pos[key])))) {
+        usedBoxes.push(Object.fromEntries(['x', 'y', 'width', 'height'].map(key => [key, Number(pos[key])])));
+      }
+    }));
+    const saved = savedSourceBoxes.get(String(step.id));
+    if (saved?.fingerprint === currentFingerprint) {
+      saved.ids.forEach(id => usedSourceIds.add(id));
+    }
+  }
+  const image = canvas.value.backgroundImage;
+  const width = Number(template.size.width) > 0 ? Number(template.size.width) : image.width;
+  const height = Number(template.size.height) > 0 ? Number(template.size.height) : image.height;
+  return template.objects.filter(item => {
+    if (item.sourceBoxId && usedSourceIds.has(String(item.sourceBoxId))) return false;
+    const box = {
+      x: item.xmin * image.width / width,
+      y: item.ymin * image.height / height,
+      width: (item.xmax - item.xmin) * image.width / width,
+      height: (item.ymax - item.ymin) * image.height / height
+    };
+    return !usedBoxes.some(used => sameBox(box, used));
+  });
+};
+
+const renderAvailableTemplate = async (file, showMessage = false) => {
+  const objects = await unusedTemplateObjects(file);
+  renderVocAnnotations(objects, batchVocTemplate.value.size,
+      { clearExisting: true, showMessage: false, markAsBatchTemplate: true });
+  if (showMessage) proxy.$modal.msgSuccess(`已加载 ${objects.length} 个未使用的标注框`);
+};
+
+const loadFileToCanvas = (file, historyCoords = []) => new Promise((resolve, reject) => {
   uploadFile.value = file;
   proxy.$modal.loading('正在加载原图...');
 
@@ -660,11 +782,13 @@ const loadFileToCanvas = (file, historyCoords = []) => {
   reader.onload = (e) => {
     const imgObj = new Image();
     imgObj.src = e.target.result;
-    imgObj.onload = () => {
+    imgObj.onload = async () => {
+      try {
       canvas.value.clear();
       annotationList.value = [];
       selectedAnnotationIds.value = [];
       hoveredAnnotationId.value = null;
+      activeAnnotationId.value = null;
       stepCount.value = 1;
 
       const fImg = new fabric.Image(imgObj);
@@ -680,14 +804,10 @@ const loadFileToCanvas = (file, historyCoords = []) => {
       });
       canvas.value.setViewportTransform([1, 0, 0, 1, 0, 0]);
 
-      // 批量绑定已导入 VOC 后，始终优先恢复导入时的原始模板。
-      // 不读取目标工步的历史标签，也不沿用上一工步对模板所做的增删改。
-      if (!props.packageFlag && props.stepIds.length > 1 && batchVocTemplate.value) {
-        renderVocAnnotations(
-            batchVocTemplate.value.objects,
-            batchVocTemplate.value.size,
-            { clearExisting: false, showMessage: false, markAsBatchTemplate: true }
-        );
+      if (!props.packageFlag && batchVocTemplate.value &&
+          !(Array.isArray(historyCoords) && historyCoords.length > 0) &&
+          batchVocTemplate.value.imageFingerprint === await fingerprintFile(file)) {
+        await renderAvailableTemplate(file);
       } else if (historyCoords && Array.isArray(historyCoords) && historyCoords.length > 0) {
         // 非批量模板场景下，正常回显当前工步的历史标注。
         isUsingBatchVocTemplate.value = false;
@@ -714,7 +834,7 @@ const loadFileToCanvas = (file, historyCoords = []) => {
                 selectable: true,
                 evented: true,
                 id: uniqueId,
-                customData: {label: group.label, remark: pos.remark || ''}
+                 customData: {label: group.label, remark: pos.remark || '', sourceBoxId: pos.sourceBoxId}
               });
 
               canvas.value.add(rect);
@@ -732,32 +852,31 @@ const loadFileToCanvas = (file, historyCoords = []) => {
         isUsingBatchVocTemplate.value = false;
       }
       proxy.$modal.closeLoading();
+      resolve();
+      } catch (error) {
+        proxy.$modal.closeLoading();
+        reject(error);
+      }
     };
     imgObj.onerror = () => {
       proxy.$modal.closeLoading();
       proxy.$modal.msgWarning('图片解析失败，可能文件已损坏，请重新上传！');
+      reject(new Error('图片解析失败'));
     };
   };
-  reader.onerror = () => proxy.$modal.closeLoading();
+  reader.onerror = () => { proxy.$modal.closeLoading(); reject(new Error('图片读取失败')); };
   reader.readAsDataURL(file);
-};
+});
 
 const handleFileChange = (file) => {
   if (file && file.raw) {
-    loadFileToCanvas(file.raw);
+    batchVocTemplate.value = null;
+    loadFileToCanvas(file.raw).catch(error => proxy.$modal.msgError(error.message));
   }
 };
 
-// 解析 Pascal VOC XML，并将其中的目标框绘制到当前图片上
-const handleVocFileChange = async (file) => {
-  if (!file?.raw) return;
-  if (!canvas.value?.backgroundImage) {
-    proxy.$modal.msgWarning('请先上传或加载对应的原始图片，再导入 VOC 标注文件！');
-    return;
-  }
-
-  try {
-    const xmlText = await file.raw.text();
+const parseVocFile = async (file) => {
+    const xmlText = await file.text();
     const xmlDoc = new DOMParser().parseFromString(xmlText, 'application/xml');
 
     if (xmlDoc.querySelector('parsererror')) {
@@ -765,10 +884,7 @@ const handleVocFileChange = async (file) => {
     }
 
     const objectNodes = Array.from(xmlDoc.getElementsByTagName('object'));
-    if (objectNodes.length === 0) {
-      proxy.$modal.msgWarning('该 VOC 文件中没有找到 object 标注节点！');
-      return;
-    }
+    if (objectNodes.length === 0) throw new Error('该 VOC 文件中没有找到 object 标注节点');
 
     const getText = (root, tagName) => root?.getElementsByTagName(tagName)?.[0]?.textContent?.trim() || '';
     const getNumber = (root, tagName) => {
@@ -788,44 +904,71 @@ const handleVocFileChange = async (file) => {
         ymin: getNumber(boxNode, 'ymin'),
         xmax: getNumber(boxNode, 'xmax'),
         ymax: getNumber(boxNode, 'ymax'),
-        remark: ''
+        remark: '',
+        sourceBoxId: `${getText(boxNode, 'xmin')},${getText(boxNode, 'ymin')},${getText(boxNode, 'xmax')},${getText(boxNode, 'ymax')}`
       };
     }).filter(item =>
         [item.xmin, item.ymin, item.xmax, item.ymax].every(Number.isFinite) &&
         item.xmax > item.xmin && item.ymax > item.ymin
     );
 
-    if (vocObjects.length === 0) {
-      proxy.$modal.msgWarning('VOC 文件中没有可用的矩形框坐标！');
-      return;
-    }
+    if (vocObjects.length === 0) throw new Error('VOC 文件中没有可用的矩形框坐标');
 
-    if (canvas.value.getObjects().length > 0) {
-      try {
-        await proxy.$modal.confirm(
-            '导入 VOC 标注会替换当前页面上已有的标注框，是否继续？',
-            '导入确认',
-            { confirmButtonText: '继续导入', cancelButtonText: '取消', type: 'warning' }
-        );
-      } catch (e) {
-        return;
-      }
-    }
+    return { objects: vocObjects, size: { width: vocWidth, height: vocHeight },
+      imageName: getText(xmlDoc, 'filename') };
+};
 
-    // 只在导入动作发生时更新批量模板；后续工步中的任何编辑都不会改写这份快照。
-    batchVocTemplate.value = {
-      objects: vocObjects.map(item => ({ ...item })),
-      size: { width: vocWidth, height: vocHeight }
-    };
+const confirmReplaceAnnotations = async () => {
+  if (canvas.value?.getObjects().length > 0) {
+    await proxy.$modal.confirm('导入标注会替换当前页面上的标注框，是否继续？',
+        '导入确认', { confirmButtonText: '继续导入', cancelButtonText: '取消', type: 'warning' });
+  }
+};
 
-    renderVocAnnotations(
-        vocObjects,
-        { width: vocWidth, height: vocHeight },
-        { markAsBatchTemplate: true }
-    );
+const handleVocFileChange = async (file) => {
+  if (!file?.raw) return;
+  if (!canvas.value?.backgroundImage || !uploadFile.value) {
+    proxy.$modal.msgWarning('请先上传或加载对应的原始图片，再导入 VOC 标注文件！');
+    return;
+  }
+
+  try {
+    const template = await parseVocFile(file.raw);
+    await confirmReplaceAnnotations();
+    template.imageFingerprint = await fingerprintFile(uploadFile.value);
+    batchVocTemplate.value = template;
+    await renderAvailableTemplate(uploadFile.value, true);
   } catch (error) {
+    if (error === 'cancel' || error === 'close') return;
     console.error('VOC 标注导入失败：', error);
     proxy.$modal.msgError(error?.message || 'VOC 标注文件解析失败，请检查 XML 格式！');
+  }
+};
+
+const handleBoundFilesChange = async (event) => {
+  const files = Array.from(event.target.files || []);
+  event.target.value = '';
+  const images = files.filter(file => file.type.startsWith('image/'));
+  const xmlFiles = files.filter(file => /\.xml$/i.test(file.name));
+  if (images.length !== 1 || xmlFiles.length !== 1 || files.length !== 2) {
+    proxy.$modal.msgWarning('请一次选择一张图像和一个 VOC XML 标注文件');
+    return;
+  }
+
+  try {
+    const template = await parseVocFile(xmlFiles[0]);
+    if (template.imageName && template.imageName.toLowerCase() !== images[0].name.toLowerCase()) {
+      throw new Error(`标注文件中的图像名 ${template.imageName} 与所选图像不一致`);
+    }
+    await confirmReplaceAnnotations();
+    template.imageFingerprint = await fingerprintFile(images[0]);
+    batchVocTemplate.value = template;
+    await loadFileToCanvas(images[0]);
+    proxy.$modal.msgSuccess(`图像与标注已绑定导入，当前可用 ${annotationList.value.length} 个标注框`);
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') return;
+    console.error('组合导入失败：', error);
+    proxy.$modal.msgError(error?.message || '组合导入失败');
   }
 };
 
@@ -886,7 +1029,7 @@ const renderVocAnnotations = (vocObjects, vocSize, options = {}) => {
       selectable: true,
       evented: true,
       id: uniqueId,
-      customData: { label: item.label, remark: item.remark || '' }
+      customData: { label: item.label, remark: item.remark || '', sourceBoxId: item.sourceBoxId }
     });
 
     canvas.value.add(rect);
@@ -1133,10 +1276,11 @@ const confirmLabel = () => {
   resetAnnotationDialog();
 };
 
-const removeAnnotation = (index, id) => {
-  annotationList.value.splice(index, 1);
+const removeAnnotation = (id) => {
+  annotationList.value = annotationList.value.filter(item => item.id !== id);
   selectedAnnotationIds.value = selectedAnnotationIds.value.filter(itemId => itemId !== id);
   if (hoveredAnnotationId.value === id) hoveredAnnotationId.value = null;
+  if (activeAnnotationId.value === id) activeAnnotationId.value = null;
 
   const objects = canvas.value.getObjects();
   const objToRemove = objects.find(obj => obj.id === id);
@@ -1156,15 +1300,41 @@ const toggleAnnotationSelection = (id, checked) => {
 };
 
 const toggleSelectAllAnnotations = (checked) => {
-  selectedAnnotationIds.value = checked ? annotationList.value.map(item => item.id) : [];
+  const visibleIds = new Set(filteredAnnotations.value.map(item => item.id));
+  const otherIds = selectedAnnotationIds.value.filter(id => !visibleIds.has(id));
+  selectedAnnotationIds.value = checked ? [...otherIds, ...visibleIds] : otherIds;
+};
+
+const invertFilteredSelection = () => {
+  const selected = new Set(selectedAnnotationIds.value);
+  filteredAnnotations.value.forEach(item => {
+    if (selected.has(item.id)) selected.delete(item.id);
+    else selected.add(item.id);
+  });
+  selectedAnnotationIds.value = [...selected];
+};
+
+const deleteAnnotationIds = (ids) => {
+  const idSet = new Set(ids);
+  canvas.value.getObjects().forEach(obj => {
+    if (obj.id && idSet.has(obj.id)) canvas.value.remove(obj);
+  });
+  annotationList.value = annotationList.value.filter(item => !idSet.has(item.id));
+  selectedAnnotationIds.value = selectedAnnotationIds.value.filter(id => !idSet.has(id));
+  if (hoveredAnnotationId.value && idSet.has(hoveredAnnotationId.value)) hoveredAnnotationId.value = null;
+  if (activeAnnotationId.value && idSet.has(activeAnnotationId.value)) activeAnnotationId.value = null;
+  stepCount.value = annotationList.value.length + 1;
+  canvas.value.discardActiveObject();
+  canvas.value.requestRenderAll();
 };
 
 const removeSelectedAnnotations = async () => {
-  if (selectedAnnotationIds.value.length === 0) return;
+  const ids = filteredAnnotations.value.filter(item => selectedAnnotationIds.value.includes(item.id)).map(item => item.id);
+  if (ids.length === 0) return;
 
   try {
     await proxy.$modal.confirm(
-        `确定删除选中的 ${selectedAnnotationIds.value.length} 个标注吗？`,
+        `确定删除当前搜索结果中选中的 ${ids.length} 个标注吗？`,
         '批量删除确认',
         { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
     );
@@ -1172,44 +1342,60 @@ const removeSelectedAnnotations = async () => {
     return;
   }
 
-  const idSet = new Set(selectedAnnotationIds.value);
-  canvas.value.getObjects().forEach(obj => {
-    if (obj.id && idSet.has(obj.id)) canvas.value.remove(obj);
-  });
-  annotationList.value = annotationList.value.filter(item => !idSet.has(item.id));
-  selectedAnnotationIds.value = [];
-  if (hoveredAnnotationId.value && idSet.has(hoveredAnnotationId.value)) hoveredAnnotationId.value = null;
-  stepCount.value = annotationList.value.length + 1;
-  canvas.value.discardActiveObject();
-  canvas.value.requestRenderAll();
+  deleteAnnotationIds(ids);
 };
 
-const setCanvasObjectHighlight = (id, isHover) => {
-  const obj = canvas.value?.getObjects().find(o => o.id === id);
-  if (obj) {
-    obj.set('strokeWidth', isHover ? 3 : 1);
-    obj.set('stroke', isHover ? '#409EFF' : 'red');
-    canvas.value.requestRenderAll();
-  }
+const keepSelectedAnnotations = async () => {
+  const selected = new Set(selectedAnnotationIds.value);
+  const toDelete = filteredAnnotations.value.filter(item => !selected.has(item.id)).map(item => item.id);
+  if (!toDelete.length) return;
+  try {
+    await proxy.$modal.confirm(`确定仅保留当前搜索结果中选中的 ${selectedFilteredCount.value} 个标注吗？`,
+        '批量保留确认', { confirmButtonText: '仅保留', cancelButtonText: '取消', type: 'warning' });
+  } catch (e) { return; }
+  deleteAnnotationIds(toDelete);
+};
+
+const refreshCanvasHighlights = () => {
+  canvas.value?.getObjects().forEach(obj => {
+    if (!obj.id) return;
+    const highlighted = obj.id === hoveredAnnotationId.value || obj.id === activeAnnotationId.value;
+    obj.set({ strokeWidth: highlighted ? 3 : 1, stroke: highlighted ? '#409EFF' : 'red' });
+  });
+  canvas.value?.requestRenderAll();
 };
 
 const highlightAnnotation = (id, isHover) => {
   hoveredAnnotationId.value = isHover ? id : (hoveredAnnotationId.value === id ? null : hoveredAnnotationId.value);
-  setCanvasObjectHighlight(id, isHover);
+  refreshCanvasHighlights();
+};
+
+const selectAnnotation = (id) => {
+  activeAnnotationId.value = id;
+  const obj = canvas.value?.getObjects().find(item => item.id === id);
+  if (obj) canvas.value.setActiveObject(obj);
+  refreshCanvasHighlights();
+};
+
+const handleCanvasObjectMouseDown = (opt) => {
+  if (isDrawingMode.value || props.packageFlag) return;
+  activeAnnotationId.value = opt?.target?.id || null;
+  if (!activeAnnotationId.value) canvas.value.discardActiveObject();
+  refreshCanvasHighlights();
 };
 
 const handleCanvasObjectMouseOver = (opt) => {
   const id = opt?.target?.id;
   if (!id) return;
   hoveredAnnotationId.value = id;
-  setCanvasObjectHighlight(id, true);
+  refreshCanvasHighlights();
 };
 
 const handleCanvasObjectMouseOut = (opt) => {
   const id = opt?.target?.id;
   if (!id) return;
   if (hoveredAnnotationId.value === id) hoveredAnnotationId.value = null;
-  setCanvasObjectHighlight(id, false);
+  refreshCanvasHighlights();
 };
 
 const cancelAnnotation = () => {
@@ -1229,6 +1415,7 @@ const clearCanvasAnnotations = () => {
   annotationList.value = [];
   selectedAnnotationIds.value = [];
   hoveredAnnotationId.value = null;
+  activeAnnotationId.value = null;
   stepCount.value = 1;
   canvas.value.requestRenderAll();
 };
@@ -1286,6 +1473,14 @@ const uploadToMinio = async () => {
 
     await updateStep(data)
 
+    if (!props.packageFlag && isUsingBatchVocTemplate.value && batchVocTemplate.value) {
+      savedSourceBoxes.set(String(currentStepId.value), {
+        fingerprint: batchVocTemplate.value.imageFingerprint,
+        ids: new Set(canvas.value.getObjects()
+            .map(obj => obj.customData?.sourceBoxId).filter(Boolean))
+      });
+    }
+
     emit('change-status')
     proxy.$modal.msgSuccess('保存成功！');
 
@@ -1342,7 +1537,8 @@ const getDataEasy = () => {
 
         return {
           label: rectObj.customData.label,
-          pos: { x: realX, y: realY, width: realW, height: realH, remark: rectObj.customData.remark }
+          pos: { x: realX, y: realY, width: realW, height: realH,
+            remark: rectObj.customData.remark }
         };
       });
 
@@ -1409,6 +1605,8 @@ function handleLabelDialogClose(){
 .annotator-container { display: flex; flex-direction: column; gap: 20px; align-items: center; padding: 10px; }
 .step-navigator { display: flex; align-items: center; justify-content: center; width: 100%; max-width: 1000px; margin-bottom: -10px; }
 .toolbar { width: 100%; max-width: 1150px; }
+.toolbar :deep(.el-space) { flex-wrap: wrap; }
+.bound-import-input { display: none; }
 
 /* 左右布局核心样式 */
 .main-workspace {
@@ -1514,7 +1712,7 @@ function handleLabelDialogClose(){
   color: #909399;
   font-size: 11px;
   line-height: 16px;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .annotation-count-badge {
@@ -1537,16 +1735,23 @@ function handleLabelDialogClose(){
 }
 
 .annotation-batch-toolbar {
-  height: 52px;
+  min-height: 52px;
   padding: 9px 12px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 8px;
   box-sizing: border-box;
   border-bottom: 1px solid #edf0f5;
   background: #fafbfc;
 }
+
+.annotation-search {
+  padding: 9px 12px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.annotation-search span { color: #909399; font-size: 12px; }
 
 .batch-select-area {
   min-width: 0;

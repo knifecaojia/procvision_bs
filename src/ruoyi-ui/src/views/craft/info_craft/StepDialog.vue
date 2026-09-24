@@ -155,6 +155,7 @@
     </el-dialog>
 
     <LabelDialog v-model="labelVisible" :visible="labelVisible" :stepIds="targetStepIds"
+                  :processId="props.processId"
                   :tempCraftType="props.tempCraftType"
                   :tempAlgType="props.tempAlgType"
                   :packageFlag="packageFlag"
@@ -485,7 +486,8 @@ async function handleGenerateFinalStep() {
             if (!mergedCoordsMap.has(group.label)) {
               mergedCoordsMap.set(group.label, []);
             }
-            mergedCoordsMap.get(group.label).push(...group.posList);
+            // 旧标注数据可能含界面内部的 sourceBoxId，终检只保留业务坐标字段。
+            mergedCoordsMap.get(group.label).push(...group.posList.map(({ sourceBoxId, ...pos }) => pos));
           });
         } catch (e) {
           console.error(`解析工步 [${step.name}] 坐标失败`);
@@ -570,7 +572,8 @@ function handleBind(row) {
 function handleBatchBind() {
   if (ids.value.length === 0) return;
   packageFlag.value = false;
-  targetStepIds.value = [...ids.value]
+  targetStepIds.value = stepList.value.filter(step => ids.value.includes(step.id))
+      .sort((a, b) => Number(a.sort) - Number(b.sort)).map(step => step.id)
   labelVisible.value = true
 }
 
