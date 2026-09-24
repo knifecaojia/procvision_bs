@@ -1,5 +1,5 @@
 <template>
-  <el-dialog title="图片标注" v-model="labelVisible" width="1000px" :close-on-click-modal="false">
+  <el-dialog title="图片标注/包装信息录入" v-model="labelVisible" width="1200px" @close="handleLabelDialogClose" :close-on-click-modal="false">
     <div class="annotator-container">
 
       <div v-if="stepIds.length > 1" class="step-navigator">
@@ -21,47 +21,148 @@
             <el-button type="primary" icon="FolderOpened">本地上传</el-button>
           </el-upload>
 
+          <el-button type="primary" plain icon="pointer" @click="openAnnotationTool">打开标注工具</el-button>
+
+          <el-upload
+              v-if="!props.packageFlag"
+              :auto-upload="false"
+              :show-file-list="false"
+              accept=".xml,text/xml,application/xml"
+              :on-change="handleVocFileChange"
+          >
+            <el-button type="primary" plain icon="DocumentAdd">导入标注</el-button>
+          </el-upload>
+
           <el-button type="success" icon="Camera" @click="openCameraDialog">打开相机</el-button>
 
           <el-divider direction="vertical"/>
 
+          <template v-if="!props.packageFlag">
+            <el-button
+                type="warning"
+                @click="toggleDrawMode"
+                :plain="!isDrawingMode"
+                icon="Edit"
+            >
+              {{ isDrawingMode ? '结束标注' : '开始标注' }}
+            </el-button>
+            <el-button type="danger" @click="clearCanvasAnnotations" icon="Delete">清空标注</el-button>
+          </template>
+
           <el-button
-              type="warning"
-              @click="toggleDrawMode"
-              :plain="!isDrawingMode"
-              icon="Edit"
+              v-if="props.packageFlag"
+              type="success"
+              icon="Box"
+              @click="packageDialogVisible = true"
           >
-            {{ isDrawingMode ? '结束标注' : '开始标注' }}
+            添加包装信息
           </el-button>
 
-          <el-button type="danger" @click="clearCanvasAnnotations" icon="Delete">清空标注</el-button>
-          <el-button type="primary" @click="uploadToMinio" icon="Check">保存标注结果</el-button>
+          <el-button type="primary" @click="uploadToMinio" icon="Check">
+            {{ props.packageFlag ? '保存包装(及图片)' : '保存标注结果' }}
+          </el-button>
         </el-space>
 
-        <div class="status-text" v-if="isDrawingMode">
-          当前状态：<span style="color: red">绘制中...</span>
-          <span style="margin-left: 15px;">Tips：开启绘制后按住ALT+鼠标左键可以拖拽图片</span>
+        <div class="status-panel" v-if="isDrawingMode && !props.packageFlag">
+          <el-alert
+              type="warning"
+              show-icon
+              :closable="false"
+              class="drawing-alert"
+          >
+            <template #title>
+              <span class="alert-title">当前状态：<span class="highlight-text">绘制中...</span></span>
+            </template>
+            <template #default>
+              <div class="alert-tips">
+                <strong>Tips：</strong>
+                开启绘制后按住 <el-tag size="small" type="info" effect="plain">ALT + 鼠标左键</el-tag> 可以拖拽图片，
+                选中框后按 <el-tag size="small" type="danger" effect="plain">Delete</el-tag> 键可删除
+              </div>
+            </template>
+          </el-alert>
+
+          <div class="step-content-box" v-if="currentStepContent">
+            <div class="step-header">
+              <el-icon color="#409EFF"><Document /></el-icon>
+              <span>工步内容</span>
+            </div>
+            <div class="step-text">{{ currentStepContent }}</div>
+          </div>
         </div>
       </el-card>
 
-      <div class="canvas-wrapper" v-loading="canvasLoading" element-loading-text="正在加载原图...">
-        <canvas id="c"></canvas>
+      <div class="main-workspace">
+        <div class="canvas-wrapper" v-loading="canvasLoading" element-loading-text="正在加载原图...">
+          <canvas id="c"></canvas>
+        </div>
+
+        <div class="annotation-list-wrapper">
+          <el-card shadow="never" class="annotation-card" v-if="props.packageFlag">
+            <template #header>
+              <div class="card-header">
+                <span>包装信息面板</span>
+                <el-tag type="success" size="small">共 {{ packageList.length }} 条</el-tag>
+              </div>
+            </template>
+            <el-scrollbar height="500px">
+              <el-empty v-if="packageList.length === 0" description="暂无包装信息，请点击上方按钮添加" :image-size="80" />
+              <div v-for="(item, index) in packageList" :key="item._id" class="annotation-item">
+                <div class="item-info">
+                  <div class="item-label">
+                    <el-tag type="success" size="small">产品信息</el-tag>
+                    <span style="margin-left: 8px; font-weight: bold;">{{ item.productInfo }}</span>
+                  </div>
+                  <div class="item-remark" style="margin-top: 8px; font-size: 14px;">
+                    待检测数量：<strong style="color: #E6A23C;">{{ item.quantity }}</strong>
+                  </div>
+                </div>
+                <el-button type="danger" icon="Delete" circle plain size="small" @click="removePackageInfo(index)"></el-button>
+              </div>
+            </el-scrollbar>
+          </el-card>
+
+          <el-card shadow="never" class="annotation-card" v-else>
+            <template #header>
+              <div class="card-header">
+                <span>标注信息面板</span>
+                <el-tag type="info" size="small">共 {{ annotationList.length }} 个</el-tag>
+              </div>
+            </template>
+            <el-scrollbar height="500px">
+              <el-empty v-if="annotationList.length === 0" description="暂无标注信息" :image-size="80" />
+              <div
+                  v-for="(item, index) in annotationList"
+                  :key="item.id"
+                  class="annotation-item"
+                  @mouseenter="highlightAnnotation(item.id, true)"
+                  @mouseleave="highlightAnnotation(item.id, false)"
+              >
+                <div class="item-info">
+                  <div class="item-label"><el-tag size="small">{{ item.label }}</el-tag></div>
+                  <div class="item-remark">{{ item.remark }}</div>
+                </div>
+                <el-button type="danger" icon="Delete" circle plain size="small" @click="removeAnnotation(index, item.id)"></el-button>
+              </div>
+            </el-scrollbar>
+          </el-card>
+        </div>
       </div>
 
       <el-dialog
           v-model="dialogVisible"
-          title="添加标注文字"
+          title="添加标注信息"
           width="300px"
           append-to-body
           :close-on-click-modal="false"
           @close="cancelAnnotation"
       >
-        <el-input
-            v-model="labelText"
-            placeholder="请输入标签"
-            @keyup.enter="confirmLabel"
-            ref="inputRef"
-        />
+        <el-select v-model="labelText" filterable placeholder="请选择标签" style="width: 100%; margin-bottom: 20px;">
+          <el-option v-if="props.tempAlgType === 0" v-for="item in label_tianxian" :key="item.value" :label="item.label" :value="item.value"></el-option>
+          <el-option v-else-if="props.tempAlgType === 1" v-for="item in label_banji" :key="item.label" :label="item.label" :value="item.value"></el-option>
+          <el-option v-else v-for="(item, index) in label_mozu" :key="item.label + index" :label="item.label" :value="item.value"></el-option>
+        </el-select>
+
         <el-input
             style="margin-top: 20px;"
             v-model="remark"
@@ -76,6 +177,30 @@
         </span>
         </template>
       </el-dialog>
+
+      <el-dialog
+          v-model="packageDialogVisible"
+          title="填写包装信息"
+          width="400px"
+          append-to-body
+          :close-on-click-modal="false"
+      >
+        <el-form label-width="110px">
+          <el-form-item label="产品信息" required>
+            <el-input v-model="packageData.productInfo" placeholder="请输入产品信息" />
+          </el-form-item>
+          <el-form-item label="待检测数量" required>
+            <el-input-number v-model="packageData.quantity" :min="1" placeholder="待检测数量" style="width: 100%;" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="packageDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="confirmPackageInfo">确定</el-button>
+          </span>
+        </template>
+      </el-dialog>
+
     </div>
 
     <el-dialog
@@ -97,7 +222,7 @@
            <el-icon><VideoCamera/></el-icon> 本地相机模式
          </span>
         <el-button type="primary" size="large" icon="CameraFilled" :loading="isCapturing" @click="handleCapture">
-          立即抓拍并去标注
+          立即抓拍并去配置
         </el-button>
       </div>
     </el-dialog>
@@ -111,10 +236,10 @@ import {fabric} from 'fabric';
 import {getUploadUrl} from "@/api/algorithm/algorithm.js";
 import {updateStep, getStep} from "@/api/craft/step.js";
 import axios from "axios";
-import {Loading} from "@element-plus/icons-vue";
-
+import {Loading, VideoCamera} from "@element-plus/icons-vue";
 const {proxy} = getCurrentInstance()
 
+const {label_tianxian, label_banji, label_mozu} = proxy.useDict("label_tianxian", 'label_banji', 'label_mozu')
 const labelVisible = defineModel()
 const canvas = ref(null);
 const isDrawingMode = ref(false);
@@ -122,7 +247,19 @@ const dialogVisible = ref(false);
 const labelText = ref('');
 const inputRef = ref(null);
 const stepCount = ref(0);
-const uploadFile = ref(null)
+const currentStepContent = ref('');
+
+// 标注模式状态管理
+const annotationList = ref([]);
+
+// 包装模式状态管理（现改为数组支持多条录入）
+const packageDialogVisible = ref(false);
+const packageData = ref({ productInfo: '', quantity: 1 });
+const packageList = ref([]);
+
+// 保存最原始、未被任何压缩的物理图片文件
+const uploadFile = ref(null);
+
 const remark = ref('')
 const canvasLoading = ref(false);
 
@@ -143,12 +280,44 @@ const props = defineProps({
   stepIds: {
     type: Array,
     default: () => []
+  },
+  tempCraftType: {
+    type: String,
+    default: ''
+  },
+  borrowImageUrl: {
+    type: String,
+    default: ''
+  },
+  tempAlgType: {
+    type: Number
+  },
+  packageFlag: {
+    type: Boolean,
+    default: false
   }
 });
 
+const options = computed(() => [
+  {
+    value: 'tianxian',
+    label: '天线',
+    children: label_tianxian.value
+  },
+  {
+    value: 'banji',
+    label: '板级',
+    children: label_banji.value
+  },
+  {
+    value: 'mozu',
+    label: '模组',
+    children: label_mozu.value
+  }
+]);
+
 const emit = defineEmits(['change-status'])
 
-// 连续标注进度控制
 const currentIndex = ref(0);
 const currentStepId = computed(() => props.stepIds[currentIndex.value]);
 
@@ -163,22 +332,58 @@ watch(() => props.visible, (visible) => {
     isDrawingMode.value = false;
     if (canvas.value) canvas.value.clear();
     stopLocalCamera();
+    annotationList.value = [];
+    packageList.value = [];
+    packageData.value = { productInfo: '', quantity: 1 };
   }
 })
 
-// 加载当前进度对应工步的历史原图（若有）
+// 加载当前进度对应工步的历史原图和历史数据
 const loadCurrentStepData = async () => {
   if (!currentStepId.value) return;
 
   canvasLoading.value = true;
   stepCount.value = 1;
 
-  // 仅清空标注框，保留 canvas 背景图（视觉保留）
   clearCanvasAnnotations();
+  packageList.value = [];
 
   try {
     const res = await getStep(currentStepId.value);
-    const urlsStr = res.data.guideMapUrl;
+    let urlsStr = res.data.guideMapUrl;
+    currentStepContent.value = res.data.content;
+
+    if (!urlsStr && res.data.code === '99' && props.borrowImageUrl) {
+      urlsStr = JSON.stringify([props.borrowImageUrl]);
+    }
+
+    let coordsInfo = null;
+    if (res.data.coordsInfo) {
+      try {
+        coordsInfo = JSON.parse(res.data.coordsInfo);
+      } catch (e) {
+      }
+    }
+
+    // 【核心新增】：包装模式下的多条数据回显
+    if (props.packageFlag && coordsInfo) {
+      if (Array.isArray(coordsInfo)) {
+        if (coordsInfo.length === 0 || !coordsInfo[0].posList) {
+          // 从后端拿到纯净数据后，动态映射加上 _id 供前端 v-for 使用
+          packageList.value = coordsInfo.map(item => ({
+            ...item,
+            _id: `pkg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
+          }));
+        }
+      } else {
+        // 兼容单对象
+        packageList.value = [{
+          _id: `pkg_${Date.now()}`,
+          productInfo: coordsInfo.productInfo,
+          quantity: coordsInfo.quantity
+        }];
+      }
+    }
 
     if (urlsStr) {
       let urls = [];
@@ -192,33 +397,31 @@ const loadCurrentStepData = async () => {
       if (originalUrl) {
         const fullUrl = originalUrl.startsWith('http') ? originalUrl : BASE_API + originalUrl;
         const response = await fetch(fullUrl, { cache: "no-cache" });
+
+        if (!response.ok) {
+          throw new Error(`图片加载失败，状态码: ${response.status}`);
+        }
+
         const blob = await response.blob();
         const file = new File([blob], `history_${Date.now()}.jpg`, { type: blob.type });
-        // loadFileToCanvas 内部会用新文件覆盖 uploadFile.value
-        loadFileToCanvas(file);
+
+        loadFileToCanvas(file, props.packageFlag ? null : coordsInfo);
       }
     } else {
-      // 当前工步没有原图
       if (currentIndex.value === 0) {
-        // 场景 A：如果是第一步且没图，说明没有任何基准，清空画布和文件
         if (canvas.value) canvas.value.clear();
         uploadFile.value = null;
-      } else {
-        // 场景 B：如果是第二步以后且没图，系统默认沿用上一张图。
-        // 【核心修复】：此时什么也不做！保留 canvas 背景的同时，也保留上一轮的 uploadFile.value
-        console.log("沿用上一工步的底图及文件对象");
       }
     }
   } catch (err) {
-    console.error("加载工步历史图片失败", err);
-    // 发生异常时，如果是第一步也需清空防止卡死
-    if (currentIndex.value === 0) uploadFile.value = null;
+    proxy.$modal.msgWarning('历史原图已失效或加载失败，请通过“本地上传”或“打开相机”提供新图片！');
+    if (canvas.value) canvas.value.clear();
+    uploadFile.value = null;
   } finally {
     canvasLoading.value = false;
   }
 }
 
-// 导航功能
 const prevStep = () => {
   if (currentIndex.value > 0) {
     currentIndex.value--;
@@ -249,14 +452,17 @@ const initCanvas = () => {
   window.addEventListener('keydown', handleKeydown);
 };
 
-// ... 此处保留原有的 initZoom, handleKeydown 等函数不变 ...
 const handleKeydown = (e) => {
+  if (props.packageFlag) return; // 包装模式禁用键盘删除框
   if (e.key === 'Delete' || e.key === 'Backspace') {
     if (!canvas.value) return;
     const activeObjects = canvas.value.getActiveObjects();
     if (activeObjects.length) {
       canvas.value.discardActiveObject();
       activeObjects.forEach((obj) => {
+        if (obj.id) {
+          annotationList.value = annotationList.value.filter(item => item.id !== obj.id);
+        }
         canvas.value.remove(obj);
         stepCount.value -= 1;
       });
@@ -308,55 +514,248 @@ const initZoom = () => {
   });
 };
 
-
-const loadFileToCanvas = (file) => {
+const loadFileToCanvas = (file, historyCoords = []) => {
   uploadFile.value = file;
+  proxy.$modal.loading('正在加载原图...');
+
   const reader = new FileReader();
   reader.onload = (e) => {
     const imgObj = new Image();
     imgObj.src = e.target.result;
     imgObj.onload = () => {
       canvas.value.clear();
+      annotationList.value = [];
       stepCount.value = 1;
+
       const fImg = new fabric.Image(imgObj);
       const canvasWidth = canvas.value.getWidth();
       const canvasHeight = canvas.value.getHeight();
+
       const scale = Math.min(canvasWidth / fImg.width, canvasHeight / fImg.height);
+
       canvas.value.setBackgroundImage(fImg, canvas.value.renderAll.bind(canvas.value), {
         scaleX: scale, scaleY: scale,
         top: canvasHeight / 2, left: canvasWidth / 2,
         originX: 'center', originY: 'center'
       });
       canvas.value.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+      // 普通模式下的标注框回显
+      if (historyCoords && Array.isArray(historyCoords) && historyCoords.length > 0) {
+        const bgLogicalLeft = (canvasWidth / 2) - (fImg.width * scale) / 2;
+        const bgLogicalTop = (canvasHeight / 2) - (fImg.height * scale) / 2;
+
+        historyCoords.forEach(group => {
+          if (group.posList && group.posList.length > 0) {
+            group.posList.forEach(pos => {
+              const uniqueId = `rect_load_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+              const rectLeft = pos.x * scale + bgLogicalLeft;
+              const rectTop = pos.y * scale + bgLogicalTop;
+              const rectWidth = pos.width * scale;
+              const rectHeight = pos.height * scale;
+
+              const rect = new fabric.Rect({
+                left: rectLeft,
+                top: rectTop,
+                width: rectWidth,
+                height: rectHeight,
+                fill: 'rgba(255, 0, 0, 0)',
+                stroke: 'red',
+                strokeWidth: 1,
+                selectable: true,
+                evented: true,
+                id: uniqueId,
+                customData: {label: group.label, remark: pos.remark || ''}
+              });
+
+              canvas.value.add(rect);
+
+              annotationList.value.push({
+                id: uniqueId,
+                label: group.label,
+                remark: pos.remark || ''
+              });
+            });
+          }
+        });
+        canvas.value.requestRenderAll();
+      }
+      proxy.$modal.closeLoading();
+    };
+    imgObj.onerror = () => {
+      proxy.$modal.closeLoading();
+      proxy.$modal.msgWarning('图片解析失败，可能文件已损坏，请重新上传！');
     };
   };
+  reader.onerror = () => proxy.$modal.closeLoading();
   reader.readAsDataURL(file);
 };
 
-// const handleFileChange = (file) => loadFileToCanvas(file.raw);
-
-// 修改后：拦截上传文件并进行压缩
-const handleFileChange = async (file) => {
-  proxy.$modal.loading('正在压缩处理图片...');
-  try {
-    // 限制最大 1920x1080，质量 0.8
-    const compressedFile = await compressImage(file.raw, 1920, 1080, 0.8);
-    loadFileToCanvas(compressedFile);
-  } catch (error) {
-    console.error("图片压缩失败", error);
-    proxy.$modal.msgError('图片处理失败，已回退至原图');
-    loadFileToCanvas(file.raw); // 容错：如果压缩失败，尝试硬加载原图
-  } finally {
-    proxy.$modal.closeLoading();
+const handleFileChange = (file) => {
+  if (file && file.raw) {
+    loadFileToCanvas(file.raw);
   }
 };
 
-// --- 相机逻辑保持不变 ---
+// 解析 Pascal VOC XML，并将其中的目标框绘制到当前图片上
+const handleVocFileChange = async (file) => {
+  if (!file?.raw) return;
+  if (!canvas.value?.backgroundImage) {
+    proxy.$modal.msgWarning('请先上传或加载对应的原始图片，再导入 VOC 标注文件！');
+    return;
+  }
+
+  try {
+    const xmlText = await file.raw.text();
+    const xmlDoc = new DOMParser().parseFromString(xmlText, 'application/xml');
+
+    if (xmlDoc.querySelector('parsererror')) {
+      throw new Error('XML 文件格式不正确');
+    }
+
+    const objectNodes = Array.from(xmlDoc.getElementsByTagName('object'));
+    if (objectNodes.length === 0) {
+      proxy.$modal.msgWarning('该 VOC 文件中没有找到 object 标注节点！');
+      return;
+    }
+
+    const getText = (root, tagName) => root?.getElementsByTagName(tagName)?.[0]?.textContent?.trim() || '';
+    const getNumber = (root, tagName) => {
+      const value = Number(getText(root, tagName));
+      return Number.isFinite(value) ? value : NaN;
+    };
+
+    const sizeNode = xmlDoc.getElementsByTagName('size')[0];
+    const vocWidth = getNumber(sizeNode, 'width');
+    const vocHeight = getNumber(sizeNode, 'height');
+
+    const vocObjects = objectNodes.map((node) => {
+      const boxNode = node.getElementsByTagName('bndbox')[0];
+      return {
+        label: getText(node, 'name') || 'unknown',
+        xmin: getNumber(boxNode, 'xmin'),
+        ymin: getNumber(boxNode, 'ymin'),
+        xmax: getNumber(boxNode, 'xmax'),
+        ymax: getNumber(boxNode, 'ymax')
+      };
+    }).filter(item =>
+        [item.xmin, item.ymin, item.xmax, item.ymax].every(Number.isFinite) &&
+        item.xmax > item.xmin && item.ymax > item.ymin
+    );
+
+    if (vocObjects.length === 0) {
+      proxy.$modal.msgWarning('VOC 文件中没有可用的矩形框坐标！');
+      return;
+    }
+
+    if (canvas.value.getObjects().length > 0) {
+      try {
+        await proxy.$modal.confirm(
+            '导入 VOC 标注会替换当前页面上已有的标注框，是否继续？',
+            '导入确认',
+            { confirmButtonText: '继续导入', cancelButtonText: '取消', type: 'warning' }
+        );
+      } catch (e) {
+        return;
+      }
+    }
+
+    renderVocAnnotations(vocObjects, { width: vocWidth, height: vocHeight });
+  } catch (error) {
+    console.error('VOC 标注导入失败：', error);
+    proxy.$modal.msgError(error?.message || 'VOC 标注文件解析失败，请检查 XML 格式！');
+  }
+};
+
+const renderVocAnnotations = (vocObjects, vocSize) => {
+  const bgImg = canvas.value?.backgroundImage;
+  if (!bgImg) return;
+
+  // VOC 文件尺寸可能与当前图片实际尺寸不同，这里先换算到原图坐标，再映射到画布。
+  const sourceWidth = Number.isFinite(vocSize.width) && vocSize.width > 0 ? vocSize.width : bgImg.width;
+  const sourceHeight = Number.isFinite(vocSize.height) && vocSize.height > 0 ? vocSize.height : bgImg.height;
+  const sourceScaleX = bgImg.width / sourceWidth;
+  const sourceScaleY = bgImg.height / sourceHeight;
+
+  const bgScaleX = bgImg.scaleX;
+  const bgScaleY = bgImg.scaleY;
+  const bgLogicalLeft = bgImg.left - (bgImg.width * bgScaleX) / 2;
+  const bgLogicalTop = bgImg.top - (bgImg.height * bgScaleY) / 2;
+
+  clearCanvasAnnotations();
+  isDrawingMode.value = false;
+  canvas.value.skipTargetFind = false;
+  canvas.value.selection = true;
+
+  let importedCount = 0;
+  let skippedCount = 0;
+
+  vocObjects.forEach((item, index) => {
+    let realX = item.xmin * sourceScaleX;
+    let realY = item.ymin * sourceScaleY;
+    let realRight = item.xmax * sourceScaleX;
+    let realBottom = item.ymax * sourceScaleY;
+
+    realX = Math.max(0, Math.min(realX, bgImg.width));
+    realY = Math.max(0, Math.min(realY, bgImg.height));
+    realRight = Math.max(0, Math.min(realRight, bgImg.width));
+    realBottom = Math.max(0, Math.min(realBottom, bgImg.height));
+
+    const realWidth = realRight - realX;
+    const realHeight = realBottom - realY;
+    if (realWidth <= 0 || realHeight <= 0) {
+      skippedCount++;
+      return;
+    }
+
+    const uniqueId = `rect_voc_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 8)}`;
+    const rect = new fabric.Rect({
+      left: bgLogicalLeft + realX * bgScaleX,
+      top: bgLogicalTop + realY * bgScaleY,
+      width: realWidth * bgScaleX,
+      height: realHeight * bgScaleY,
+      fill: 'rgba(255, 0, 0, 0)',
+      stroke: 'red',
+      strokeWidth: 1,
+      selectable: true,
+      evented: true,
+      id: uniqueId,
+      customData: { label: item.label, remark: '' }
+    });
+
+    canvas.value.add(rect);
+    annotationList.value.push({
+      id: uniqueId,
+      label: item.label,
+      remark: ''
+    });
+    importedCount++;
+  });
+
+  stepCount.value = importedCount + 1;
+  canvas.value.discardActiveObject();
+  canvas.value.requestRenderAll();
+
+  if (skippedCount > 0) {
+    proxy.$modal.msgWarning(`已导入 ${importedCount} 个标注框，另有 ${skippedCount} 个越界或无效框被忽略。`);
+  } else {
+    proxy.$modal.msgSuccess(`VOC 标注导入成功，共加载 ${importedCount} 个标注框。`);
+  }
+};
+
+const openAnnotationTool = () => {
+  // 直接通过 window.location.href 触发自定义协议
+  window.location.href = 'annotationdebug://';
+
+  // 给用户一个反馈，因为唤起本地程序有时会有点慢
+  proxy.$modal.msgSuccess('正在尝试唤起调试程序...');
+};
+
 const openCameraDialog = async () => {
   cameraVisible.value = true;
   cameraConnected.value = false;
   await nextTick();
-  startLocalCamera();
+  await startLocalCamera();
 };
 
 const startLocalCamera = async () => {
@@ -382,23 +781,33 @@ const stopLocalCamera = () => {
 const handleCapture = () => {
   if (!videoRef.value || !cameraConnected.value) return;
   isCapturing.value = true;
+  proxy.$modal.loading('正在处理抓拍画面...');
+
   try {
     const video = videoRef.value;
     const cvs = document.createElement('canvas');
     cvs.width = video.videoWidth; cvs.height = video.videoHeight;
     cvs.getContext('2d').drawImage(video, 0, 0, cvs.width, cvs.height);
+
     cvs.toBlob((blob) => {
       if (!blob) return;
-      loadFileToCanvas(new File([blob], `capture_${Date.now()}.jpg`, { type: 'image/jpeg' }));
+      const rawFile = new File([blob], `capture_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      loadFileToCanvas(rawFile);
+
       proxy.$modal.msgSuccess('抓拍成功！');
       closeCameraDialog();
       isCapturing.value = false;
+      proxy.$modal.closeLoading();
     }, 'image/jpeg', 1);
-  } catch (error) { proxy.$modal.msgError('抓拍异常'); isCapturing.value = false; }
+  } catch (error) {
+    proxy.$modal.msgError('抓拍异常');
+    isCapturing.value = false;
+    proxy.$modal.closeLoading();
+  }
 };
 
-// --- 标注事件 ---
 const toggleDrawMode = () => {
+  if (props.packageFlag) return proxy.$modal.msgWarning('包装模式下无需框选标注！');
   if (!canvas.value.backgroundImage) return proxy.$modal.msgWarning('请先上传图片或使用相机拍照！');
   isDrawingMode.value = !isDrawingMode.value;
   canvas.value.skipTargetFind = isDrawingMode.value;
@@ -406,16 +815,26 @@ const toggleDrawMode = () => {
 };
 
 const onMouseDown = (opt) => {
-  if (!isDrawingMode.value) return;
+  if (!isDrawingMode.value || props.packageFlag) return;
   isMouseDown = true;
   const pointer = canvas.value.getPointer(opt.e);
   startX = pointer.x; startY = pointer.y;
-  activeRect = new fabric.Rect({ left: startX, top: startY, width: 0, height: 0, fill: 'rgba(255, 0, 0, 0)', stroke: 'red', strokeWidth: 2, selectable: false, evented: false });
+  activeRect = new fabric.Rect({
+    left: startX,
+    top: startY,
+    width: 0,
+    height: 0,
+    fill: 'rgba(255, 0, 0, 0)',
+    stroke: 'red',
+    strokeWidth: 1,
+    selectable: false,
+    evented: false
+  });
   canvas.value.add(activeRect);
 };
 
 const onMouseMove = (opt) => {
-  if (!isDrawingMode.value || !isMouseDown) return;
+  if (!isDrawingMode.value || !isMouseDown || props.packageFlag) return;
   const pointer = canvas.value.getPointer(opt.e);
   if (pointer.x < startX) activeRect.set({left: pointer.x});
   if (pointer.y < startY) activeRect.set({top: pointer.y});
@@ -424,99 +843,166 @@ const onMouseMove = (opt) => {
 };
 
 const onMouseUp = () => {
-  if (!isDrawingMode.value || !isMouseDown) return;
+  if (!isDrawingMode.value || !isMouseDown || props.packageFlag) return;
   isMouseDown = false;
   if (activeRect.width < 5 || activeRect.height < 5) { canvas.value.remove(activeRect); activeRect = null; return; }
   dialogVisible.value = true;
   nextTick(() => { inputRef.value?.focus(); });
 };
 
+// 【包装修改】：去除上传引导图的强制校验
+const confirmPackageInfo = () => {
+  if (!packageData.value.productInfo) return proxy.$modal.msgWarning('请输入产品信息');
+
+  // 生成唯一ID并推入列表
+  packageList.value.push({
+    _id: `pkg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+    productInfo: packageData.value.productInfo,
+    quantity: packageData.value.quantity
+  });
+
+  // 添加完毕后自动清空表单，方便继续添加，然后关闭弹窗
+  packageData.value = { productInfo: '', quantity: 1 };
+  packageDialogVisible.value = false;
+  proxy.$modal.msgSuccess('添加成功，可继续添加或点击“保存包装及图片”');
+};
+
+// 从右侧面板中删除某条包装信息
+const removePackageInfo = (index) => {
+  packageList.value.splice(index, 1);
+};
+
 const confirmLabel = () => {
-  if (!labelText.value || !remark.value) return proxy.$modal.msgWarning('请输入标签和备注');
-  const text = new fabric.Text(labelText.value, { fontSize: 16, fill: 'white', backgroundColor: 'red', left: activeRect.left, top: activeRect.top - 20 < 0 ? activeRect.top : activeRect.top - 20, padding: 5 });
-  const group = new fabric.Group([activeRect, text], { left: activeRect.left, top: text.top, selectable: true });
-  group.set({ customData: { label: labelText.value, remark: remark.value } });
-  canvas.value.remove(activeRect);
+  if (!labelText.value) return proxy.$modal.msgWarning('请输入标签');
+
+  if (!remark) remark.value = '';
+
+  const uniqueId = `rect_${Date.now()}`;
+
+  activeRect.set({
+    id: uniqueId,
+    selectable: true,
+    evented: true,
+    customData: { label: labelText.value, remark: remark.value }
+  });
+
+  annotationList.value.push({
+    id: uniqueId,
+    label: labelText.value,
+    remark: remark.value
+  });
+
   stepCount.value += 1;
-  canvas.value.add(group); canvas.value.setActiveObject(group); canvas.value.renderAll();
-  dialogVisible.value = false; labelText.value = ''; remark.value = ''; activeRect = null;
+  canvas.value.setActiveObject(activeRect);
+  canvas.value.renderAll();
+
+  dialogVisible.value = false;
+  remark.value = '';
+  activeRect = null;
+};
+
+const removeAnnotation = (index, id) => {
+  annotationList.value.splice(index, 1);
+  const objects = canvas.value.getObjects();
+  const objToRemove = objects.find(obj => obj.id === id);
+  if (objToRemove) {
+    canvas.value.remove(objToRemove);
+    canvas.value.requestRenderAll();
+  }
+};
+
+const highlightAnnotation = (id, isHover) => {
+  const obj = canvas.value.getObjects().find(o => o.id === id);
+  if (obj) {
+    obj.set('strokeWidth', isHover ? 2 : 1);
+    obj.set('stroke', isHover ? '#409EFF' : 'red');
+    canvas.value.requestRenderAll();
+  }
 };
 
 const cancelAnnotation = () => {
   if (activeRect) { canvas.value.remove(activeRect); canvas.value.renderAll(); }
-  dialogVisible.value = false; labelText.value = ''; remark.value = ''; activeRect = null;
+  dialogVisible.value = false;
+  remark.value = '';
+  activeRect = null;
 };
 
-// 仅清空标注（保留背景）
 const clearCanvasAnnotations = () => {
   if (!canvas.value) return;
   const objects = canvas.value.getObjects();
   objects.forEach(obj => canvas.value.remove(obj));
+  annotationList.value = [];
   stepCount.value = 1;
   canvas.value.requestRenderAll();
 };
 
-// --- 修改后的上传逻辑：双图上传并支持连续提示 ---
 const uploadToMinio = async () => {
-  if (!canvas.value || canvas.value.getObjects().length === 0) {
-    return proxy.$modal.msgWarning('请先完成标注！')
-  }
-  if (!uploadFile.value) {
-    return proxy.$modal.msgError('未找到原始图片文件');
+  // 根据不同模式走不同的检验规则
+  if (props.packageFlag) {
+    if (packageList.value.length === 0) return proxy.$modal.msgWarning('请先录入包装信息！');
+    // 【包装修改】：去除必须有图片的拦截
+  } else {
+    if (!canvas.value || canvas.value.getObjects().length === 0) return proxy.$modal.msgWarning('请先完成标注！');
+    if (!uploadFile.value) return proxy.$modal.msgError('未找到原始图片文件');
   }
 
-  proxy.$modal.loading('正在上传图片和标注数据...')
-
+  proxy.$modal.loading('正在保存数据...')
   try {
-    // 1. 获取两次上传链接（分别给原图和标注图）
-    const resOrig = await getUploadUrl();
-    const resAnnot = await getUploadUrl();
+    let urlList = [];
 
-    // 2. 上传原图
-    await axios.put(resOrig.data.url, uploadFile.value, {
-      headers: {'Content-Type': uploadFile.value.type || 'image/jpeg'}
-    });
+    // 【包装修改】：只有用户传了图片，才去调用Minio接口
+    if (uploadFile.value) {
+      const resOrig = await getUploadUrl();
+      const resAnnot = await getUploadUrl();
 
-    // 3. 上传标注截图
-    const annotationFile = getFile();
-    await axios.put(resAnnot.data.url, annotationFile, {
-      headers: {'Content-Type': 'image/jpeg'}
-    });
+      await axios.put(resOrig.data.url, uploadFile.value, {
+        headers: {'Content-Type': uploadFile.value.type || 'image/jpeg'}
+      });
 
-    // 4. 将两个 objectName 封装为列表 JSON 字符串
-    const urlList = [resOrig.data.objectName, resAnnot.data.objectName];
+      const annotationFile = getFile();
+      if (annotationFile) {
+        await axios.put(resAnnot.data.url, annotationFile, {
+          headers: {'Content-Type': 'image/jpeg'}
+        });
+        urlList = [resOrig.data.objectName, resAnnot.data.objectName];
+      } else {
+        urlList = [resOrig.data.objectName, resOrig.data.objectName];
+      }
+    }
+
+    // 判断不同模式的数据结构 (包装模式将存为数组 [{productInfo, quantity}, ...])
+    const coordsInfoData = props.packageFlag
+        ? packageList.value.map(({ _id, ...rest }) => rest)
+        : getDataEasy();
 
     const data = {
       id: currentStepId.value,
-      guideMapUrl: JSON.stringify(urlList), // 返回给后端的列表
-      coordsInfo: JSON.stringify(getDataEasy()),
+      // 如果没有传图片，urlList 为空数组，此时直接存 null，保证后端数据干净
+      guideMapUrl: urlList.length > 0 ? JSON.stringify(urlList) : null,
+      coordsInfo: JSON.stringify(coordsInfoData),
     }
+
     await updateStep(data)
 
     emit('change-status')
     proxy.$modal.msgSuccess('保存成功！');
 
-    // 5. 提示是否进行下一次标注（如果是批量/连续标注）
     if (props.stepIds.length > 1) {
-      proxy.$modal.confirm('已保存当前结果。是否清空标注并开始下一个工步？', '连续标注提示', {
+      proxy.$modal.confirm('已保存当前结果。是否清空并开始下一个工步？', '连续处理提示', {
         confirmButtonText: '下一工步',
         cancelButtonText: '留在当前'
       }).then(() => {
         clearCanvasAnnotations();
         if (currentIndex.value < props.stepIds.length - 1) {
           currentIndex.value++;
-          loadCurrentStepData(); // 会尝试拉取下一工步的原图，如果没有则继续使用当前画布的原图
+          loadCurrentStepData();
         } else {
           proxy.$modal.msgSuccess('当前已经是最后一个工步');
         }
       }).catch(() => {});
-    } else {
-      // 并非连续标注或者只有一个，保存完不清空窗口，可自行点击关闭
     }
-
   } catch (error) {
-    console.error(error);
-    proxy.$modal.msgError('绑定失败，请检查网络');
+    proxy.$modal.msgError('保存失败，请检查网络');
   } finally {
     proxy.$modal.closeLoading()
   }
@@ -524,47 +1010,80 @@ const uploadToMinio = async () => {
 
 const getDataEasy = () => {
   const bgImg = canvas.value.backgroundImage;
-  const bgRect = bgImg.getBoundingRect();
-  const scale = bgImg.scaleX;
+  if (!bgImg) return [];
+
+  const scaleX = bgImg.scaleX;
+  const scaleY = bgImg.scaleY;
+
+  const bgLogicalLeft = bgImg.left - (bgImg.width * scaleX) / 2;
+  const bgLogicalTop = bgImg.top - (bgImg.height * scaleY) / 2;
+
   const labelSet = new Set();
 
-  const results = canvas.value.getObjects().filter(obj => obj.type === 'group' && obj.customData).map(group => {
-    const gLeft = group.left; const gTop = group.top;
-    const gScaleX = group.scaleX; const gScaleY = group.scaleY;
-    const OFFSET_Y = 20;
-    const rectCanvasLeft = gLeft;
-    const rectCanvasTop = gTop + (OFFSET_Y * gScaleY);
-    const rectObj = group.getObjects().find(o => o.type === 'rect');
-    const rectCanvasWidth = rectObj.width * rectObj.scaleX * gScaleX;
-    const rectCanvasHeight = rectObj.height * rectObj.scaleY * gScaleY;
+  const results = canvas.value.getObjects()
+      .filter(obj => obj.type === 'rect' && obj.customData)
+      .map(rectObj => {
+        labelSet.add(rectObj.customData.label);
 
-    labelSet.add(group.customData.label);
-    return {
-      label: group.customData.label,
-      pos: {
-        x: Math.round((rectCanvasLeft - bgRect.left) / scale),
-        y: Math.round((rectCanvasTop - bgRect.top) / scale),
-        width: Math.round(rectCanvasWidth / scale),
-        height: Math.round(rectCanvasHeight / scale),
-        remark: group.customData.remark,
-      }
-    };
+        const canvasRectWidth = rectObj.width * rectObj.scaleX;
+        const canvasRectHeight = rectObj.height * rectObj.scaleY;
+
+        let realX = Math.round((rectObj.left - bgLogicalLeft) / scaleX);
+        let realY = Math.round((rectObj.top - bgLogicalTop) / scaleY);
+        let realW = Math.round(canvasRectWidth / scaleX);
+        let realH = Math.round(canvasRectHeight / scaleY);
+
+        realX = Math.max(0, realX);
+        realY = Math.max(0, realY);
+        realW = Math.min(realW, bgImg.width - realX);
+        realH = Math.min(realH, bgImg.height - realY);
+
+        return {
+          label: rectObj.customData.label,
+          pos: { x: realX, y: realY, width: realW, height: realH, remark: rectObj.customData.remark }
+        };
+      });
+
+  const coordsInfo = [];
+  labelSet.forEach(label => {
+    let tempCoordsList = [];
+    results.forEach(result => {
+      if (result.label === label) tempCoordsList.push(result.pos);
+    });
+    coordsInfo.push({ label: label, posList: tempCoordsList });
   });
 
-  const coordsInfo = []
-  labelSet.forEach(label => {
-    let tempCoordsList = []
-    results.forEach(result => { if (result.label === label) tempCoordsList.push(result.pos) })
-    coordsInfo.push({ label: label, posList: tempCoordsList })
-  })
   return coordsInfo;
-}
+};
 
 const getFile = () => {
   const bgImage = canvas.value.backgroundImage;
-  const currentScale = bgImage ? bgImage.scaleX : 1;
-  const multiplier = 1 / currentScale;
-  const dataURL = canvas.value.toDataURL({ format: 'jpeg', quality: 0.9, multiplier: multiplier });
+  if (!bgImage) {
+    return null;
+  }
+
+  const originalVpt = [...canvas.value.viewportTransform];
+  canvas.value.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+  const currentScale = bgImage.scaleX;
+
+  const bgLogicalLeft = bgImage.left - (bgImage.width * currentScale) / 2;
+  const bgLogicalTop = bgImage.top - (bgImage.height * currentScale) / 2;
+  const bgLogicalWidth = bgImage.width * currentScale;
+  const bgLogicalHeight = bgImage.height * currentScale;
+
+  const dataURL = canvas.value.toDataURL({
+    format: 'jpeg',
+    quality: 1,
+    left: bgLogicalLeft,
+    top: bgLogicalTop,
+    width: bgLogicalWidth,
+    height: bgLogicalHeight,
+    multiplier: 1 / currentScale
+  });
+
+  canvas.value.setViewportTransform(originalVpt);
+
   const blob = dataURLtoBlob(dataURL);
   return new File([blob], `annotated_${Date.now()}.jpg`, {type: 'image/jpeg'});
 }
@@ -579,70 +1098,134 @@ const dataURLtoBlob = (dataurl) => {
   return new Blob([u8arr], {type: mime});
 };
 
-/**
- * 纯前端图片压缩函数
- * @param {File} file 原始图片文件
- * @param {number} maxWidth 最大宽度
- * @param {number} maxHeight 最大高度
- * @param {number} quality 压缩质量 (0.1 - 1.0)
- * @returns {Promise<File>} 返回压缩后的 File 对象
- */
-const compressImage = (file, maxWidth = 1920, maxHeight = 1080, quality = 0.8) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        let targetWidth = img.width;
-        let targetHeight = img.height;
-
-        // 等比缩放计算
-        if (targetWidth > maxWidth || targetHeight > maxHeight) {
-          const ratio = Math.min(maxWidth / targetWidth, maxHeight / targetHeight);
-          targetWidth = Math.round(targetWidth * ratio);
-          targetHeight = Math.round(targetHeight * ratio);
-        }
-
-        const offscreenCanvas = document.createElement('canvas');
-        offscreenCanvas.width = targetWidth;
-        offscreenCanvas.height = targetHeight;
-        const ctx = offscreenCanvas.getContext('2d');
-
-        // 绘制压缩图
-        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-
-        // 导出为 Blob
-        offscreenCanvas.toBlob((blob) => {
-          if (blob) {
-            // 保持原有文件名，但强制转为 jpeg 格式以减小体积
-            const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
-            const compressedFile = new File([blob], newFileName, {
-              type: 'image/jpeg',
-              lastModified: Date.now()
-            });
-            resolve(compressedFile);
-          } else {
-            reject(new Error('Canvas to Blob failed'));
-          }
-        }, 'image/jpeg', quality);
-      };
-      img.onerror = (e) => reject(e);
-    };
-    reader.onerror = (e) => reject(e);
-  });
-};
+function handleLabelDialogClose(){
+  labelText.value = ''
+}
 </script>
 
 <style scoped>
 .annotator-container { display: flex; flex-direction: column; gap: 20px; align-items: center; padding: 10px; }
-.step-navigator { display: flex; align-items: center; justify-content: center; width: 100%; max-width: 850px; margin-bottom: -10px; }
-.toolbar { width: 100%; max-width: 850px; }
-.canvas-wrapper { border: 1px solid #ccc; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); min-height: 600px; }
-.status-text { margin-top: 10px; font-size: 14px; color: #666; }
+.step-navigator { display: flex; align-items: center; justify-content: center; width: 100%; max-width: 1000px; margin-bottom: -10px; }
+.toolbar { width: 100%; max-width: 1150px; }
+
+/* 左右布局核心样式 */
+.main-workspace {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  max-width: 1150px;
+  align-items: stretch;
+}
+
+.canvas-wrapper {
+  border: 1px solid #ccc;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  width: 800px;
+  height: 600px;
+  flex-shrink: 0;
+}
+
+.annotation-list-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.annotation-card {
+  height: 600px;
+  border-radius: 4px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+}
+
+.annotation-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 10px;
+  border-bottom: 1px solid #ebeef5;
+  transition: background-color 0.3s;
+}
+
+.annotation-item:hover {
+  background-color: #f5f7fa;
+}
+
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.item-label { font-weight: bold; }
+.item-remark { font-size: 13px; color: #606266; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 .camera-preview-box { width: 100%; height: 500px; background-color: #000; display: flex; justify-content: center; align-items: center; border-radius: 4px; overflow: hidden; margin-bottom: 20px; }
 .live-stream { width: 100%; height: 100%; object-fit: contain; }
 .camera-loading { color: #fff; text-align: center; }
 .camera-controls { display: flex; justify-content: flex-end; align-items: center; padding: 0 10px; }
+.status-panel {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.drawing-alert {
+  border: 1px solid #faecd8;
+  border-radius: 6px;
+}
+
+.alert-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #e6a23c;
+}
+
+.highlight-text {
+  color: #f56c6c;
+  margin-left: 5px;
+}
+
+.alert-tips {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.step-content-box {
+  background-color: #f4f4f5;
+  border-left: 4px solid #409eff;
+  padding: 12px 16px;
+  border-radius: 4px;
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 8px;
+}
+
+.step-text {
+  font-size: 14px;
+  color: #606266;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
 </style>

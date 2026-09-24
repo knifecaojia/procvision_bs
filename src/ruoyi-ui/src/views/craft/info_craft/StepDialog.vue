@@ -155,11 +155,18 @@
     </el-dialog>
 
     <LabelDialog v-model="labelVisible" :visible="labelVisible" :stepIds="targetStepIds"
-                 :tempCraftType="props.tempCraftType"
-                 :tempAlgType="props.tempAlgType"
-                 :packageFlag="packageFlag"
-                 :borrowImageUrl="borrowImageUrl"
-                 @change-status="changeStepStatus"/>
+                  :tempCraftType="props.tempCraftType"
+                  :tempAlgType="props.tempAlgType"
+                  :packageFlag="packageFlag"
+                  :borrowImageUrl="borrowImageUrl"
+                  @change-status="changeStepStatus"/>
+
+<!--    <LabelDialog_ v-model="labelVisible" :visible="labelVisible" :stepIds="targetStepIds"-->
+<!--                 :tempCraftType="props.tempCraftType"-->
+<!--                 :tempAlgType="props.tempAlgType"-->
+<!--                 :packageFlag="packageFlag"-->
+<!--                 :borrowImageUrl="borrowImageUrl"-->
+<!--                 @change-status="changeStepStatus"/>-->
   </div>
 </template>
 
@@ -175,6 +182,7 @@ import LabelDialog from "@/views/craft/info_craft/LabelDialog.vue";
 import {changeStatus} from "@/api/craft/craft.js";
 import {ref, reactive, toRefs, getCurrentInstance, watch} from "vue";
 import { ElMessageBox } from 'element-plus';
+// import LabelDialog_ from "@/views/craft/info_craft/LabelDialog_.vue";
 
 const {proxy} = getCurrentInstance()
 
