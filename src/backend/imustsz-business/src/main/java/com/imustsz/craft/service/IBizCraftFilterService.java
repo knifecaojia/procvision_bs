@@ -7,7 +7,7 @@ import java.util.List;
 
 
 /**
- * 工序步骤工艺过滤规则 Service 接口
+ * 工序过滤规则 Service 接口
  *
  * @author ruoyi
  */
@@ -53,16 +53,15 @@ public interface IBizCraftFilterService {
     void refreshCraftFilterCache();
 
     /**
-     * 根据产品类型和工序名称从缓存获取生效的规则列表
+     * 根据产品类型从缓存获取生效的规则列表
      */
-    List<BizCraftFilter> getRulesFromCache(Integer productType, String processName);
+    List<BizCraftFilter> getRulesFromCache(Integer productType);
 
     /**
-     * 工艺步骤是否命中过滤判定
+     * 工序名称是否命中过滤判定（命中时跳过整道工序及其工步）
      * @param productType 产品类型
      * @param processName 工序名
-     * @param stepContent 步骤/工步内容文本
      * @return true: 需要过滤掉; false: 保留
      */
-    boolean isStepFiltered(Integer productType, String processName, String stepContent);
+    boolean isProcessFiltered(Integer productType, String processName);
 }

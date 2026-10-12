@@ -7,7 +7,7 @@ import com.imustsz.craft.domain.BizCraftFilter;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * 工序步骤工艺过滤规则 Mapper 接口
+ * 工序过滤规则 Mapper 接口
  *
  * @author ruoyi
  */

@@ -15,6 +15,7 @@ import com.imustsz.craft.mapper.BizStepMapper;
 import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
 import com.imustsz.craft.service.IBizCraftFilterService;
+import com.imustsz.craft.utils.CraftProductType;
 import com.imustsz.craft.service.ICraftService;
 import com.imustsz.craft.service.IProcessService;
 import com.imustsz.framework.aspectj.AutoFill;
@@ -163,9 +164,14 @@ public class CraftServiceImpl implements ICraftService {
             craft.setCreateBy(SecurityUtils.getUsername());
             craftMapper.insertCraft(craft);
 
+            int productType = CraftProductType.fromCraftCode(crackInfo.getProcessNo());
+
             //导入工序信息
             operationList.forEach(processMMO -> {
                 OperationInfo processInfo = processMMO.getOperationInfo();
+                if (craftFilterService.isProcessFiltered(productType, processInfo.getOperationName())) {
+                    return; // 跳过整道工序，包括其材料信息和全部工步
+                }
 
                 Process process = new Process();
                 process.setCode(processInfo.getOperationNo());
@@ -176,20 +182,9 @@ public class CraftServiceImpl implements ICraftService {
                 process.setProcessMaterialInfo(JSONObject.toJSONString(processMMO.getOperationMaterialInfo()));
                 processMapper.insertProcess(process);
 
-                //导入工步信息
-                int processType = -1;
-                if (crackInfo.getProcessNo().contains("TX"))
-                    processType = 0;
-                else if (crackInfo.getProcessNo().contains("BJ"))
-                    processType = 1;
-                else if (crackInfo.getProcessNo().contains("MZ"))
-                    processType = 2;
-
-                int finalProcessType = processType;
-
-                processMMO.getStepList().forEach(step -> {
-
-                    if (!craftFilterService.isStepFiltered(finalProcessType, processInfo.getOperationName(), step.getStepName())) {
+                // 保留工序中的全部工步，不再按工步名称过滤。
+                if (processMMO.getStepList() != null) {
+                    processMMO.getStepList().forEach(step -> {
                         BizStep bizStep = new BizStep();
                         bizStep.setProcessId(process.getId());
                         bizStep.setCode(step.getStepNo());
@@ -197,8 +192,8 @@ public class CraftServiceImpl implements ICraftService {
                         bizStep.setName(step.getStepName());
                         bizStep.setContent(step.getStepContent());
                         bizStepMapper.insertBizStep(bizStep);
-                    }
-                });
+                    });
+                }
 
             });
         }finally {

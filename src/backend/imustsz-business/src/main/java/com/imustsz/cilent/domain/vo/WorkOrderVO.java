@@ -23,6 +23,7 @@ public class WorkOrderVO {
     private String worker_code;
     private String worker_name;
     private Integer status;
+    private Integer final_check_flag;
     private Long algorithm_id;
     private String prod_order_no;
     private List<StepVO> step_infos;

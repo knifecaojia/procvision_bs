@@ -6,7 +6,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
- * 工序步骤工艺过滤规则对象 biz_craft_filter
+ * 工序过滤规则对象 biz_craft_filter
  *
  * @author ruoyi
  */
@@ -20,11 +20,11 @@ public class BizCraftFilter extends BaseEntity {
     @Excel(name = "产品类型", readConverterExp = "0=天线,1=板级,2=模块")
     private Integer productType;
 
-    /** 独立绑定的工序名称 */
+    /** 兼容字段，保存工序关键词；不再限制规则适用范围 */
     @Excel(name = "工序名称")
     private String processName;
 
-    /** 步骤关键词 */
+    /** 工序名称关键词 */
     @Excel(name = "过滤关键词")
     private String keyword;
 

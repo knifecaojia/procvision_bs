@@ -125,7 +125,8 @@ public class BizWorkOrderController extends BaseController
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         WorkOrderTaskData taskSync = objectMapper.readValue(file.getInputStream(), WorkOrderTaskData.class);
-        return toAjax(bizWorkOrderService.importOrderFromMMo(taskSync));
+        int rows = bizWorkOrderService.importOrderFromMMo(taskSync);
+        return success("导入完成，新增或更新 " + rows + " 条任务，命中过滤规则的工序已跳过");
     }
 
     @PostMapping("/importTemplate")

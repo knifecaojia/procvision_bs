@@ -1,5 +1,6 @@
 <template>
   <div class="app-container">
+<!--    <el-alert title="按产品类型匹配工序名称；命中规则后，导入时跳过整道工序及其全部工步，同时跳过对应任务。" type="info" :closable="false" show-icon class="mb8" />-->
     <!-- 搜索筛选区 -->
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="88px">
       <el-form-item label="产品类型" prop="productType">
@@ -13,20 +14,10 @@
         </el-select>
       </el-form-item>
 
-      <el-form-item label="关键工序" prop="processName">
-        <el-input
-            v-model="queryParams.processName"
-            placeholder="请输入工序名称"
-            clearable
-            style="width: 180px"
-            @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-
       <el-form-item label="过滤关键词" prop="keyword">
         <el-input
             v-model="queryParams.keyword"
-            placeholder="请输入步骤关键词"
+            placeholder="请输入工序名称关键词"
             clearable
             style="width: 180px"
             @keyup.enter="handleQuery"
@@ -49,22 +40,22 @@
     <!-- 操作按钮栏 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['process:craftFilter:add']">
+        <el-button type="primary" plain icon="Plus" @click="handleAdd">
           新增规则
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['process:craftFilter:edit']">
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" >
           修改
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['process:craftFilter:remove']">
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" >
           删除
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Refresh" @click="handleRefreshCache" v-hasPermi="['process:craftFilter:edit']">
+        <el-button type="warning" plain icon="Refresh" @click="handleRefreshCache" >
           刷新缓存
         </el-button>
       </el-col>
@@ -83,8 +74,7 @@
           <el-tag v-else type="info">未知({{ scope.row.productType }})</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="绑定工序名称" align="center" prop="processName" min-width="150" />
-      <el-table-column label="待过滤步骤关键词" align="center" prop="keyword" min-width="160">
+      <el-table-column label="待过滤工序关键词" align="center" prop="keyword" min-width="160">
         <template #default="scope">
           <el-tag type="danger">{{ scope.row.keyword }}</el-tag>
         </template>
@@ -143,12 +133,8 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="绑定工序" prop="processName">
-          <el-input v-model="form.processName" placeholder="如：装配、检验（SMT）" />
-        </el-form-item>
-
-        <el-form-item label="步骤关键词" prop="keyword">
-          <el-input v-model="form.keyword" placeholder="请输入该工序下需剔除的关键词" />
+        <el-form-item label="工序关键词" prop="keyword">
+          <el-input v-model="form.keyword" placeholder="如：调试、准备、入库" />
         </el-form-item>
 
         <el-form-item label="匹配模式" prop="matchMode">
@@ -217,13 +203,11 @@ const data = reactive({
     pageNum: 1,
     pageSize: 10,
     productType: undefined,
-    processName: undefined,
     keyword: undefined,
     isEnabled: undefined
   },
   rules: {
     productType: [{ required: true, message: '产品类型不能为空', trigger: 'change' }],
-    processName: [{ required: true, message: '关键工序不能为空', trigger: 'blur' }],
     keyword: [{ required: true, message: '过滤关键词不能为空', trigger: 'blur' }]
   }
 })
@@ -259,7 +243,6 @@ function reset() {
   form.value = {
     id: undefined,
     productType: undefined,
-    processName: undefined,
     keyword: undefined,
     matchMode: 2,
     isEnabled: 1,
@@ -274,7 +257,7 @@ function handleAdd() {
     form.value.productType = queryParams.value.productType
   }
   open.value = true
-  title.value = '新增工序步骤工艺过滤规则'
+  title.value = '新增工序过滤规则'
 }
 
 function handleUpdate(row) {
@@ -283,7 +266,7 @@ function handleUpdate(row) {
   getFilterRule(ruleId).then(response => {
     form.value = response.data
     open.value = true
-    title.value = '修改工序步骤工艺过滤规则'
+    title.value = '修改工序过滤规则'
   })
 }
 
