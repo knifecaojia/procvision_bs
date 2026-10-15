@@ -20,16 +20,19 @@ public class LabelTrialController extends BaseController {
         this.service = service;
     }
 
+    /** 查询标注试验详情 */
     @GetMapping("/{id}")
     public AjaxResult info(@PathVariable Long id) throws Exception {
         return success(service.info(id));
     }
 
+    /** 上传标注试验文件 */
     @PostMapping("/{id}/upload")
     public AjaxResult upload(@PathVariable Long id) throws Exception {
         return success(service.upload(id));
     }
 
+    /** 保存标注试验结果 */
     @Log(title = "工步标注试验版", businessType = BusinessType.UPDATE)
     @PostMapping("/save")
     public AjaxResult save(@RequestBody LabelTrialRequest request) throws Exception {

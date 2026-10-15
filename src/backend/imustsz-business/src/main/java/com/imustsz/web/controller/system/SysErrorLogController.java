@@ -103,6 +103,7 @@ public class SysErrorLogController extends BaseController
         return toAjax(sysErrorLogService.deleteSysErrorLogByIds(ids));
     }
 
+    /** 清理系统异常日志 */
     @PreAuthorize("@ss.hasPermi('system:errlog:remove')")
     @Log(title = "系统异常日志", businessType = BusinessType.CLEAN)
     @DeleteMapping("/clean")

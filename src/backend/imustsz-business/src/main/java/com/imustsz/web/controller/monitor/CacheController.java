@@ -35,6 +35,7 @@ public class CacheController
         caches.add(new SysCache(CacheConstants.PWD_ERR_CNT_KEY, "密码错误次数"));
     }
 
+    /** 查询详情 */
     @PreAuthorize("@ss.hasPermi('monitor:cache:list')")
     @GetMapping()
     public AjaxResult getInfo() throws Exception
@@ -59,6 +60,7 @@ public class CacheController
         return AjaxResult.success(result);
     }
 
+    /** 查询缓存统计信息 */
     @PreAuthorize("@ss.hasPermi('monitor:cache:list')")
     @GetMapping("/getNames")
     public AjaxResult cache()
@@ -66,6 +68,7 @@ public class CacheController
         return AjaxResult.success(caches);
     }
 
+    /** 查询缓存键列表 */
     @PreAuthorize("@ss.hasPermi('monitor:cache:list')")
     @GetMapping("/getKeys/{cacheName}")
     public AjaxResult getCacheKeys(@PathVariable String cacheName)
@@ -74,6 +77,7 @@ public class CacheController
         return AjaxResult.success(new TreeSet<>(cacheKeys));
     }
 
+    /** 查询缓存内容 */
     @PreAuthorize("@ss.hasPermi('monitor:cache:list')")
     @GetMapping("/getValue/{cacheName}/{cacheKey}")
     public AjaxResult getCacheValue(@PathVariable String cacheName, @PathVariable String cacheKey)
@@ -83,6 +87,7 @@ public class CacheController
         return AjaxResult.success(sysCache);
     }
 
+    /** 清理指定缓存 */
     @PreAuthorize("@ss.hasPermi('monitor:cache:list')")
     @DeleteMapping("/clearCacheName/{cacheName}")
     public AjaxResult clearCacheName(@PathVariable String cacheName)
@@ -92,6 +97,7 @@ public class CacheController
         return AjaxResult.success();
     }
 
+    /** 清理指定缓存键 */
     @PreAuthorize("@ss.hasPermi('monitor:cache:list')")
     @DeleteMapping("/clearCacheKey/{cacheKey}")
     public AjaxResult clearCacheKey(@PathVariable String cacheKey)
@@ -100,6 +106,7 @@ public class CacheController
         return AjaxResult.success();
     }
 
+    /** 清理全部缓存 */
     @PreAuthorize("@ss.hasPermi('monitor:cache:list')")
     @DeleteMapping("/clearCacheAll")
     public AjaxResult clearCacheAll()

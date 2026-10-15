@@ -102,11 +102,13 @@ public class BizDataCollectionController extends BaseController
         return toAjax(bizDataCollectionService.deleteBizDataCollectionByIds(ids));
     }
 
+    /** 校验生产信息 */
     @GetMapping("/check")
     public AjaxResult check(@RequestParam("productionInfo") String productionInfo) {
         return success(bizDataCollectionService.checkProduction(productionInfo));
     }
 
+    /** 处理采集图像*/
     @PostMapping("/process")
     public AjaxResult processImage(
             @RequestParam("file") MultipartFile file,

@@ -129,12 +129,14 @@ public class BizWorkOrderController extends BaseController
         return success("导入完成，新增或更新 " + rows + " 条任务，命中过滤规则的工序已跳过");
     }
 
+    /** 下载导入模板 */
     @PostMapping("/importTemplate")
     public void importTemplate(HttpServletResponse response) {
         ExcelUtil<OrderImportTemplate> util = new ExcelUtil<>(OrderImportTemplate.class);
         util.importTemplateExcel(response, "任务数据导入模板");
     }
 
+    /** 导入数据 */
     @PostMapping("/importData")
     public AjaxResult importData(MultipartFile file) throws Exception {
         ExcelUtil<OrderImportTemplate> util = new ExcelUtil<>(OrderImportTemplate.class);
@@ -198,6 +200,7 @@ public class BizWorkOrderController extends BaseController
         return success(workOrderTaskData);
     }
 
+    /** 根据编码查询完工工单 */
     @PostMapping("/uploadToMOM")
     public AjaxResult getOrderByCode(@RequestBody FinishedOrderDTO finishedOrderDTO) throws Exception {
         return toAjax(bizWorkOrderService.uploadToMOM(finishedOrderDTO));

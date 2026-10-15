@@ -37,6 +37,7 @@ public class ServerController
     // 备份文件存放路径 (根据你的Linux服务器或Docker挂载路径调整)
     private String backupLocation = "/home/backup/";
 
+    /** 查询详情 */
     @PreAuthorize("@ss.hasPermi('monitor:server:list')")
     @GetMapping()
     public AjaxResult getInfo() throws Exception

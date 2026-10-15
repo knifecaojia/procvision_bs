@@ -96,11 +96,13 @@ public class ProcessController extends BaseController
         return toAjax(processService.deleteProcessByIds(ids));
     }
 
+    /** 绑定工序算法 */
     @GetMapping("/bindAlg/{id}/{algId}")
     public AjaxResult bindAlg(@PathVariable Long id, @PathVariable Long algId) {
         return toAjax(processService.bindAlg(id, algId));
     }
 
+    /** 检查删除工序的影响 */
     @GetMapping("/check/{ids}")
     public AjaxResult check(@PathVariable Long[] ids) {
         if(processService.safeDelCheck(ids))
@@ -109,11 +111,13 @@ public class ProcessController extends BaseController
             return success();
     }
 
+    /** 修改异常检查状态 */
     @PostMapping("/changeExceptionStatus")
     public AjaxResult changeExceptionCheck(@RequestBody Process process) {
         return toAjax(processService.changeExceptionCheck(process));
     }
 
+    /** 修改最终工序状态 */
     @PostMapping("/changeFinalStatus")
     public AjaxResult changeFinalStatus(@RequestBody Process process) {
         return toAjax(processService.changeFinalStatus(process));

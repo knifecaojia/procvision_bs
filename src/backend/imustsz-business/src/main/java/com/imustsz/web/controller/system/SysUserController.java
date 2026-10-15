@@ -59,6 +59,7 @@ public class SysUserController extends BaseController
         return getDataTable(list);
     }
 
+    /** 导出数据 */
     @Log(title = "用户管理", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('system:user:export')")
     @PostMapping("/export")
@@ -69,6 +70,7 @@ public class SysUserController extends BaseController
         util.exportExcel(response, list, "用户数据");
     }
 
+    /** 导入数据 */
     @Log(title = "用户管理", businessType = BusinessType.IMPORT)
     @PreAuthorize("@ss.hasPermi('system:user:import')")
     @PostMapping("/importData")
@@ -81,6 +83,7 @@ public class SysUserController extends BaseController
         return success(message);
     }
 
+    /** 下载导入模板 */
     @PostMapping("/importTemplate")
     public void importTemplate(HttpServletResponse response)
     {

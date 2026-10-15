@@ -47,6 +47,7 @@ public class BizStepController extends BaseController
         return getDataTable(list);
     }
 
+    /** 查询原始工步列表 */
     @GetMapping("/listOri")
     public TableDataInfo listOri(BizStep bizStep) throws Exception {
         startPage();
@@ -106,16 +107,19 @@ public class BizStepController extends BaseController
         return toAjax(bizStepService.deleteBizStepByIds(ids));
     }
 
+    /** 绑定工步图片与信息 */
     @PostMapping("/bindImg")
     public AjaxResult bindImgAndInfo(@RequestBody GuideInfoDTO guideInfoDTO) throws Exception {
         return toAjax(bizStepService.bindImgAndInfo(guideInfoDTO));
     }
 
+    /** 删除指定工序下的工步 */
     @DeleteMapping("/{code}/{processId}")
     public AjaxResult deleteStepByCodeAndProcessId(@PathVariable String code, @PathVariable Long processId) throws Exception {
         return toAjax(bizStepService.deleteStepByCodeAndProcessId(code, processId));
     }
 
+    /** 获取工步图片上传地址 */
     @GetMapping("/getUrl")
     public AjaxResult getUrl() throws Exception {
         String objectName = DateUtils.getDate() + UUID.randomUUID();
@@ -125,6 +129,7 @@ public class BizStepController extends BaseController
         return success(map);
     }
 
+    /** 获取原始工步图片地址 */
     @GetMapping("/ori/{id}")
     public AjaxResult getOriUrl(@PathVariable Long id) throws Exception {
         return success(bizStepService.selectBizStepOriById(id));

@@ -45,6 +45,7 @@ public class CameraController extends BaseController {
                 .body(img);
     }
 
+    /** 检查相机状态 */
     @GetMapping("/check")
     public AjaxResult checkCamera() throws CameraControlException {
         int count = cameraService.checkCamera();

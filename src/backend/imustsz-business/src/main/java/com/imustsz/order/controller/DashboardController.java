@@ -31,26 +31,31 @@ public class DashboardController extends BaseController {
     @Value("${minio.bucketName}")
     private String bucketName;
 
+    /** 查询看板概览数据 */
     @GetMapping("/overview")
     public AjaxResult overview(ResultQuery query) {
         return success(dashboardService.getOverview(query));
     }
 
+    /** 查询看板指标统计 */
     @GetMapping("/kpiStats")
     public AjaxResult kpiStats(ResultQuery query) {
         return success(dashboardService.getOverview(query).get("statistics"));
     }
 
+    /** 查询看板图表分析数据 */
     @GetMapping("/chartAnalysis")
     public AjaxResult chartAnalysis(ResultQuery query) {
         return success(dashboardService.getOverview(query).get("charts"));
     }
 
+    /** 查询近期处理结果 */
     @GetMapping("/recentResults")
     public AjaxResult recentResults(ResultQuery query) {
         return success(dashboardService.getRecords(query));
     }
 
+    /** 生成报告数据 */
     @Log(title = "装配多媒体PDF报告", businessType = BusinessType.EXPORT)
     @GetMapping("/reportData")
     public AjaxResult reportData(ResultQuery query) {

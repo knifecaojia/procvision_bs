@@ -97,6 +97,7 @@ public class BizProcessRecordController extends BaseController
         return toAjax(bizProcessRecordService.deleteBizProcessRecordByIds(ids));
     }
 
+    /** 根据任务号和工序编码查询过程记录 */
     @GetMapping("task/{taskNo}/{processCode}")
     public AjaxResult getRecordByTaskNoAndProcessCode(@PathVariable String taskNo, @PathVariable String processCode) {
     	return success(bizProcessRecordService.getRecordByTaskNoAndProcessCode(taskNo, processCode));

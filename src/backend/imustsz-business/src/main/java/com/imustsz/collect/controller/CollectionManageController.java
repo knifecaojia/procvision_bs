@@ -23,6 +23,7 @@ public class CollectionManageController extends BaseController {
         this.service = service;
     }
 
+    /** 查询采集管理列表 */
     @GetMapping("/list")
     public TableDataInfo list(CollectionManageQuery query) {
         query.validate();
@@ -30,6 +31,7 @@ public class CollectionManageController extends BaseController {
         return getDataTable(service.list(query));
     }
 
+    /** 导出采集图片 */
     @PostMapping("/export-images")
     @Log(title = "采集图像批量导出", businessType = BusinessType.EXPORT)
     public void exportImages(@RequestBody CollectionExportRequest request, javax.servlet.http.HttpServletResponse response) throws Exception {
@@ -45,11 +47,13 @@ public class CollectionManageController extends BaseController {
         }
     }
 
+    /** 查询采集文件存储信息 */
     @GetMapping("/{id}/storage")
     public AjaxResult storageInfo(@PathVariable Long id) throws Exception {
         return success(service.storageInfo(id));
     }
 
+    /** 转换采集文件存储方式 */
     @PutMapping("/storage")
     @Log(title = "采集图像存储转换", businessType = BusinessType.UPDATE)
     public AjaxResult convert(@RequestBody CollectionStorageRequest request) throws Exception {

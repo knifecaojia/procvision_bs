@@ -57,6 +57,8 @@ public class TestController extends BaseController
         @ApiImplicitParam(name = "password", value = "用户密码", dataType = "String", dataTypeClass = String.class),
         @ApiImplicitParam(name = "mobile", value = "用户手机", dataType = "String", dataTypeClass = String.class)
     })
+
+    /** 保存标注试验结果 */
     @PostMapping("/save")
     public R<String> save(UserEntity user)
     {

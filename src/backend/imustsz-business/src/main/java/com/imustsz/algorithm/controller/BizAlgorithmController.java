@@ -111,6 +111,7 @@ public class  BizAlgorithmController extends BaseController {
         return toAjax(bizAlgorithmService.deleteBizAlgorithmByIds(ids));
     }
 
+    /** 删除minio算法文件 */
     @PostMapping("/remove")
     public AjaxResult removeMinioFile(@RequestParam("objectName") String objectName) throws Exception {
         minioUtils.deleteFile(objectName);

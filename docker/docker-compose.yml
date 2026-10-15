@@ -16,12 +16,18 @@ services:
     environment:
       - SPRING_DATASOURCE_HOST=mysql
       - SPRING_REDIS_HOST=redis
-      - MINIO_HOST=192.168.80.132
+      - MINIO_HOST=192.168.80.132   # 192.168.80.132改为服务器ip
       - MINIO_PORT=9000
-      - WEBSERVICE_HOST=webservice
+      - HTTPS_PORT=443
+      - WEBSERVICE_HOST=http://192.168.80.132:8081/services/SendService   # 192.168.80.132改为服务器ip
       - WEBSERVICE_PORT=8081
-      - TARGET_NAMESPACE=http://www.pgxxgc.com/IF_Service
-      - SERVICE_NAME=IFService
+      - TARGET_NAMESPACE=http://service.sender.jezetek.cc/
+      - SERVICE_NAME=sendFile
+      - TARGET_SYS_NAME=MOM
+      - TARGET_SYS_NUM=MOM
+      - ORI_SYS_NAME=SJYD
+      - ORI_SYS_NUM=SJYD
+      - SEC_LEVEL=None
     restart: unless-stopped
     depends_on:
       mysql:
@@ -116,7 +122,7 @@ services:
 
   # 6. MOM服务 (MOM)
   webservice:
-    build: ../MOM
+    build: ../MOM/demo
     container_name: procvision-webservice
     ports:
       - "8081:8081"
@@ -126,8 +132,8 @@ services:
     environment:
       SERVER_IP: webservice
       SERVER_PORT: 8081
-      UNIQUE_FLAG_CRAFT: 1000001
-      UNIQUE_FLAG_ORDER: 1000003
+      UNIQUE_FLAG_CRAFT: 1000003
+      UNIQUE_FLAG_ORDER: 1000004
       TARGET_ADDRESS_CRAFT: http://server:8080/craft/info/getCraftFromMMO
       TARGET_ADDRESS_ORDER: http://server:8080/workOrder/getOrderFromMMO
     networks:

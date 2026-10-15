@@ -140,22 +140,26 @@ public class CraftController extends BaseController
         return success();
     }
 
+    /** 修改工艺状态 */
     @GetMapping("/checkStatus/{id}")
     public AjaxResult changeCraftStatus(@PathVariable Long id) {
         craftService.checkStatus(id);
         return success();
     }
 
+    /** 查询工艺选项 */
     @GetMapping("/options")
     public AjaxResult getOptions() {
         return success(craftService.getSelectorOptions());
     }
 
+    /** 查询工艺选择器信息 */
     @GetMapping("/craftSelector")
     public AjaxResult getSelectorInfo() {
         return success(craftService.getCraftSelector());
     }
 
+    /** excel导入数据 */
     @PostMapping("/importData")
     public AjaxResult importData(MultipartFile file) throws Exception {
         ExcelUtil<ProcessImportTemplate> util = new ExcelUtil<>(ProcessImportTemplate.class);

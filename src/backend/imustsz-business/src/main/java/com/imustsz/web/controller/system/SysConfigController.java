@@ -40,6 +40,7 @@ public class SysConfigController extends BaseController
         return getDataTable(list);
     }
 
+    /** 导出数据 */
     @Log(title = "参数管理", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('system:config:export')")
     @PostMapping("/export")

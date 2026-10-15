@@ -28,6 +28,7 @@ public class SysDictTypeController extends BaseController
     @Autowired
     private ISysDictTypeService dictTypeService;
 
+    /** 查询字典类型列表 */
     @PreAuthorize("@ss.hasPermi('system:dict:list')")
     @GetMapping("/list")
     public TableDataInfo list(SysDictType dictType)
@@ -37,6 +38,7 @@ public class SysDictTypeController extends BaseController
         return getDataTable(list);
     }
 
+    /** 导出数据 */
     @Log(title = "字典类型", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('system:dict:export')")
     @PostMapping("/export")

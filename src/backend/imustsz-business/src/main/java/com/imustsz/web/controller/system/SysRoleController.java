@@ -49,6 +49,7 @@ public class SysRoleController extends BaseController
     @Autowired
     private ISysDeptService deptService;
 
+    /** 查询角色列表 */
     @PreAuthorize("@ss.hasPermi('system:role:list')")
     @GetMapping("/list")
     public TableDataInfo list(SysRole role)
@@ -58,6 +59,7 @@ public class SysRoleController extends BaseController
         return getDataTable(list);
     }
 
+    /** 导出数据 */
     @Log(title = "角色管理", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('system:role:export')")
     @PostMapping("/export")

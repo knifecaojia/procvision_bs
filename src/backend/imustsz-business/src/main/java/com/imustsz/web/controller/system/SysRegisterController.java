@@ -25,6 +25,7 @@ public class SysRegisterController extends BaseController
     @Autowired
     private ISysConfigService configService;
 
+    /** 用户注册 */
     @PostMapping("/register")
     public AjaxResult register(@RequestBody RegisterBody user)
     {
