@@ -53,15 +53,14 @@ public interface IBizCraftFilterService {
     void refreshCraftFilterCache();
 
     /**
-     * 根据产品类型从缓存获取生效的规则列表
+     * 从缓存获取全部生效的工序规则列表
      */
-    List<BizCraftFilter> getRulesFromCache(Integer productType);
+    List<BizCraftFilter> getRulesFromCache();
 
     /**
      * 工序名称是否命中过滤判定（命中时跳过整道工序及其工步）
-     * @param productType 产品类型
      * @param processName 工序名
      * @return true: 需要过滤掉; false: 保留
      */
-    boolean isProcessFiltered(Integer productType, String processName);
+    boolean isProcessFiltered(String processName);
 }

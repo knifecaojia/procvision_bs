@@ -16,8 +16,8 @@ public class BizCraftFilter extends BaseEntity {
     /** 规则ID */
     private Integer id;
 
-    /** 产品类型（0:天线, 1:板级, 2:模块） */
-    @Excel(name = "产品类型", readConverterExp = "0=天线,1=板级,2=模块")
+    /** 兼容字段（不参与过滤） */
+    @Excel(name = "兼容产品类型字段", readConverterExp = "0=天线,1=板级,2=模块")
     private Integer productType;
 
     /** 兼容字段，保存工序关键词；不再限制规则适用范围 */

@@ -15,7 +15,6 @@ import com.imustsz.craft.mapper.BizStepMapper;
 import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.mapper.ProcessMapper;
 import com.imustsz.craft.service.IBizCraftFilterService;
-import com.imustsz.craft.utils.CraftProductType;
 import com.imustsz.craft.service.ICraftService;
 import com.imustsz.craft.service.IProcessService;
 import com.imustsz.framework.aspectj.AutoFill;
@@ -28,6 +27,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -164,12 +164,10 @@ public class CraftServiceImpl implements ICraftService {
             craft.setCreateBy(SecurityUtils.getUsername());
             craftMapper.insertCraft(craft);
 
-            int productType = CraftProductType.fromCraftCode(crackInfo.getProcessNo());
-
             //导入工序信息
             operationList.forEach(processMMO -> {
                 OperationInfo processInfo = processMMO.getOperationInfo();
-                if (craftFilterService.isProcessFiltered(productType, processInfo.getOperationName())) {
+                if (craftFilterService.isProcessFiltered(processInfo.getOperationName())) {
                     return; // 跳过整道工序，包括其材料信息和全部工步
                 }
 
@@ -179,7 +177,10 @@ public class CraftServiceImpl implements ICraftService {
                 process.setCraftId(craft.getId());
                 process.setCraftCode(craft.getCode());
                 process.setDesc(processInfo.getOperationDesc());
-                process.setProcessMaterialInfo(JSONObject.toJSONString(processMMO.getOperationMaterialInfo()));
+                // 统一将缺失的物料列表保存为 []，避免数据库出现字符串 "null"
+                List<MaterialInfo> materialInfo = processMMO.getOperationMaterialInfo();
+                process.setProcessMaterialInfo(JSONObject.toJSONString(
+                        materialInfo == null ? new ArrayList<MaterialInfo>() : materialInfo));
                 processMapper.insertProcess(process);
 
                 // 保留工序中的全部工步，不再按工步名称过滤。
@@ -277,3 +278,5 @@ public class CraftServiceImpl implements ICraftService {
         return craftMapper.insertCraft(craft);
     }
 }
+
+

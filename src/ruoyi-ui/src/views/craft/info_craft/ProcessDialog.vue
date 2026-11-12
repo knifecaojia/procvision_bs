@@ -284,7 +284,12 @@ function getProcessList() {
   listProcess(processPageParms.value).then(response => {
     processList.value = response.rows
     processList.value.forEach(item => {
-      item.processMaterialInfo = item.processMaterialInfo ? JSON.parse(item.processMaterialInfo) : []
+      try {
+        const parsed = item.processMaterialInfo ? JSON.parse(item.processMaterialInfo) : []
+        item.processMaterialInfo = Array.isArray(parsed) ? parsed : []
+      } catch (e) {
+        item.processMaterialInfo = []
+      }
     })
     processTotal.value = response.total
     processLoading.value = false
@@ -304,13 +309,21 @@ function handleProcessUpdate(row) {
   getProcess(_id).then(response => {
     form.value = response.data
     // 【核心】回显时：将 JSON 字符串还原成数组
-    if (form.value.processMaterialInfo) {
-      try {
-        materialList.value = JSON.parse(form.value.processMaterialInfo)
-      } catch (e) {
-        console.error("物料信息解析失败", e)
-        materialList.value = []
-      }
+    // 兼容 null、非法 JSON、单对象及历史下划线字段
+    try {
+      const raw = form.value.processMaterialInfo
+      const parsed = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : []
+      const list = Array.isArray(parsed) ? parsed : (parsed ? [parsed] : [])
+      materialList.value = list.map(item => ({
+        materialNo: item.materialNo ?? item.material_no,
+        materialName: item.materialName ?? item.material_name,
+        materialQuantity: item.materialQuantity ?? item.material_quantity,
+        materialUnit: item.materialUnit ?? item.material_unit,
+        errorPreventionMark: item.errorPreventionMark ?? item.error_prevention_mark
+      }))
+    } catch (e) {
+      console.error("物料信息解析失败", e)
+      materialList.value = []
     }
     open.value = true
     title.value = "修改工序信息"
@@ -320,9 +333,10 @@ function handleProcessUpdate(row) {
 function submitForm() {
   proxy.$refs["processRef"].validate(valid => {
     if (valid) {
-      form.value.processMaterialInfo = materialList.value.length > 0
-          ? JSON.stringify(materialList.value)
-          : null;
+      // 始终提交数组，空数组可以正确清空数据库中的旧物料
+      form.value.processMaterialInfo = JSON.stringify(
+        Array.isArray(materialList.value) ? materialList.value : []
+      );
       if (form.value.id != null) {
         updateProcess(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功")
@@ -413,3 +427,8 @@ onMounted(() => {
   getAlgList()
 })
 </script>
+
+
+
+
+

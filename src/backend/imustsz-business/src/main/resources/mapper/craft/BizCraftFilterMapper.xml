@@ -30,10 +30,6 @@
         <include refid="selectBizCraftFilterVo"/>
         <where>
             is_deleted = 0
-            <!-- 注意：必须使用 productType != null，严禁加 != '' -->
-            <if test="productType != null">
-                AND product_type = #{productType}
-            </if>
             <if test="processName != null and processName != ''">
                 AND process_name like concat('%', #{processName}, '%')
             </if>
@@ -48,6 +44,14 @@
             </if>
         </where>
         order by create_time desc
+    </select>
+
+    <!-- 按关键词精确查询，用于新增/修改时校验重复规则 -->
+    <select id="selectBizCraftFilterByKeyword" parameterType="String" resultMap="BizCraftFilterResult">
+        <include refid="selectBizCraftFilterVo"/>
+        where is_deleted = 0 and keyword = #{keyword}
+        order by id asc
+        limit 1
     </select>
 
     <!-- 单条查询 -->

@@ -219,8 +219,20 @@ public class CraftController extends BaseController
             }else
                 throw new RuntimeException("工步序不能为空");
 
-            if (StringUtils.isNotBlank(row.getMaterialNo())) {
-                materialGroupMap.get(opNo).computeIfAbsent(row.getMaterialNo(), k -> {
+            // 物料号为空但填写了名称、数量等信息时也要保留，避免导入后整道工序看不到物料
+            boolean hasMaterial = StringUtils.isNotBlank(row.getMaterialNo())
+                    || StringUtils.isNotBlank(row.getMaterialName())
+                    || row.getMaterialQuantity() != null
+                    || StringUtils.isNotBlank(row.getMaterialUnit())
+                    || StringUtils.isNotBlank(row.getErrorPreventionMark());
+            if (hasMaterial) {
+                String materialKey = StringUtils.isNotBlank(row.getMaterialNo())
+                        ? row.getMaterialNo()
+                        : String.join("|", StringUtils.defaultString(row.getMaterialName()),
+                        String.valueOf(row.getMaterialQuantity()),
+                        StringUtils.defaultString(row.getMaterialUnit()),
+                        StringUtils.defaultString(row.getErrorPreventionMark()));
+                materialGroupMap.get(opNo).computeIfAbsent(materialKey, k -> {
                     MaterialInfo material = new MaterialInfo();
                     material.setMaterialNo(row.getMaterialNo());
                     material.setMaterialName(row.getMaterialName());
@@ -249,3 +261,4 @@ public class CraftController extends BaseController
         return success(orderProcessData);
     }
 }
+

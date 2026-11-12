@@ -39,7 +39,6 @@ import com.imustsz.craft.domain.json.StepMaterialInfo;
 import com.imustsz.craft.mapper.BizStepMapper;
 import com.imustsz.craft.mapper.CraftMapper;
 import com.imustsz.craft.service.IBizCraftFilterService;
-import com.imustsz.craft.utils.CraftProductType;
 import com.imustsz.craft.mapper.ProcessMapper;
 import com.imustsz.framework.aspectj.AutoFill;
 import com.imustsz.order.domain.OriginInfo;
@@ -230,10 +229,9 @@ public class BizWorkOrderServiceImpl implements IBizWorkOrderService {
                 if (craft == null)
                     throw new RuntimeException("工艺信息有误，请核对工艺信息");
 
-                int productType = CraftProductType.fromCraftCode(craft.getCode());
                 for (DispatchTask task : dispatchTaskInfo) {
                     // 必须在工序查询和任务新增/更新之前过滤。
-                    if (craftFilterService.isProcessFiltered(productType, task.getOperationName())) {
+                    if (craftFilterService.isProcessFiltered(task.getOperationName())) {
                         continue;
                     }
 

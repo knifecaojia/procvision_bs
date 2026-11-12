@@ -3,7 +3,6 @@ package com.imustsz.craft.service.impl;
 
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,9 +45,12 @@ public class BizCraftFilterServiceImpl implements IBizCraftFilterService {
     @Override
     public int insertBizCraftFilter(BizCraftFilter bizCraftFilter) {
         validateRule(bizCraftFilter);
+        if (bizCraftFilter.getProductType() == null) {
+            bizCraftFilter.setProductType(0);
+        }
         int rows = bizCraftFilterMapper.insertBizCraftFilter(bizCraftFilter);
         if (rows > 0) {
-            refreshSubCache(bizCraftFilter.getProductType());
+            refreshCraftFilterCache();
         }
         return rows;
     }
@@ -56,13 +58,9 @@ public class BizCraftFilterServiceImpl implements IBizCraftFilterService {
     @Override
     public int updateBizCraftFilter(BizCraftFilter bizCraftFilter) {
         validateRule(bizCraftFilter);
-        BizCraftFilter old = bizCraftFilterMapper.selectBizCraftFilterById(bizCraftFilter.getId());
         int rows = bizCraftFilterMapper.updateBizCraftFilter(bizCraftFilter);
         if (rows > 0) {
-            if (old != null) {
-                refreshSubCache(old.getProductType());
-            }
-            refreshSubCache(bizCraftFilter.getProductType());
+            refreshCraftFilterCache();
         }
         return rows;
     }
@@ -78,20 +76,18 @@ public class BizCraftFilterServiceImpl implements IBizCraftFilterService {
 
     @Override
     public int deleteBizCraftFilterById(Integer id) {
-        BizCraftFilter rule = bizCraftFilterMapper.selectBizCraftFilterById(id);
         int rows = bizCraftFilterMapper.deleteBizCraftFilterById(id);
-        if (rows > 0 && rule != null) {
-            refreshSubCache(rule.getProductType());
+        if (rows > 0) {
+            refreshCraftFilterCache();
         }
         return rows;
     }
 
     @Override
     public int updateStatus(Integer id, Integer isEnabled, String updateBy) {
-        BizCraftFilter rule = bizCraftFilterMapper.selectBizCraftFilterById(id);
         int rows = bizCraftFilterMapper.updateStatus(id, isEnabled, updateBy);
-        if (rows > 0 && rule != null) {
-            refreshSubCache(rule.getProductType());
+        if (rows > 0) {
+            refreshCraftFilterCache();
         }
         return rows;
     }
@@ -100,61 +96,41 @@ public class BizCraftFilterServiceImpl implements IBizCraftFilterService {
     public void refreshCraftFilterCache() {
         BizCraftFilter query = new BizCraftFilter();
         query.setIsEnabled(1);
-        List<BizCraftFilter> allRules = bizCraftFilterMapper.selectBizCraftFilterList(query);
-
-        Map<String, List<BizCraftFilter>> map = allRules.stream()
-                .collect(Collectors.groupingBy(item -> buildHashKey(item.getProductType())));
-
-        redisCache.deleteObject(CACHE_KEY);
-        if (!map.isEmpty()) {
-            redisCache.setCacheMap(CACHE_KEY, map);
-        }
-        log.info("【工艺过滤规则】Redis 缓存已全量刷新，产品类型数: {}", map.size());
-    }
-
-    private void refreshSubCache(Integer productType) {
-        String hKey = buildHashKey(productType);
-        BizCraftFilter query = new BizCraftFilter();
-        query.setProductType(productType);
-
-        query.setIsEnabled(1);
         List<BizCraftFilter> activeRules = bizCraftFilterMapper.selectBizCraftFilterList(query);
 
+        redisCache.deleteObject(CACHE_KEY);
         if (activeRules != null && !activeRules.isEmpty()) {
-            redisCache.setCacheMapValue(CACHE_KEY, hKey, activeRules);
-        } else {
-            redisCache.deleteCacheMapValue(CACHE_KEY, hKey);
+            redisCache.setCacheObject(CACHE_KEY, activeRules);
         }
+        log.info("【工艺过滤规则】Redis 缓存已全量刷新，工序关键词数: {}", activeRules == null ? 0 : activeRules.size());
     }
 
     @Override
-    public List<BizCraftFilter> getRulesFromCache(Integer productType) {
-        String hKey = buildHashKey(productType);
-        List<BizCraftFilter> rules = redisCache.getCacheMapValue(CACHE_KEY, hKey);
+    @SuppressWarnings("unchecked")
+    public List<BizCraftFilter> getRulesFromCache() {
+        List<BizCraftFilter> rules = redisCache.getCacheObject(CACHE_KEY);
         if (rules == null) {
             BizCraftFilter query = new BizCraftFilter();
-            query.setProductType(productType);
-
             query.setIsEnabled(1);
             rules = bizCraftFilterMapper.selectBizCraftFilterList(query);
             if (rules != null && !rules.isEmpty()) {
-                redisCache.setCacheMapValue(CACHE_KEY, hKey, rules);
+                redisCache.setCacheObject(CACHE_KEY, rules);
             }
         }
         return rules != null ? rules : Collections.emptyList();
     }
 
     @Override
-    public boolean isProcessFiltered(Integer productType, String processName) {
-        if (productType == null || productType < 0 || productType > 2
-                || processName == null || processName.trim().isEmpty()) {
+    public boolean isProcessFiltered(String processName) {
+        if (processName == null || processName.trim().isEmpty()) {
             return false;
         }
-        for (BizCraftFilter rule : getRulesFromCache(productType)) {
+        for (BizCraftFilter rule : getRulesFromCache()) {
             String keyword = rule.getKeyword();
             Integer mode = rule.getMatchMode();
-            if (!productType.equals(rule.getProductType()) || !Integer.valueOf(1).equals(rule.getIsEnabled())
-                    || Integer.valueOf(1).equals(rule.getIsDeleted()) || keyword == null || keyword.trim().isEmpty()) {
+            if (!Integer.valueOf(1).equals(rule.getIsEnabled())
+                    || Integer.valueOf(1).equals(rule.getIsDeleted())
+                    || keyword == null || keyword.trim().isEmpty()) {
                 continue;
             }
             keyword = keyword.trim();
@@ -176,13 +152,14 @@ public class BizCraftFilterServiceImpl implements IBizCraftFilterService {
     }
 
     private void validateRule(BizCraftFilter rule) {
-        if (rule.getProductType() == null || rule.getProductType() < 0 || rule.getProductType() > 2) {
-            throw new ServiceException("请选择有效的产品类型");
-        }
         if (rule.getKeyword() == null || rule.getKeyword().trim().isEmpty()) {
             throw new ServiceException("工序关键词不能为空");
         }
         rule.setKeyword(rule.getKeyword().trim());
+        BizCraftFilter existing = bizCraftFilterMapper.selectBizCraftFilterByKeyword(rule.getKeyword());
+        if (existing != null && !existing.getId().equals(rule.getId())) {
+            throw new ServiceException("工序关键词已存在，请勿重复新增");
+        }
         if (rule.getMatchMode() == null || rule.getMatchMode() < 1 || rule.getMatchMode() > 3) {
             throw new ServiceException("请选择有效的匹配模式");
         }
@@ -197,7 +174,4 @@ public class BizCraftFilterServiceImpl implements IBizCraftFilterService {
         rule.setProcessName(rule.getKeyword());
     }
 
-    private String buildHashKey(Integer productType) {
-        return String.valueOf(productType);
-    }
 }

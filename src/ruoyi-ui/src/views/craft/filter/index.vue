@@ -1,20 +1,8 @@
 <template>
   <div class="app-container">
-<!--    <el-alert title="按产品类型匹配工序名称；命中规则后，导入时跳过整道工序及其全部工步，同时跳过对应任务。" type="info" :closable="false" show-icon class="mb8" />-->
     <!-- 搜索筛选区 -->
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="88px">
-      <el-form-item label="产品类型" prop="productType">
-        <el-select v-model="queryParams.productType" placeholder="请选择产品类型" clearable style="width: 180px">
-          <el-option
-              v-for="item in productTypeOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-          />
-        </el-select>
-      </el-form-item>
-
-      <el-form-item label="过滤关键词" prop="keyword">
+<el-form-item label="过滤关键词" prop="keyword">
         <el-input
             v-model="queryParams.keyword"
             placeholder="请输入工序名称关键词"
@@ -66,15 +54,7 @@
     <el-table v-loading="loading" :data="ruleList" @selection-change="handleSelectionChange" border>
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="ID" align="center" prop="id" width="70" />
-      <el-table-column label="产品类型" align="center" prop="productType" width="120">
-        <template #default="scope">
-          <el-tag v-if="scope.row.productType === 0" type="warning">天线</el-tag>
-          <el-tag v-else-if="scope.row.productType === 1" type="primary">板级</el-tag>
-          <el-tag v-else-if="scope.row.productType === 2" type="success">模块</el-tag>
-          <el-tag v-else type="info">未知({{ scope.row.productType }})</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="待过滤工序关键词" align="center" prop="keyword" min-width="160">
+<el-table-column label="待过滤工序关键词" align="center" prop="keyword" min-width="160">
         <template #default="scope">
           <el-tag type="danger">{{ scope.row.keyword }}</el-tag>
         </template>
@@ -122,18 +102,7 @@
     <!-- 新增 / 修改对话框 -->
     <el-dialog :title="title" v-model="open" width="550px" append-to-body>
       <el-form ref="ruleRef" :model="form" :rules="rules" label-width="110px">
-        <el-form-item label="产品类型" prop="productType">
-          <el-select v-model="form.productType" placeholder="请选择产品类型" style="width: 100%">
-            <el-option
-                v-for="item in productTypeOptions"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-            />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="工序关键词" prop="keyword">
+<el-form-item label="工序关键词" prop="keyword">
           <el-input v-model="form.keyword" placeholder="如：调试、准备、入库" />
         </el-form-item>
 
@@ -141,7 +110,7 @@
           <el-radio-group v-model="form.matchMode">
             <el-radio :label="2">包含匹配</el-radio>
             <el-radio :label="1">精确匹配</el-radio>
-            <el-radio :label="3">正则匹配</el-radio>
+<!--            <el-radio :label="3">正则匹配</el-radio>-->
           </el-radio-group>
         </el-form-item>
 
@@ -190,24 +159,15 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
 
-// 0:天线, 1:板级, 2:模块
-const productTypeOptions = [
-  { label: '天线', value: 0 },
-  { label: '板级', value: 1 },
-  { label: '模块', value: 2 }
-]
-
 const data = reactive({
   form: {},
   queryParams: {
     pageNum: 1,
     pageSize: 10,
-    productType: undefined,
     keyword: undefined,
     isEnabled: undefined
   },
   rules: {
-    productType: [{ required: true, message: '产品类型不能为空', trigger: 'change' }],
     keyword: [{ required: true, message: '过滤关键词不能为空', trigger: 'blur' }]
   }
 })
@@ -242,7 +202,6 @@ function handleSelectionChange(selection) {
 function reset() {
   form.value = {
     id: undefined,
-    productType: undefined,
     keyword: undefined,
     matchMode: 2,
     isEnabled: 1,
@@ -253,9 +212,6 @@ function reset() {
 
 function handleAdd() {
   reset()
-  if (queryParams.value.productType !== undefined) {
-    form.value.productType = queryParams.value.productType
-  }
   open.value = true
   title.value = '新增工序过滤规则'
 }

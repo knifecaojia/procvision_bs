@@ -29,6 +29,11 @@ public interface BizCraftFilterMapper {
     List<BizCraftFilter> selectBizCraftFilterList(BizCraftFilter bizCraftFilter);
 
     /**
+     * 按工序关键词精确查询未删除规则，用于防止全局关键词重复。
+     */
+    BizCraftFilter selectBizCraftFilterByKeyword(@Param("keyword") String keyword);
+
+    /**
      * 新增过滤规则
      *
      * @param bizCraftFilter 规则实体
