@@ -283,13 +283,27 @@
           <el-option v-else v-for="(item, index) in label_mozu" :key="item.label + index" :label="item.label" :value="item.value"></el-option>
         </el-select>
 
-        <el-input
-            style="margin-top: 20px;"
+<!--        <el-input-->
+<!--            style="margin-top: 20px;"-->
+<!--            v-model="remark"-->
+<!--            placeholder="请输入备注"-->
+<!--            @keyup.enter="confirmLabel"-->
+<!--            ref="inputRef"-->
+<!--        />-->
+
+        <el-select
             v-model="remark"
-            placeholder="请输入备注"
-            @keyup.enter="confirmLabel"
-            ref="inputRef"
-        />
+            filterable
+            allow-create
+            default-first-option
+            placeholder="请选择或输入标签"
+            style="width: 100%; margin-bottom: 20px;"
+        >
+          <el-option v-if="props.tempAlgType === 0" v-for="item in remark_tianxian" :key="item.value" :label="item.label" :value="item.value"></el-option>
+          <el-option v-else-if="props.tempAlgType === 1" v-for="item in remark_banji" :key="item.label" :label="item.label" :value="item.value"></el-option>
+<!--          <el-option v-else v-for="(item, index) in label_mozu" :key="item.label + index" :label="item.label" :value="item.value"></el-option>-->
+        </el-select>
+
         <template #footer>
         <span class="dialog-footer">
           <el-button @click="cancelAnnotation">取消</el-button>
@@ -361,7 +375,7 @@ import axios from "axios";
 import {Loading, VideoCamera} from "@element-plus/icons-vue";
 const {proxy} = getCurrentInstance()
 
-const {label_tianxian, label_banji, label_mozu} = proxy.useDict("label_tianxian", 'label_banji', 'label_mozu')
+const {label_tianxian, label_banji, label_mozu, remark_tianxian, remark_banji} = proxy.useDict("label_tianxian", 'label_banji', 'label_mozu', 'remark_tianxian', 'remark_banji')
 const labelVisible = defineModel()
 const canvas = ref(null);
 const isDrawingMode = ref(false);
