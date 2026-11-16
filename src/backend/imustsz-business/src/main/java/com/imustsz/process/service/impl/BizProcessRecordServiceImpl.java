@@ -90,7 +90,7 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
      * @return 过程记录
      */
     @Override
-    public List<BizProcessRecord> selectBizProcessRecordList(BizProcessRecord record){
+    public List<BizProcessRecord> selectBizProcessRecordList(BizProcessRecord record) {
         List<BizProcessRecord> bizProcessRecords = bizProcessRecordMapper.selectBizProcessRecordList(record);
 
         return bizProcessRecords.stream().peek(processRecord -> {
@@ -179,7 +179,7 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
         if (LastStepCache != null) {
             maxStepNo = LastStepCache;
             log.info("从redis中获取maxStepNo:{}，当前stepNo:{}", maxStepNo, bizProcessRecord.getStepCode());
-        }else {
+        } else {
             maxStepNo = bizStepMapper.selectLastStepByProcessId(process.getId());
             log.info("从数据库中获取maxStepNo:{}，当前stepNo:{}", maxStepNo, bizProcessRecord.getStepCode());
             redisCache.setCacheObject("maxStepNo-" + processDTO.getTask_no() + "-" + processDTO.getProcess_code(), maxStepNo, 5, TimeUnit.MINUTES);
@@ -197,16 +197,21 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
                 finishedOrderDTO.setStepName(bizProcessRecord.getStepName());
                 finishedOrderDTO.setObjectName(processDTO.getObject_name());
                 int status = 1;
-                if (maxStepNo == Integer.parseInt(finishedOrderDTO.getStepNo()))
-                    status = bizWorkOrderService.uploadToMOM(finishedOrderDTO);
-                bizProcessRecord.setUploaded(status == 1 ? 0 : 1);
-                bizProcessRecordMapper.insertBizProcessRecord(bizProcessRecord);
-            }else {
+                try {
+                    if (maxStepNo == Integer.parseInt(finishedOrderDTO.getStepNo()))
+                        status = bizWorkOrderService.uploadToMOM(finishedOrderDTO);
+                } catch (Exception e) {
+                    log.error("上传图片给MOM失败", e);
+                } finally {
+                    bizProcessRecord.setUploaded(status == 1 ? 0 : 1);
+                    bizProcessRecordMapper.insertBizProcessRecord(bizProcessRecord);
+                }
+            } else {
                 bizProcessRecord.setAlgResult(1);
                 bizProcessRecord.setNgReason(algResultJson.getData().getNg_reason());
                 bizProcessRecordMapper.insertBizProcessRecord(bizProcessRecord);
             }
-        }else {
+        } else {
             bizProcessRecord.setAlgResult(-1);
             bizProcessRecordMapper.insertBizProcessRecord(bizProcessRecord);
         }
@@ -215,7 +220,7 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
     }
 
     @Override
-    public List<ProcessRecordVO> getProcessRecordList(Integer status, String taskNo, Integer recordStatus) {
+    public List<ProcessRecordVO> getProcessRecordList(Integer status, String taskNo, Integer recordStatus, String source) {
 
         List<UniqueRecordParams> paramList = bizProcessRecordMapper.selectBizProcessRecords(taskNo);
 
@@ -233,7 +238,10 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
                 stepRecordVO.setStepName(record.getStepName());
                 stepRecordVO.setStepStatus(record.getStepStatus());
                 try {
-                    stepRecordVO.setImgUrl(minioUtils.getPresignedUrl(record.getImagePath()));
+                    if (source.equals("server"))
+                        stepRecordVO.setImgUrl(minioUtils.getPresignedUrl(record.getImagePath()));
+                    else
+                        stepRecordVO.setImgUrl(minioUtils.getPresignedUrlHttp(record.getImagePath()));
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -242,14 +250,10 @@ public class BizProcessRecordServiceImpl implements IBizProcessRecordService {
             }).collect(Collectors.toList()));
             return processRecordVO;
         }).filter(processRecordVO -> {
-            if (status == null)
-                return processRecordVO.getTaskStatus() == 2 || processRecordVO.getTaskStatus() == 3;
-            else if (status == 1)
-                return processRecordVO.getTaskStatus() == 2;
-            else if (status == 2)
-                return processRecordVO.getTaskStatus() == 3;
-            else
-                throw new RuntimeException("参数错误");
+            if (status == null) return processRecordVO.getTaskStatus() == 2 || processRecordVO.getTaskStatus() == 3;
+            else if (status == 1) return processRecordVO.getTaskStatus() == 2;
+            else if (status == 2) return processRecordVO.getTaskStatus() == 3;
+            else throw new RuntimeException("参数错误");
         }).collect(Collectors.toList());
     }
 

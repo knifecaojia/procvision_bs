@@ -68,7 +68,7 @@ public interface IBizProcessRecordService
 
     int insertBizProcessRecordByUpload(ProcessDTO processDTO) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
 
-    List<ProcessRecordVO> getProcessRecordList(Integer status, String taskNo, Integer recordStatus);
+    List<ProcessRecordVO> getProcessRecordList(Integer status, String taskNo, Integer recordStatus, String source);
 
     ProcessRecordVO getRecordByTaskNoAndProcessCode(String taskNo, String processCode);
 }
